@@ -3,6 +3,8 @@ import { GRADE_LABEL, RPS_ICON, type GameEvent, type Grade, type PlayerView, typ
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { DENY_TEXT, WHIFF_TEXT, describeExchange } from '../ui/describe';
+import { DEPTH, FONT, buildArena } from '../art/arena';
+import { drawAim, drawCharacter } from '../art/character';
 
 export interface GameSceneData {
   conn: GameConnection;
@@ -10,18 +12,21 @@ export interface GameSceneData {
 }
 
 const SYM_KEYS: Record<string, Rps> = { ONE: 'rock', TWO: 'paper', THREE: 'scissors', J: 'rock', K: 'paper', L: 'scissors' };
-const GRADE_COLOR: Record<Grade, string> = { perfect: '#06d6a0', good: '#e8ecf5', fail: '#ef476f' };
+const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#fff4e6', fail: '#ff5a5f' };
 const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
 
 interface Labels {
   name: Phaser.GameObjects.Text;
   hand: Phaser.GameObjects.Text;
+  body: Phaser.GameObjects.Graphics;
 }
 
 export class GameScene extends Phaser.Scene {
   private conn!: GameConnection;
   private onEnd!: GameSceneData['onEnd'];
   private hud!: Hud;
+  /** Camada do chão (setas de mira) e camada de sobreposição (anel do QTE, seleção). */
+  private ground!: Phaser.GameObjects.Graphics;
   private gfx!: Phaser.GameObjects.Graphics;
   private labels = new Map<string, Labels>();
   private centerText!: Phaser.GameObjects.Text;
@@ -51,33 +56,24 @@ export class GameScene extends Phaser.Scene {
     const cfg = this.conn.config;
     const { width, height } = cfg.arena;
 
-    // Arena estática.
-    const floor = this.add.graphics();
-    floor.fillStyle(0x141826, 1).fillRect(0, 0, width, height);
-    floor.lineStyle(1, 0x1d2234, 1);
-    for (let x = 0; x <= width; x += 40) floor.lineBetween(x, 0, x, height);
-    for (let y = 0; y <= height; y += 40) floor.lineBetween(0, y, width, y);
-    floor.lineStyle(4, 0x3a4260, 1).strokeRect(2, 2, width - 4, height - 4);
-    for (const r of cfg.obstacles) {
-      floor.fillStyle(0x2a3045, 1).fillRoundedRect(r.x, r.y, r.w, r.h, 8);
-      floor.lineStyle(2, 0x48506c, 1).strokeRoundedRect(r.x, r.y, r.w, r.h, 8);
-    }
-
-    this.gfx = this.add.graphics();
+    buildArena(this, cfg);
+    this.ground = this.add.graphics().setDepth(DEPTH.floor + 10);
+    this.gfx = this.add.graphics().setDepth(DEPTH.ui);
     this.centerText = this.add
-      .text(width / 2, height / 2, '', { fontFamily: 'Segoe UI, sans-serif', fontSize: '96px', fontStyle: 'bold', color: '#ffb703' })
+      .text(width / 2, height / 2, '', { fontFamily: FONT, fontSize: '150px', fontStyle: '700', color: '#ffc145' })
       .setOrigin(0.5)
-      .setDepth(50)
-      .setStroke('#000', 8);
+      .setDepth(DEPTH.popup + 10)
+      .setStroke('#2b1d22', 14);
     this.timerText = this.add
-      .text(width / 2, 14, '', { fontFamily: 'Segoe UI, sans-serif', fontSize: '22px', color: '#8b93a8' })
+      .text(width / 2, 18, '', { fontFamily: FONT, fontSize: '34px', fontStyle: '700', color: '#fff4e6' })
       .setOrigin(0.5, 0)
-      .setDepth(40);
+      .setDepth(DEPTH.popup)
+      .setStroke('#2b1d22', 8);
     this.qteText = this.add
-      .text(0, 0, '', { fontFamily: 'Segoe UI, sans-serif', fontSize: '14px', fontStyle: 'bold', color: '#ffb703' })
+      .text(0, 0, '', { fontFamily: FONT, fontSize: '20px', fontStyle: '700', color: '#ffc145' })
       .setOrigin(0.5)
-      .setDepth(45)
-      .setStroke('#000', 4);
+      .setDepth(DEPTH.popup)
+      .setStroke('#2b1d22', 6);
 
     this.setupInput();
     this.hud = new Hud(this.conn.localPlayerId, {
@@ -256,10 +252,10 @@ export class GameScene extends Phaser.Scene {
 
   private floatText(x: number, y: number, text: string, color: string, size = 16, ms = 900): void {
     const t = this.add
-      .text(x, y, text, { fontFamily: `Segoe UI, ${EMOJI_FONT}`, fontSize: `${size}px`, fontStyle: 'bold', color })
+      .text(x, y, text, { fontFamily: `${FONT}, ${EMOJI_FONT}`, fontSize: `${Math.round(size * 1.35)}px`, fontStyle: '700', color })
       .setOrigin(0.5)
-      .setDepth(60)
-      .setStroke('#000', 5);
+      .setDepth(DEPTH.popup)
+      .setStroke('#2b1d22', 6);
     this.tweens.add({ targets: t, y: y - 28, alpha: { from: 1, to: 0 }, ease: 'Cubic.easeIn', duration: ms, onComplete: () => t.destroy() });
   }
 
@@ -303,72 +299,64 @@ export class GameScene extends Phaser.Scene {
 
   private draw(snap: Snapshot, now: number, me: PlayerView | undefined): void {
     const g = this.gfx;
+    const ground = this.ground;
     const cfg = this.conn.config;
     const R = cfg.player.radius;
     g.clear();
+    ground.clear();
 
-    // Alcance do jogador local (discreto).
+    // Alcance do jogador local (discreto, no chão).
     if (me?.alive) {
-      g.lineStyle(1, 0xffffff, 0.06).strokeCircle(me.x, me.y, cfg.attack.engageRange);
-      g.lineStyle(1, 0xffffff, 0.1).strokeCircle(me.x, me.y, cfg.attack.hitRange);
+      const fy = me.y + R * 0.55;
+      ground.lineStyle(2, 0xfff4e6, 0.1).strokeEllipse(me.x, fy, cfg.attack.engageRange * 2, cfg.attack.engageRange * 2);
+      ground.lineStyle(2, 0xfff4e6, 0.16).strokeEllipse(me.x, fy, cfg.attack.hitRange * 2, cfg.attack.hitRange * 2);
     }
 
-    // Linhas de preparação de ataque (sem revelar símbolo).
+    // Setas de mira no chão (sem revelar símbolo) e arco de preparação.
     for (const p of snap.players) {
       if (!p.alive || !p.holding || !p.targetId) continue;
       const t = snap.players.find((o) => o.id === p.targetId);
       if (!t) continue;
-      const duel = p.clashWith === t.id;
-      const towardMe = t.id === me?.id;
-      dashedLine(g, p.x, p.y, t.x, t.y, duel ? 0xffb703 : p.color, towardMe ? 0.95 : 0.55, towardMe ? 4 : 3);
+      drawAim(ground, p.x, p.y, t.x, t.y, R, p.color, p.clashWith === t.id, t.id === me?.id);
       const remaining = Math.max(0, (p.impactAt ?? now) - now);
       const frac = Math.min(1, remaining / cfg.attack.windupMs);
-      g.lineStyle(3, p.color, 0.9).beginPath();
-      g.arc(p.x, p.y, R + 7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac, false).strokePath();
+      g.lineStyle(4, p.color, 0.95).beginPath();
+      g.arc(p.x, p.y - R * 0.4, R + 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac, false).strokePath();
     }
 
     // Alvo selecionado.
     const sel = snap.players.find((p) => p.id === this.targetId && p.alive);
     if (sel && me?.alive) {
-      const pulse = 4 + Math.sin(now / 120) * 2;
-      g.lineStyle(2, 0xffffff, 0.8).strokeCircle(sel.x, sel.y, R + 12 + pulse);
+      const pulse = 4 + Math.sin(now / 120) * 3;
+      const fy = sel.y + R * 0.55;
+      ground.lineStyle(3, 0xfff4e6, 0.9).strokeEllipse(sel.x, fy, (R + 22 + pulse) * 2, (R + 22 + pulse) * 1.1);
     }
 
-    // Jogadores.
-    for (const p of snap.players) {
+    // Jogadores (cada um na sua profundidade, para ordenar com o cenário).
+    snap.players.forEach((p, index) => {
       const lab = this.labelsFor(p);
+      lab.body.setDepth(p.alive ? p.y + R * 0.55 : p.y - 100);
+      drawCharacter(lab.body, p, { index, R, now, isMe: p.id === me?.id, inGrace: now < p.graceUntil });
+      lab.name.setPosition(p.x, p.y + R + 26).setAlpha(p.alive ? 1 : 0.45);
       if (!p.alive) {
-        g.fillStyle(0x3a3f50, 0.5).fillCircle(p.x, p.y, R);
-        g.lineStyle(3, 0x6b7186, 0.6).lineBetween(p.x - 10, p.y - 10, p.x + 10, p.y + 10).lineBetween(p.x + 10, p.y - 10, p.x - 10, p.y + 10);
-        lab.name.setPosition(p.x, p.y + R + 12).setAlpha(0.4);
         lab.hand.setText('');
-        continue;
+        return;
       }
-      const inGrace = now < p.graceUntil;
-      const alpha = inGrace && Math.floor(now / 90) % 2 === 0 ? 0.45 : 1;
-      g.fillStyle(p.color, alpha).fillCircle(p.x, p.y, R);
-      g.lineStyle(3, p.id === me?.id ? 0xffffff : 0x0d0f17, alpha).strokeCircle(p.x, p.y, R);
-      if (p.stunned) {
-        for (let i = 0; i < 3; i++) {
-          const a = now / 150 + (i * Math.PI * 2) / 3;
-          g.fillStyle(0xffd166, 1).fillCircle(p.x + Math.cos(a) * (R + 6), p.y - R - 4 + Math.sin(a) * 4, 3);
-        }
-      }
-      // Vida e foco.
+      // Vida e foco abaixo do nome.
       for (let i = 0; i < p.maxHp; i++) {
-        g.fillStyle(i < p.hp ? 0xef476f : 0x3a3f50, 1).fillCircle(p.x - (p.maxHp - 1) * 7 + i * 14, p.y + R + 30, 4.5);
+        g.fillStyle(0x2b1d22, 0.9).fillCircle(p.x - (p.maxHp - 1) * 9 + i * 18, p.y + R + 47, 7);
+        g.fillStyle(i < p.hp ? 0xff5a5f : 0x5b4a50, 1).fillCircle(p.x - (p.maxHp - 1) * 9 + i * 18, p.y + R + 47, 5);
       }
-      g.fillStyle(0x0b0d14, 1).fillRect(p.x - 22, p.y + R + 37, 44, 4);
-      g.fillStyle(0x8ecae6, 1).fillRect(p.x - 22, p.y + R + 37, 44 * (p.focus / cfg.player.maxFocus), 4);
+      g.fillStyle(0x2b1d22, 0.9).fillRoundedRect(p.x - 28, p.y + R + 58, 56, 7, 3);
+      g.fillStyle(0x8ecae6, 1).fillRoundedRect(p.x - 27, p.y + R + 59, 54 * (p.focus / cfg.player.maxFocus), 5, 2);
 
-      lab.name.setPosition(p.x, p.y + R + 13).setAlpha(1);
       // Mão: o próprio símbolo só para você; os outros veem "?".
       let hand = '';
       if (p.holding) hand = p.symbol ? RPS_ICON[p.symbol] : '❔';
       if (p.locked) hand += '🔒';
-      if (!p.holding && snap.players.some((o) => o.alive && o.targetId === p.id) && p.id === me?.id) hand = '❗';
-      lab.hand.setText(hand).setPosition(p.x, p.y - R - 20);
-    }
+      if (!p.holding && p.id === me?.id && snap.players.some((o) => o.alive && o.targetId === p.id)) hand = '❗';
+      lab.hand.setText(hand).setPosition(p.x, p.y - R * 2.5);
+    });
 
     this.drawQte(snap, now, me);
   }
@@ -382,24 +370,26 @@ export class GameScene extends Phaser.Scene {
     const T = Math.min(...impacts.filter((t) => t + qte.lateMs >= now));
     if (!Number.isFinite(T)) return;
     const g = this.gfx;
-    const baseR = player.radius + 14;
+    const baseR = player.radius + 22;
+    const cy = me.y - player.radius * 0.4;
     const dt = T - now;
 
-    g.lineStyle(4, 0xffffff, 0.85).strokeCircle(me.x, me.y, baseR);
+    g.lineStyle(5, 0xfff4e6, 0.9).strokeCircle(me.x, cy, baseR);
     if (me.locked) {
-      this.qteText.setText('TRAVADO').setColor('#8ecae6').setPosition(me.x, me.y - player.radius - 46);
+      this.qteText.setText('TRAVADO').setColor('#8ecae6').setPosition(me.x, me.y - player.radius * 3.6);
       return;
     }
     const r = baseR + Math.max(0, dt) * 0.09;
     const perfect = Math.abs(dt) <= qte.perfectMs;
     const inWindow = dt <= qte.leadMs;
-    const color = perfect ? 0x06d6a0 : inWindow ? 0xffd166 : 0x8b93a8;
-    g.lineStyle(perfect ? 7 : 4, color, 1).strokeCircle(me.x, me.y, r);
-    if (dt < 0) g.lineStyle(4, 0xef476f, 0.8).strokeCircle(me.x, me.y, baseR - 6);
+    const color = perfect ? 0x5ad19a : inWindow ? 0xffc145 : 0xd9cfd0;
+    g.lineStyle(perfect ? 9 : 5, 0x2b1d22, 0.5).strokeCircle(me.x, cy, r + 1);
+    g.lineStyle(perfect ? 8 : 4, color, 1).strokeCircle(me.x, cy, r);
+    if (dt < 0) g.lineStyle(5, 0xff5a5f, 0.85).strokeCircle(me.x, cy, baseR - 7);
     this.qteText
       .setText(perfect ? 'AGORA!' : inWindow ? 'ESPAÇO' : 'confirmar cedo = BOM')
-      .setColor(perfect ? '#06d6a0' : inWindow ? '#ffd166' : '#8b93a8')
-      .setPosition(me.x, me.y - player.radius - 46);
+      .setColor(perfect ? '#5ad19a' : inWindow ? '#ffc145' : '#fff4e6')
+      .setPosition(me.x, me.y - player.radius * 3.6);
   }
 
   private labelsFor(p: PlayerView): Labels {
@@ -407,19 +397,20 @@ export class GameScene extends Phaser.Scene {
     if (!l) {
       const name = this.add
         .text(0, 0, p.id === this.conn.localPlayerId ? `${p.name} (você)` : p.name, {
-          fontFamily: 'Segoe UI, sans-serif',
-          fontSize: '13px',
-          fontStyle: 'bold',
-          color: '#e8ecf5',
+          fontFamily: FONT,
+          fontSize: '19px',
+          fontStyle: '600',
+          color: '#fff4e6',
         })
         .setOrigin(0.5)
-        .setDepth(20)
-        .setStroke('#0d0f17', 4);
+        .setDepth(DEPTH.ui + 1)
+        .setStroke('#2b1d22', 6);
       const hand = this.add
-        .text(0, 0, '', { fontFamily: EMOJI_FONT, fontSize: '26px' })
+        .text(0, 0, '', { fontFamily: EMOJI_FONT, fontSize: '36px' })
         .setOrigin(0.5)
-        .setDepth(21);
-      l = { name, hand };
+        .setDepth(DEPTH.ui + 2);
+      const body = this.add.graphics();
+      l = { name, hand, body };
       this.labels.set(p.id, l);
     }
     return l;
@@ -433,20 +424,4 @@ function dist(a: { x: number; y: number }, b: { x: number; y: number }): number 
 function formatTime(ms: number): string {
   const s = Math.ceil(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-
-function dashedLine(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, color: number, alpha: number, width: number): void {
-  const len = Math.hypot(x2 - x1, y2 - y1);
-  if (len < 1) return;
-  const ux = (x2 - x1) / len;
-  const uy = (y2 - y1) / len;
-  g.lineStyle(width, color, alpha);
-  for (let d = 0; d < len; d += 16) {
-    const e = Math.min(len, d + 9);
-    g.lineBetween(x1 + ux * d, y1 + uy * d, x1 + ux * e, y1 + uy * e);
-  }
-  // Ponta de seta perto do alvo.
-  const tx = x2 - ux * 30;
-  const ty = y2 - uy * 30;
-  g.fillStyle(color, alpha).fillTriangle(tx + ux * 10, ty + uy * 10, tx - uy * 7, ty + ux * 7, tx + uy * 7, ty - ux * 7);
 }

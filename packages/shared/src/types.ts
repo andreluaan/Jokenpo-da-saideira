@@ -25,6 +25,8 @@ export interface PlayerView {
   isBot: boolean;
   x: number;
   y: number;
+  faceX: number;
+  faceY: number;
   hp: number;
   maxHp: number;
   focus: number;

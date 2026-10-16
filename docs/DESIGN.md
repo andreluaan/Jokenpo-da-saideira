@@ -1,6 +1,8 @@
 # PPT da Saideira — Documento de Design Técnico
 
-> Versão 0.1 — Etapa 1 (protótipo de combate com NPCs)
+> Versão 0.2 — Etapa 1 (protótipo de combate com NPCs) + passe de direção de arte ([ART_DIRECTION.md](ART_DIRECTION.md))
+>
+> Arena: elipse de 1520×940 no quintal do Bar do Zé, com mesa central, 4 pilhas de engradados e 4 barris (todos bloqueiam movimento e linha de visão).
 
 ## 1. Riscos identificados
 
@@ -88,7 +90,7 @@ Valores entre colchetes são os padrões de `config.ts`.
 - **Impacto (T)**: instante em que um ataque se resolve. Conhecido por todos (o anel de tempo é público); o símbolo não.
 
 ### 5.2 Iniciar ataque (Etapa A)
-- Requisitos: estar livre (sem mão, sem atordoamento, sem recuperação, sem investida), alvo vivo a ≤ [230 px].
+- Requisitos: estar livre (sem mão, sem atordoamento, sem recuperação, sem investida), alvo vivo a ≤ [250 px].
 - T = agora + [1000 ms]. Todos veem uma linha de preparação até o alvo, sem o símbolo.
 - **Resposta / Duelo**: se o alvo escolhido já está atacando você e ainda faltam ≥ [200 ms] para o impacto dele, forma-se um **duelo**: T compartilhado = máx(T dele, agora + [500 ms]). Um duelo resolve os dois ataques numa única troca.
 - Segurar mão reduz a velocidade a [75%].
@@ -115,7 +117,7 @@ Enquanto a mão **não estiver travada**:
 ### 5.4 Resolução de uma troca (Etapa D)
 Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, ou sem mão).
 
-0. Alvo morto, fora de alcance [160 px] ou linha de visão bloqueada por obstáculo → **Errou** (recuperação longa [650 ms]).
+0. Alvo morto, fora de alcance [175 px] ou linha de visão bloqueada por obstáculo → **Errou** (recuperação longa [650 ms]).
 1. B sem mão: A Falha → **Errou**; senão A vence (**Indefeso**).
 2. Ambos Falha → nada acontece (ambos erraram).
 3. Há vencedor por símbolo:

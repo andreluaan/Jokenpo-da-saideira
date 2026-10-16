@@ -12,10 +12,10 @@ function newSim(n = 2): GameSimulation {
   );
   sim.step(1); // contagem zerada → partida começa
   // Posições previsíveis, longe de obstáculos.
-  sim.debugPlace('A', 200, 360);
-  sim.debugPlace('B', 300, 360);
-  if (n > 2) sim.debugPlace('C', 300, 460);
-  if (n > 3) sim.debugPlace('D', 1100, 650);
+  sim.debugPlace('A', 780, 520);
+  sim.debugPlace('B', 880, 520);
+  if (n > 2) sim.debugPlace('C', 880, 420);
+  if (n > 3) sim.debugPlace('D', 1300, 900);
   return sim;
 }
 
@@ -62,7 +62,7 @@ describe('ataque simples', () => {
 
   it('não pode iniciar ataque fora de alcance', () => {
     const sim = newSim();
-    sim.debugPlace('B', 200 + cfg.attack.engageRange + 50, 360);
+    sim.debugPlace('B', 780 + cfg.attack.engageRange + 50, 520);
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
     expect(sim.debugPlayer('A').attack).toBeNull();
   });
@@ -71,7 +71,7 @@ describe('ataque simples', () => {
     const sim = newSim();
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
     sim.applyInput('A', { type: 'commit' });
-    sim.debugPlace('B', 600, 600);
+    sim.debugPlace('B', 1300, 900);
     const ev = advanceTo(sim, impactOf(sim, 'A') + LATE + 1);
     expect(ev.find((e) => e.type === 'whiff')).toMatchObject({ reason: 'range' });
     expect(sim.debugPlayer('B').hp).toBe(cfg.player.maxHp);
@@ -79,8 +79,8 @@ describe('ataque simples', () => {
 
   it('obstáculo entre os dois bloqueia o golpe', () => {
     const sim = newSim();
-    sim.debugPlace('A', 565, 360);
-    sim.debugPlace('B', 715, 360); // pilar central em x 590–690
+    sim.debugPlace('A', 455, 600);
+    sim.debugPlace('B', 585, 600); // barril em (520, 600)
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
     sim.applyInput('A', { type: 'commit' });
     const ev = advanceTo(sim, impactOf(sim, 'A') + LATE + 1);
@@ -222,7 +222,6 @@ describe('vários jogadores', () => {
 
   it('uma mão só: o símbolo do defensor vale contra quem o ataca, e ao vencer ele mantém a ação', () => {
     const sim = newSim(3);
-    sim.debugPlace('C', 400, 360);
     sim.applyInput('B', { type: 'symbol', symbol: 'paper', targetId: 'C' }); // B mira C
     advanceTo(sim, sim.now + 50);
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' }); // A ataca B
@@ -239,7 +238,6 @@ describe('vários jogadores', () => {
 
   it('quem leva dano perde a própria ação (interrupção)', () => {
     const sim = newSim(3);
-    sim.debugPlace('C', 400, 360);
     sim.applyInput('B', { type: 'symbol', symbol: 'scissors', targetId: 'C' });
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
     sim.applyInput('A', { type: 'commit' });
@@ -298,5 +296,24 @@ describe('fim de partida', () => {
     );
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
     expect(sim.debugPlayer('A').attack).toBeNull();
+  });
+});
+
+describe('arena', () => {
+  it('a cerca elíptica segura o jogador dentro da arena', () => {
+    const sim = newSim();
+    sim.applyInput('A', { type: 'move', x: -1, y: -1 });
+    advanceTo(sim, sim.now + 6000);
+    const a = sim.debugPlayer('A');
+    const { cx, cy, rx, ry } = cfg.arena;
+    expect(((a.x - cx) / rx) ** 2 + ((a.y - cy) / ry) ** 2).toBeLessThanOrEqual(1);
+  });
+
+  it('barril redondo bloqueia o movimento', () => {
+    const sim = newSim();
+    sim.debugPlace('A', 420, 600);
+    sim.applyInput('A', { type: 'move', x: 1, y: 0 });
+    advanceTo(sim, sim.now + 300);
+    expect(sim.debugPlayer('A').x).toBeLessThanOrEqual(520 - 34 - cfg.player.radius + 0.01);
   });
 });

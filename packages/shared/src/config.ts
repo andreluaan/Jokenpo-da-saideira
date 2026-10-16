@@ -7,9 +7,24 @@ export interface Rect {
   h: number;
 }
 
+/** Elementos de cenário dentro da arena; todos bloqueiam movimento e linha de visão. */
+export type PropKind = 'table' | 'crates' | 'barrel';
+
+export type Obstacle = ({ kind: 'rect' } & Rect & { prop: PropKind }) | { kind: 'circle'; x: number; y: number; r: number; prop: PropKind };
+
+/** Mundo (width × height) com a arena jogável em forma de elipse. */
+export interface Arena {
+  width: number;
+  height: number;
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+}
+
 export interface GameConfig {
-  arena: { width: number; height: number };
-  obstacles: Rect[];
+  arena: Arena;
+  obstacles: Obstacle[];
   spawns: { x: number; y: number }[];
   player: {
     radius: number;
@@ -79,32 +94,37 @@ export interface GameConfig {
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
-  arena: { width: 1280, height: 720 },
+  // Quintal do Bar do Zé: elipse 1520 × 940 (≈ 22% mais área que o retângulo da v0.1).
+  arena: { width: 1920, height: 1200, cx: 960, cy: 600, rx: 760, ry: 470 },
   obstacles: [
-    { x: 590, y: 310, w: 100, h: 100 },
-    { x: 330, y: 150, w: 70, h: 70 },
-    { x: 880, y: 150, w: 70, h: 70 },
-    { x: 330, y: 500, w: 70, h: 70 },
-    { x: 880, y: 500, w: 70, h: 70 },
+    { kind: 'circle', x: 960, y: 600, r: 62, prop: 'table' },
+    { kind: 'rect', x: 640, y: 395, w: 96, h: 72, prop: 'crates' },
+    { kind: 'rect', x: 1184, y: 395, w: 96, h: 72, prop: 'crates' },
+    { kind: 'rect', x: 640, y: 733, w: 96, h: 72, prop: 'crates' },
+    { kind: 'rect', x: 1184, y: 733, w: 96, h: 72, prop: 'crates' },
+    { kind: 'circle', x: 960, y: 290, r: 34, prop: 'barrel' },
+    { kind: 'circle', x: 960, y: 910, r: 34, prop: 'barrel' },
+    { kind: 'circle', x: 520, y: 600, r: 34, prop: 'barrel' },
+    { kind: 'circle', x: 1400, y: 600, r: 34, prop: 'barrel' },
   ],
   spawns: [
-    { x: 150, y: 130 },
-    { x: 1130, y: 590 },
-    { x: 1130, y: 130 },
-    { x: 150, y: 590 },
+    { x: 440, y: 400 },
+    { x: 1480, y: 800 },
+    { x: 1480, y: 400 },
+    { x: 440, y: 800 },
   ],
   player: {
-    radius: 22,
+    radius: 26,
     maxHp: 3,
-    speed: 230,
+    speed: 250,
     holdingSpeedMul: 0.75,
     maxFocus: 100,
     startFocus: 60,
     focusRegen: 12,
   },
   attack: {
-    engageRange: 230,
-    hitRange: 160,
+    engageRange: 250,
+    hitRange: 175,
     windupMs: 1000,
     minResponseMs: 500,
     responseCutoffMs: 200,

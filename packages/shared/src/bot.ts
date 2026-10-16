@@ -1,5 +1,5 @@
 import type { GameConfig } from './config';
-import { dist, normalize } from './geometry';
+import { arenaDepth, dist, insideObstacle, lineBlocked, normalize } from './geometry';
 import { counterOf } from './rules';
 import { RPS_LIST, type GameEvent, type PlayerInput, type PlayerView, type Rps, type Snapshot } from './types';
 
@@ -185,7 +185,7 @@ export class BotBrain {
       const n = normalize(target.x - me.x, target.y - me.y);
       const want = this.config.attack.hitRange * 0.65;
       const k = d > want ? 1 : d < want * 0.6 ? -0.6 : 0;
-      out.push({ type: 'move', x: n.x * k - n.y * 0.25 * this.strafeDir, y: n.y * k + n.x * 0.25 * this.strafeDir });
+      out.push(this.steer(me, n.x * k - n.y * 0.25 * this.strafeDir, n.y * k + n.x * 0.25 * this.strafeDir));
     }
   }
 
@@ -225,7 +225,7 @@ export class BotBrain {
       }
       if (this.handledAttackKey === key) {
         const away = normalize(me.x - threat.x, me.y - threat.y);
-        out.push({ type: 'move', x: away.x, y: away.y });
+        out.push(this.steer(me, away.x, away.y));
         return;
       }
     } else {
@@ -249,12 +249,37 @@ export class BotBrain {
     const n = normalize(target.x - me.x, target.y - me.y);
     const want = me.busy ? cfg.attack.engageRange : cfg.attack.hitRange * 0.55;
     const k = d > want + 20 ? 1 : d < want - 20 ? -0.7 : 0;
-    out.push({ type: 'move', x: n.x * k - n.y * 0.55 * this.strafeDir, y: n.y * k + n.x * 0.55 * this.strafeDir });
+    out.push(this.steer(me, n.x * k - n.y * 0.55 * this.strafeDir, n.y * k + n.x * 0.55 * this.strafeDir));
 
-    const ready = !me.busy && !me.stunned && d <= cfg.attack.hitRange * 0.85;
+    const clear = !lineBlocked(me.x, me.y, target.x, target.y, cfg.obstacles);
+    const ready = clear && !me.busy && !me.stunned && d <= cfg.attack.hitRange * 0.85;
     if (ready && this.rng() < (this.profile.aggression * dt) / 1000) {
       out.push({ type: 'symbol', symbol: this.choose(target.id, null), targetId: target.id });
     }
+  }
+
+  /** Desvia de obstáculos e da cerca: testa a direção desejada e, se bloqueada, gira até achar caminho. */
+  private steer(me: PlayerView, x: number, y: number): PlayerInput {
+    const dir = normalize(x, y);
+    if (dir.x === 0 && dir.y === 0) return { type: 'move', x: 0, y: 0 };
+    const { obstacles, arena, player } = this.config;
+    const probe = player.radius + 30;
+    const free = (a: number) => {
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      const px = me.x + (dir.x * c - dir.y * s) * probe;
+      const py = me.y + (dir.x * s + dir.y * c) * probe;
+      return !insideObstacle(px, py, player.radius, obstacles) && arenaDepth(px, py, arena) < 0.96;
+    };
+    for (const a of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
+      const turn = a * this.strafeDir;
+      if (free(turn)) {
+        const c = Math.cos(turn);
+        const s = Math.sin(turn);
+        return { type: 'move', x: dir.x * c - dir.y * s, y: dir.x * s + dir.y * c };
+      }
+    }
+    return { type: 'move', x: (arena.cx - me.x) / arena.rx, y: (arena.cy - me.y) / arena.ry };
   }
 
   // ---------------------------------------------------------------- escolha

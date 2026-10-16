@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import type { BotDifficulty } from '@ppt/shared';
+import '@fontsource/fredoka/400.css';
+import '@fontsource/fredoka/600.css';
+import '@fontsource/fredoka/700.css';
 import './style.css';
 import { LocalConnection } from './net/localConnection';
 import type { GameConnection } from './net/connection';
@@ -35,8 +38,10 @@ $('#play-again').addEventListener('click', () => lastSettings && startMatch(last
 $('#to-menu').addEventListener('click', () => backToMenu());
 $('#leave').addEventListener('click', () => backToMenu());
 
-function startMatch(settings: Settings): void {
+async function startMatch(settings: Settings): Promise<void> {
   lastSettings = settings;
+  // O Phaser desenha textos em canvas: a fonte precisa estar carregada antes.
+  await Promise.all(['400', '600', '700'].map((w) => document.fonts.load(`${w} 20px Fredoka`))).catch(() => undefined);
   teardown();
   menu.classList.add('hidden');
   matchScreen.classList.remove('hidden');
@@ -51,7 +56,7 @@ function startMatch(settings: Settings): void {
     parent: 'game-wrap',
     width,
     height,
-    backgroundColor: '#0d0f17',
+    backgroundColor: '#d4876a',
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [],
     banner: false,
@@ -64,9 +69,9 @@ function showEnd(winnerId: string | null): void {
   if (!conn) return;
   const me = conn.localPlayerId;
   const winner = conn.latest()?.players.find((p) => p.id === winnerId);
-  $('#end-title').textContent = winnerId === me ? 'Vitória! 🍻' : winnerId ? 'Derrota' : 'Empate';
+  $('#end-title').textContent = winnerId === me ? 'Vitória! 🍻' : winnerId ? 'Derrota — a saideira é sua' : 'Empate';
   $('#end-sub').textContent =
-    winnerId === me ? 'Você foi o último de pé. A saideira é por sua conta.' : winner ? `${winner.name} venceu a partida.` : 'Ninguém levou a melhor.';
+    winnerId === me ? 'Você foi o último de pé no quintal do Bar do Zé.' : winner ? `${winner.name} venceu. Quem perde paga a saideira!` : 'Ninguém levou a melhor. Rodada dividida.';
   endOverlay.classList.remove('hidden');
 }
 

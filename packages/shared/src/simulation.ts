@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
-import { clamp, dist, normalize, pushCircleOutOfRect, segmentHitsRect } from './geometry';
+import { clamp, clampInArena, dist, lineBlocked, normalize, pushOutOfObstacle } from './geometry';
 import { gradeLock, resolveExchange } from './rules';
 import type {
   DenyReason,
@@ -13,7 +13,7 @@ import type {
   WhiffReason,
 } from './types';
 
-export const PLAYER_COLORS = [0x4cc9f0, 0xf72585, 0xffd166, 0x06d6a0];
+export const PLAYER_COLORS = [0x3b9be8, 0xa35ce0, 0xf2a93b, 0x3dbf7a];
 
 export interface PlayerSetup {
   id: string;
@@ -80,9 +80,7 @@ export class GameSimulation {
     this.config = config;
     setups.forEach((s, i) => {
       const spawn = config.spawns[i % config.spawns.length];
-      const cx = config.arena.width / 2;
-      const cy = config.arena.height / 2;
-      const face = normalize(cx - spawn.x, cy - spawn.y);
+      const face = normalize(config.arena.cx - spawn.x, config.arena.cy - spawn.y);
       const p: Player = {
         id: s.id,
         name: s.name,
@@ -287,13 +285,14 @@ export class GameSimulation {
       p.x += vx * dt;
       p.y += vy * dt;
 
-      for (const r of obstacles) {
-        const pos = pushCircleOutOfRect(p.x, p.y, player.radius, r);
+      for (const o of obstacles) {
+        const pos = pushOutOfObstacle(p.x, p.y, player.radius, o);
         p.x = pos.x;
         p.y = pos.y;
       }
-      p.x = clamp(p.x, player.radius, arena.width - player.radius);
-      p.y = clamp(p.y, player.radius, arena.height - player.radius);
+      const inside = clampInArena(p.x, p.y, player.radius, arena);
+      p.x = inside.x;
+      p.y = inside.y;
 
       const target = p.attack ? this.byId.get(p.attack.targetId) : undefined;
       const face = target ? normalize(target.x - p.x, target.y - p.y) : normalize(p.moveX, p.moveY);
@@ -345,7 +344,7 @@ export class GameSimulation {
 
     if (!y.alive) return this.whiff([x], y, 'gone');
     if (dist(x.x, x.y, y.x, y.y) > this.config.attack.hitRange) return this.whiff(duel ? [x, y] : [x], y, 'range');
-    if (this.config.obstacles.some((r) => segmentHitsRect(x.x, x.y, y.x, y.y, r))) {
+    if (lineBlocked(x.x, x.y, y.x, y.y, this.config.obstacles)) {
       return this.whiff(duel ? [x, y] : [x], y, 'blocked');
     }
 
@@ -501,6 +500,8 @@ export class GameSimulation {
         isBot: p.isBot,
         x: p.x,
         y: p.y,
+        faceX: p.faceX,
+        faceY: p.faceY,
         hp: p.hp,
         maxHp: this.config.player.maxHp,
         focus: p.focus,

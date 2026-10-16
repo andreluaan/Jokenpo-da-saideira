@@ -1,4 +1,4 @@
-import type { Rect } from './config';
+import type { Arena, Obstacle, Rect } from './config';
 
 export function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
@@ -57,4 +57,61 @@ export function segmentHitsRect(x1: number, y1: number, x2: number, y2: number, 
     }
   }
   return true;
+}
+
+/** Segmento cruza o círculo (cx, cy, r)? */
+export function segmentHitsCircle(x1: number, y1: number, x2: number, y2: number, cx: number, cy: number, r: number): boolean {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 > 0 ? clamp(((cx - x1) * dx + (cy - y1) * dy) / len2, 0, 1) : 0;
+  const px = x1 + dx * t - cx;
+  const py = y1 + dy * t - cy;
+  return px * px + py * py <= r * r;
+}
+
+/** Empurra um círculo de raio r para fora de um obstáculo. */
+export function pushOutOfObstacle(x: number, y: number, r: number, o: Obstacle): { x: number; y: number } {
+  if (o.kind === 'rect') return pushCircleOutOfRect(x, y, r, o);
+  const dx = x - o.x;
+  const dy = y - o.y;
+  const d = Math.hypot(dx, dy);
+  const min = o.r + r;
+  if (d >= min) return { x, y };
+  if (d < 1e-6) return { x: o.x + min, y: o.y };
+  return { x: o.x + (dx / d) * min, y: o.y + (dy / d) * min };
+}
+
+/** Linha de visão bloqueada por algum obstáculo? */
+export function lineBlocked(x1: number, y1: number, x2: number, y2: number, obstacles: readonly Obstacle[]): boolean {
+  return obstacles.some((o) => (o.kind === 'rect' ? segmentHitsRect(x1, y1, x2, y2, o) : segmentHitsCircle(x1, y1, x2, y2, o.x, o.y, o.r)));
+}
+
+/** Ponto (com raio r) está dentro de algum obstáculo? */
+export function insideObstacle(x: number, y: number, r: number, obstacles: readonly Obstacle[]): boolean {
+  return obstacles.some((o) => {
+    if (o.kind === 'circle') return Math.hypot(x - o.x, y - o.y) < o.r + r;
+    const nx = clamp(x, o.x, o.x + o.w);
+    const ny = clamp(y, o.y, o.y + o.h);
+    return Math.hypot(x - nx, y - ny) < r;
+  });
+}
+
+/** Mantém um círculo de raio r dentro da elipse da arena (aproximação por escala radial). */
+export function clampInArena(x: number, y: number, r: number, a: Arena): { x: number; y: number } {
+  const ex = a.rx - r;
+  const ey = a.ry - r;
+  const dx = x - a.cx;
+  const dy = y - a.cy;
+  const k = (dx * dx) / (ex * ex) + (dy * dy) / (ey * ey);
+  if (k <= 1) return { x, y };
+  const s = 1 / Math.sqrt(k);
+  return { x: a.cx + dx * s, y: a.cy + dy * s };
+}
+
+/** Quanto do caminho até a borda da arena: 0 no centro, 1 na borda. */
+export function arenaDepth(x: number, y: number, a: Arena): number {
+  const dx = (x - a.cx) / a.rx;
+  const dy = (y - a.cy) / a.ry;
+  return Math.sqrt(dx * dx + dy * dy);
 }

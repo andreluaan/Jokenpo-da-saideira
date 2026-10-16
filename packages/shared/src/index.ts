@@ -5,3 +5,4 @@ export * from './geometry';
 export * from './simulation';
 export * from './bot';
 export * from './characters';
+export * from './protocol';

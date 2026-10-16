@@ -1,6 +1,14 @@
 # PPT da Saideira — Direção de Arte
 
-> v0.4 · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
+> v0.5 (3D) · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
+
+## 0. Tecnologia visual (v0.5)
+
+- Renderização **3D com Three.js** (WebGL): luz quente de fim de tarde, sombras suaves reais, câmera inclinada à la Oddballers, névoa leve.
+- Modelos **CC0 da Kenney** (Mini Characters, Furniture, Food, Nature) — ver `packages/client/public/models/CREDITS.md`.
+- Personagens = modelo animado da Kenney (idle, andar, correr, soco, chute, cair) + repintura da paleta por personagem + cabelos/acessórios em blocos montados no espaço do modelo e presos aos ossos.
+- "Bêbado": molas (`art/rig.ts`) inclinam o corpo inteiro e somam rotação nos ossos (cabeça e braços) depois da animação; rasteira = tombo limitado a ~83° + chute do vencedor.
+- HUD e textos são HTML por cima do 3D (crachás, pop-ups, anel do QTE em SVG).
 
 ## 1. Pilares
 

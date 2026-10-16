@@ -28,8 +28,8 @@
 ## 2. Arquitetura
 
 ```
-┌──────────────── Cliente (Phaser 3 + Vite) ────────────────┐
-│  Menus (DOM)   GameScene (render, input, QTE, feedback)    │
+┌──────────────── Cliente (Three.js + Vite) ────────────────┐
+│  Menus (DOM)   Game3D (render 3D, input, QTE, feedback)    │
 │                     │  GameConnection (interface)          │
 │        ┌────────────┴─────────────┐                        │
 │  LocalConnection (Etapa 1)   SocketConnection (Etapa 2)    │
@@ -61,12 +61,12 @@ PPT Da saideira/
    │  ├─ src/simulation.ts # GameSimulation (autoritativa)
    │  ├─ src/bot.ts        # NPCs
    │  └─ test/*.test.ts
-   ├─ client/              # Phaser 3 + Vite
+   ├─ client/              # Three.js (3D) + Vite
    │  ├─ index.html
    │  └─ src/
    │     ├─ main.ts        # menus e ciclo de partidas
    │     ├─ net/           # GameConnection, LocalConnection
-   │     ├─ scenes/        # GameScene
+   │     ├─ three/         # Game3D, MenuStage3D, arena, personagens
    │     └─ ui/            # HUD, log, textos
    └─ server/              # (Etapa 2) Socket.IO + salas
 ```

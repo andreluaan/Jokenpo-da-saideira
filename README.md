@@ -37,7 +37,9 @@ npm run build      # build de produção do cliente
 
 ## Estrutura
 - `packages/shared` — configuração, regras, simulação autoritativa, NPCs (sem dependências).
-- `packages/client` — Phaser 3 + Vite. `LocalConnection` hospeda a partida no navegador.
+- `packages/client` — **Three.js (3D)** + Vite. `LocalConnection` hospeda a partida no navegador.
+  - `src/three/` — renderizador 3D (arena, personagens com ragdoll de molas, efeitos, menu).
+  - `public/models/` — modelos 3D CC0 da Kenney (ver `CREDITS.md`).
 - `packages/server` — Etapa 2 (Socket.IO).
 
 Todos os números de balanceamento estão em `packages/shared/src/config.ts`.

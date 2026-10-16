@@ -6,34 +6,45 @@
     <title>PPT da Saideira</title>
   </head>
   <body>
-    <!-- Tela inicial -->
-    <section id="menu" class="screen">
+    <!-- Carregamento: o copo enche enquanto os modelos 3D chegam -->
+    <section id="loading" class="screen">
+      <div class="load-card">
+        <div class="glass"><div id="loading-bar" class="beer"></div><div class="foam"></div></div>
+        <p id="loading-msg">Gelando a cerveja…</p>
+      </div>
+    </section>
+
+    <!-- Tela inicial: cardápio de boteco sobre o quintal em 3D -->
+    <section id="menu" class="screen hidden">
       <div id="menu-bg"></div>
       <aside class="menu-card" id="menu-side">
-        <h1 class="logo">PPT <span>da Saideira</span></h1>
-        <p class="tagline">No quintal do Bar do Zé, quem perde paga a saideira. Leia, blefe, execute.</p>
+        <div class="plaque">
+          <span class="plaque-top">Bar do Zé apresenta</span>
+          <h1 class="logo">PPT <span>da Saideira</span></h1>
+        </div>
+        <p class="tagline">No quintal do boteco, quem perde paga a última rodada. Leia, blefe e dê a última palavra.</p>
 
         <div class="field">
-          <span>Personagem <em class="hint">— ou clique nele no quintal</em></span>
+          <span class="chalk">Escolha seu freguês <em class="hint">(ou clique nele no quintal)</em></span>
           <div id="char-cards"></div>
         </div>
 
         <label class="field">
-          <span>Apelido</span>
-          <input id="nickname" maxlength="16" autocomplete="off" placeholder="Seu apelido" />
+          <span class="chalk">Apelido</span>
+          <input id="nickname" maxlength="16" autocomplete="off" placeholder="Como te chamam no bar?" />
         </label>
 
         <div class="row">
           <label class="field">
-            <span>Adversários (NPC)</span>
+            <span class="chalk">Adversários</span>
             <select id="bot-count">
               <option value="1">1 NPC (duelo)</option>
               <option value="2">2 NPCs</option>
-              <option value="3" selected>3 NPCs (arena cheia)</option>
+              <option value="3" selected>3 NPCs (mesa cheia)</option>
             </select>
           </label>
           <label class="field">
-            <span>Dificuldade</span>
+            <span class="chalk">Dificuldade</span>
             <select id="difficulty">
               <option value="easy">Fácil</option>
               <option value="normal" selected>Normal</option>
@@ -42,36 +53,33 @@
           </label>
         </div>
 
-        <button id="start-training" class="btn primary">Treinar contra NPCs</button>
-        <p class="note">Etapa 1 — protótipo local. Salas online chegam na Etapa 2.</p>
+        <button id="start-training" class="btn primary">🍻 Pedir a saideira</button>
+        <p class="note">Treino contra NPCs (local). Salas online chegam na Etapa 2.</p>
 
         <details class="howto">
           <summary>Como jogar</summary>
           <ul>
             <li><b>WASD</b> move. <b>Clique</b> em um adversário ou <b>Tab</b> para escolher o alvo.</li>
-            <li><b>1 / 2 / 3</b> (ou J / K / L): ✊ Pedra, ✋ Papel, ✌️ Tesoura. Sem símbolo, inicia um ataque; com símbolo, <b>troca</b> (custa foco).</li>
+            <li><b>1 / 2 / 3</b>: ✊ Pedra, ✋ Papel, ✌️ Tesoura. Sem símbolo, ataca; com símbolo, <b>troca</b> (custa foco).</li>
             <li>Sendo atacado? Aperte um símbolo para <b>responder</b>: vira um duelo.</li>
-            <li><b>Espaço</b> é a sua <b>Última Palavra</b>: trava o símbolo. Bem quando o anel fecha = <b>PERFEITO</b>. Cedo = BOM garantido. Sem confirmar = <b>FALHA</b>.</li>
-            <li><b>F</b> finta (parece uma troca), <b>X</b> ou botão direito cancela, <b>Shift</b> investida.</li>
-            <li>Os punhos batem no ritmo do <b>JO… KEN… PÔ!</b>: aperte Espaço no <b>PÔ!</b> para o PERFEITO. Quem perde toma uma <b>rasteira</b>.</li>
-            <li>Machucado? Vá até a <b>mesa amarela</b> e aperte <b>E</b> para tomar uma gelada (+1 ❤). Se apanhar bebendo, derrama!</li>
+            <li>Os punhos batem no ritmo do <b>JO… KEN… PÔ!</b> Aperte <b>Espaço</b> no <b>PÔ!</b> para o PERFEITO. Cedo = BOM garantido; sem confirmar = FALHA.</li>
+            <li><b>F</b> finta (parece uma troca), <b>X</b>/botão direito cancela, <b>Shift</b> investida.</li>
+            <li>Quem perde toma uma <b>rasteira</b>. Machucado? Na <b>mesa amarela</b>, aperte <b>E</b> para tomar uma gelada (+1 ❤). Se apanhar bebendo, derrama!</li>
             <li>A vantagem do símbolo sempre vale mais que a execução.</li>
           </ul>
         </details>
       </aside>
     </section>
 
-    <!-- Partida -->
+    <!-- Partida: 3D em tela cheia, HUD por cima -->
     <section id="match" class="screen hidden">
+      <div id="game-wrap"></div>
       <header id="player-cards"></header>
-      <div id="stage">
-        <div id="game-wrap"></div>
-        <aside id="side">
-          <div id="log-title">Confrontos</div>
-          <ol id="log"></ol>
-          <button id="leave" class="btn small ghost" tabindex="-1">Sair para o menu</button>
-        </aside>
-      </div>
+      <aside id="side">
+        <div id="log-title">Confrontos</div>
+        <ol id="log"></ol>
+        <button id="leave" class="btn small ghost" tabindex="-1">Sair para o menu</button>
+      </aside>
       <footer id="action-bar">
         <div id="hint"></div>
         <div class="bar">

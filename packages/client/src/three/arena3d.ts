@@ -1,0 +1,454 @@
+import * as THREE from 'three';
+import { makeRng, type GameConfig, type Obstacle } from '@ppt/shared';
+import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
+import { softCircle, speckleTexture, textTexture } from './textures';
+
+const SOFT = softCircle();
+const std = (color: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) =>
+  new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true, ...extra });
+
+function mesh(geo: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh {
+  const o = new THREE.Mesh(geo, m);
+  o.position.set(x, y, z);
+  o.castShadow = true;
+  o.receiveShadow = true;
+  return o;
+}
+
+/** Elipse (com ou sem furo) deitada no chão. */
+function ellipseShape(rx: number, rz: number, holeRx?: number, holeRz?: number): THREE.Shape {
+  const s = new THREE.Shape();
+  s.absellipse(0, 0, rx, rz, 0, Math.PI * 2, false, 0);
+  if (holeRx && holeRz) {
+    const h = new THREE.Path();
+    h.absellipse(0, 0, holeRx, holeRz, 0, Math.PI * 2, true, 0);
+    s.holes.push(h);
+  }
+  return s;
+}
+
+function flat(shape: THREE.Shape, m: THREE.Material, y: number, segs = 96): THREE.Mesh {
+  const o = new THREE.Mesh(new THREE.ShapeGeometry(shape, segs), m);
+  o.rotation.x = -Math.PI / 2;
+  o.position.y = y;
+  o.receiveShadow = true;
+  return o;
+}
+
+export interface ArenaHandles {
+  /** Onde fica a long neck em cima da mesa (para mostrar/esconder). */
+  beerSpot: THREE.Vector3;
+  update(dt: number, now: number): void;
+}
+
+/** Monta todo o quintal do Bar do Zé. */
+export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles {
+  const rng = makeRng(20261016);
+  const { rx, ry } = cfg.arena;
+  const ax = rx * S;
+  const az = ry * S;
+  const smokes: { s: THREE.Sprite; t: number; x: number; z: number }[] = [];
+  const glows: THREE.Mesh[] = [];
+
+  // --- chão ---
+  const groundTex = speckleTexture(0xcf8466, [0xc77c60, 0xd8906f, 0xbf7559], 2200, 512, 3, 0.18, 2.4);
+  groundTex.repeat.set(10, 10);
+  const ground = mesh(new THREE.PlaneGeometry(70, 50), std(0xffffff, { map: groundTex, flatShading: false }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.castShadow = false;
+  scene.add(ground);
+
+  // Campo seco no fundo à direita.
+  const field = new THREE.Shape();
+  // (a forma é desenhada em x/y e deitada no chão: y da forma = -z do mundo, então o campo fica no fundo)
+  field.moveTo(4.5, 30);
+  field.lineTo(40, 30);
+  field.lineTo(40, 1.2);
+  field.bezierCurveTo(14, 1.5, 12, 3, 9.5, 5.2);
+  field.bezierCurveTo(8, 6.3, 6, 6.4, 4.5, 7.2);
+  const fieldTex = speckleTexture(0xe9b949, [0xd9a43a, 0xf2cc6a, 0xdcab40], 2000, 512, 11, 0.3, 2.5);
+  fieldTex.repeat.set(0.15, 0.15);
+  scene.add(flat(field, std(0xffffff, { map: fieldTex, flatShading: false }), 0.004));
+
+  // Terra revirada, terra da arena e a borda branca.
+  scene.add(flat(ellipseShape(ax + 0.75, az + 0.7), std(0x9a6f62, { transparent: true, opacity: 0.55 }), 0.006));
+  const dirtTex = speckleTexture(0x8d6b6c, [0x7c5e62, 0x9a7a7c, 0x86666a], 2400, 512, 5, 0.22, 3);
+  dirtTex.repeat.set(0.35, 0.35);
+  scene.add(flat(ellipseShape(ax + 0.16, az + 0.16), std(0xffffff, { map: dirtTex, flatShading: false }), 0.01));
+  scene.add(flat(ellipseShape(ax + 0.2, az + 0.2, ax + 0.06, az + 0.06), std(0xf3ece8), 0.014));
+
+  // --- cerca de madeira ---
+  const fx = ax + 0.42;
+  const fz = az + 0.42;
+  const posts: THREE.Vector3[] = [];
+  const steps = 900;
+  let acc = 0;
+  let last = new THREE.Vector3(fx, 0, 0);
+  const panel = 1.25;
+  for (let i = 1; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    const p = new THREE.Vector3(Math.cos(a) * fx, 0, Math.sin(a) * fz);
+    acc += p.distanceTo(last);
+    last = p;
+    if (acc >= panel) {
+      acc = 0;
+      posts.push(p);
+    }
+  }
+  posts.forEach((p, i) => {
+    const q = posts[(i + 1) % posts.length];
+    const mid = p.clone().add(q).multiplyScalar(0.5);
+    const f = place('nature/fence_simple', mid.x, mid.z, { height: 0.5 });
+    f.rotation.y = -Math.atan2(q.z - p.z, q.x - p.x);
+    f.scale.x *= p.distanceTo(q) / (panel * 0.98) || 1;
+    scene.add(f);
+    // Plaquinha amarela em losango de vez em quando.
+    if (i % 5 === 2) {
+      const sign = mesh(new THREE.PlaneGeometry(0.16, 0.16), std(0xffc145, { side: THREE.DoubleSide }), mid.x, 0.3, mid.z);
+      sign.rotation.set(0, f.rotation.y, Math.PI / 4);
+      sign.position.add(new THREE.Vector3(mid.x, 0, mid.z).normalize().multiplyScalar(-0.06));
+      scene.add(sign);
+    }
+  });
+
+  // Varal de luzes no fundo (postes altos + lâmpadas).
+  const bulbColors = [0xffd27a, 0xff6b5a, 0x7ee0a8, 0x9fd3ff];
+  const back = posts.filter((p) => p.z < -1.2);
+  const poles = back.filter((_, i) => i % 3 === 0);
+  for (const p of poles) scene.add(mesh(new THREE.CylinderGeometry(0.035, 0.045, 1.9, 6), std(0x6a3f37), p.x, 0.95, p.z));
+  for (let i = 0; i < poles.length - 1; i++) {
+    const a = poles[i];
+    const b = poles[i + 1];
+    const pts: THREE.Vector3[] = [];
+    for (let t = 0; t <= 1.001; t += 0.1) {
+      const v = a.clone().lerp(b, t);
+      v.y = 1.85 - Math.sin(t * Math.PI) * 0.35;
+      pts.push(v);
+    }
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x2b1d22 })));
+    pts.slice(1, -1).forEach((v, k) => {
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), new THREE.MeshBasicMaterial({ color: bulbColors[(i + k) % 4] }));
+      bulb.position.set(v.x, v.y - 0.06, v.z);
+      scene.add(bulb);
+      glows.push(bulb);
+    });
+  }
+
+  // --- obstáculos (mesmas posições da simulação) ---
+  let beerSpot = new THREE.Vector3();
+  for (const o of cfg.obstacles) {
+    const spot = buildObstacle(scene, cfg, o, smokes);
+    if (o.prop === 'beerTable' && spot) beerSpot = spot;
+  }
+
+  // --- entorno: Bar do Zé, árvores, mesas, horta ---
+  buildShack(scene, -8.1, -5.1);
+  for (const [x, z, h, kind] of [
+    [8.6, -5.4, 2.6, 'tree_oak_fall'],
+    [10.2, -2.6, 2.2, 'tree_fat_fall'],
+    [6.4, -6.8, 2.0, 'tree_default_fall'],
+    [-10.0, 0.2, 2.4, 'tree_detailed_fall'],
+    [-9.4, -2.6, 2.0, 'tree_oak_fall'],
+    [-2.6, -6.9, 2.1, 'tree_fat_fall'],
+    [10.6, 2.6, 2.3, 'tree_default_fall'],
+    [-10.6, 3.4, 2.1, 'tree_fat_fall'],
+  ] as const) {
+    scene.add(place(`nature/${kind}`, x, z, { height: h, rot: rng() * 6 }));
+  }
+  // Milharal no campo.
+  for (let i = 0; i < 26; i++) {
+    const x = 6 + (i % 9) * 0.55 + rng() * 0.2;
+    const z = -6.8 + Math.floor(i / 9) * 0.6 + rng() * 0.2;
+    if (z > -4.8 && x < 9) continue;
+    scene.add(place('nature/crops_cornStageD', x + 2.2, z, { height: 0.9 + rng() * 0.2, rot: rng() * 6 }));
+  }
+  // Horta à esquerda, na frente.
+  for (let r = 0; r < 3; r++) {
+    const z = 4.4 + r * 0.7;
+    for (let k = 0; k < 4; k++) {
+      const x = -10.2 + k * 0.85 + r * 0.25;
+      scene.add(place('nature/crops_dirtRow', x, z, { size: 0.85 }));
+      scene.add(place(r % 2 ? 'nature/crop_pumpkin' : 'nature/crop_carrot', x, z, { height: r % 2 ? 0.32 : 0.28, rot: rng() * 6 }));
+    }
+  }
+  // Mesas de plástico vermelhas com guarda-sol.
+  for (const [x, z, umb] of [
+    [8.2, 4.7, true],
+    [9.9, 3.2, false],
+  ] as const) {
+    buildPatio(scene, x, z, umb);
+  }
+  // Lousa da saideira.
+  const board = new THREE.Group();
+  board.add(mesh(new THREE.BoxGeometry(1.1, 0.75, 0.06), std(0x8a4f45), 0, 0.85, 0));
+  const chalk = mesh(new THREE.PlaneGeometry(0.98, 0.63), new THREE.MeshStandardMaterial({ map: textTexture('SAIDEIRA\nquem perde paga', { w: 512, h: 330, bg: 0x2f3b33, size: 74, color: '#fff4e6' }), roughness: 1 }), 0, 0.85, 0.035);
+  board.add(chalk);
+  board.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), std(0x6a3f37), -0.42, 0.45, -0.05));
+  board.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), std(0x6a3f37), 0.42, 0.45, -0.05));
+  board.position.set(-5.2, 0, 5.9);
+  board.rotation.y = 0.25;
+  scene.add(board);
+
+  // Grama, flores e pedrinhas espalhadas fora da arena.
+  const scatter = ['nature/grass', 'nature/grass_large', 'nature/flower_redA', 'nature/flower_yellowA', 'nature/flower_purpleA', 'nature/rock_smallA', 'nature/plant_bush'];
+  for (let i = 0; i < 90; i++) {
+    const x = (rng() - 0.5) * 24;
+    const z = (rng() - 0.5) * 15;
+    const k = (x / (ax + 1.1)) ** 2 + (z / (az + 1.1)) ** 2;
+    if (k < 1 || (x < -6.4 && z < -3.6)) continue;
+    const kind = scatter[Math.floor(rng() * scatter.length)];
+    scene.add(place(kind, x, z, { height: kind.includes('rock') ? 0.18 : kind.includes('bush') ? 0.45 : 0.25, rot: rng() * 6 }));
+  }
+  scene.add(place('nature/log_stack', -6.0, -3.9, { size: 1.0, rot: 0.4 }));
+  scene.add(place('nature/stump_round', -5.3, -4.6, { height: 0.3 }));
+  scene.add(place('furniture/trashcan', 7.2, 3.4, { height: 0.55 }));
+
+  // --- luz ---
+  const hemi = new THREE.HemisphereLight(0xffe7cc, 0x8a5a4a, 1.25);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffd9a6, 2.4);
+  sun.position.set(-7, 13, 6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  const sc = sun.shadow.camera;
+  sc.left = -13;
+  sc.right = 13;
+  sc.top = 10;
+  sc.bottom = -10;
+  sc.near = 1;
+  sc.far = 40;
+  sun.shadow.bias = -0.0006;
+  sun.shadow.normalBias = 0.02;
+  scene.add(sun);
+  const barLight = new THREE.PointLight(0xffb36b, 6, 7, 1.6);
+  barLight.position.set(-7.5, 1.6, -4.2);
+  scene.add(barLight);
+  scene.fog = new THREE.Fog(0xd08a6b, 22, 40);
+  scene.background = new THREE.Color(0xd08a6b);
+
+  return {
+    beerSpot,
+    update(dt, now) {
+      for (const sm of smokes) {
+        sm.t += dt / 2.6;
+        if (sm.t > 1) sm.t -= 1;
+        sm.s.position.set(sm.x + sm.t * 0.4, 0.9 + sm.t * 1.6, sm.z - sm.t * 0.2);
+        sm.s.scale.setScalar(0.25 + sm.t * 0.7);
+        (sm.s.material as THREE.SpriteMaterial).opacity = 0.5 * (1 - sm.t);
+      }
+      const k = 0.85 + Math.sin(now / 700) * 0.15;
+      // Lâmpadas do varal "respirando".
+      glows.forEach((gl, i) => gl.scale.setScalar(k + Math.sin(now / 400 + i) * 0.1));
+    },
+  };
+}
+
+// ------------------------------------------------------------------ obstáculos
+
+function buildObstacle(
+  scene: THREE.Scene,
+  cfg: GameConfig,
+  o: Obstacle,
+  smokes: { s: THREE.Sprite; t: number; x: number; z: number }[],
+): THREE.Vector3 | null {
+  if (o.kind === 'circle') {
+    const c = toWorld(cfg, o.x, o.y);
+    const r = o.r * S;
+    if (o.prop === 'beerTable') {
+      // Mesa de plástico amarela de boteco ("GELADA" é marca fictícia) com 4 cadeiras.
+      const yellow = { '*': 0xf6c514 };
+      const table = place('furniture/tableRound', c.x, c.z, { size: r * 1.75 });
+      recolor(table, yellow);
+      scene.add(table);
+      const top = new THREE.Box3().setFromObject(table).max.y;
+      const logo = new THREE.Mesh(
+        new THREE.CircleGeometry(r * 0.55, 32),
+        new THREE.MeshStandardMaterial({ map: textTexture('GELADA', { w: 512, h: 256, bg: 0xd8443c, ellipse: true, size: 120 }), transparent: true, roughness: 0.6 }),
+      );
+      logo.rotation.x = -Math.PI / 2;
+      logo.scale.y = 0.55;
+      logo.position.set(c.x, top + 0.003, c.z);
+      scene.add(logo);
+      for (let i = 0; i < 4; i++) {
+        const a = Math.PI / 4 + (i * Math.PI) / 2;
+        const ch = place('furniture/chair', c.x + Math.cos(a) * r * 1.15, c.z + Math.sin(a) * r * 1.15, { height: 0.6 });
+        ch.rotation.y = -a - Math.PI / 2;
+        recolor(ch, yellow);
+        scene.add(ch);
+      }
+      // Petiscos na mesa.
+      scene.add(place('food/fries', c.x - r * 0.35, c.z + r * 0.25, { height: 0.12, y: top }));
+      scene.add(place('food/glass', c.x + r * 0.35, c.z + r * 0.3, { height: 0.12, y: top }));
+      return new THREE.Vector3(c.x + r * 0.15, top, c.z - r * 0.2);
+    }
+    // Churrasqueira de tambor.
+    const g = new THREE.Group();
+    const drum = fit(instance('food/barrel'), { height: 0.62 });
+    recolor(drum, { '*': 0x4a4a52 });
+    g.add(drum);
+    const ember = mesh(new THREE.CylinderGeometry(r * 0.95, r * 0.95, 0.02, 16), new THREE.MeshStandardMaterial({ color: 0xff7a2f, emissive: 0xff5a10, emissiveIntensity: 1.6 }), 0, 0.63, 0);
+    g.add(ember);
+    for (let k = -2; k <= 2; k++) g.add(mesh(new THREE.BoxGeometry(r * 2, 0.012, 0.012), std(0x2a2a30), 0, 0.65, k * r * 0.35));
+    for (const dz of [-0.08, 0.08]) {
+      const sk = fit(instance('food/skewer'), { size: r * 2.2 });
+      sk.position.set(0, 0.66, dz);
+      g.add(sk);
+    }
+    g.position.copy(c);
+    scene.add(g);
+    const glow = new THREE.PointLight(0xff7a2f, 2.2, 2.2, 1.5);
+    glow.position.set(c.x, 0.9, c.z);
+    scene.add(glow);
+    for (let i = 0; i < 3; i++) {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: SOFT, color: 0xf3ece8, transparent: true, opacity: 0.4, depthWrite: false }));
+      scene.add(s);
+      smokes.push({ s, t: i / 3, x: c.x, z: c.z });
+    }
+    return null;
+  }
+
+  const c = toWorld(cfg, o.x + o.w / 2, o.y + o.h / 2);
+  const w = o.w * S;
+  const d = o.h * S;
+  const g = new THREE.Group();
+  g.position.copy(c);
+  if (o.prop === 'crates') {
+    // Engradados de cerveja (amarelo embaixo, verde em cima) com as tampinhas aparecendo.
+    const crate = (cw: number, cd: number, y: number, col: number) => {
+      const h = 0.26;
+      g.add(mesh(new THREE.BoxGeometry(cw, h, cd), std(col), 0, y + h / 2, 0));
+      g.add(mesh(new THREE.BoxGeometry(cw * 0.7, 0.05, 0.01), std(0x000000, { transparent: true, opacity: 0.25 }), 0, y + h * 0.6, cd / 2 + 0.006));
+      const nx = 4;
+      const nz = 3;
+      for (let i = 0; i < nx; i++) {
+        for (let j = 0; j < nz; j++) {
+          const bx = -cw / 2 + ((i + 0.5) * cw) / nx;
+          const bz = -cd / 2 + ((j + 0.5) * cd) / nz;
+          g.add(mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.05, 8), std(0x6b3a1f, { roughness: 0.3 }), bx, y + h + 0.02, bz));
+          g.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.012, 8), std(0xe8d9a0, { metalness: 0.5 }), bx, y + h + 0.05, bz));
+        }
+      }
+    };
+    crate(w, d, 0, 0xf2b134);
+    crate(w * 0.8, d * 0.75, 0.26, 0x4f9a5c);
+  } else if (o.prop === 'cooler') {
+    // Isopor com gelo e latinhas.
+    const h = 0.38;
+    g.add(mesh(new THREE.BoxGeometry(w, h, d), std(0xf6f4ef), 0, h / 2, 0));
+    g.add(mesh(new THREE.BoxGeometry(w * 0.88, 0.02, d * 0.82), std(0xbfe4f0, { roughness: 0.3 }), 0, h - 0.02, 0));
+    const lid = mesh(new THREE.BoxGeometry(w, 0.05, d * 0.9), std(0xfafaf7), 0, h + 0.18, -d / 2 - 0.02);
+    lid.rotation.x = -1.2;
+    g.add(lid);
+    const cans = ['food/soda-can', 'food/can', 'food/soda-can'];
+    cans.forEach((cn, i) => {
+      const can = fit(instance(cn), { height: 0.16 });
+      can.position.set(-w * 0.28 + i * w * 0.28, h - 0.06, (i % 2 ? 0.05 : -0.05) * d * 3);
+      can.rotation.z = (i - 1) * 0.4;
+      g.add(can);
+    });
+  } else if (o.prop === 'freezer') {
+    // Freezer horizontal de bar: branco, faixa vermelha, vidro com bebida.
+    const h = 0.62;
+    g.add(mesh(new THREE.BoxGeometry(w, h, d), std(0xf4f3f3, { roughness: 0.4 }), 0, h / 2, 0));
+    g.add(mesh(new THREE.BoxGeometry(w + 0.005, 0.09, d + 0.005), std(0xd8443c), 0, h * 0.45, 0));
+    g.add(mesh(new THREE.BoxGeometry(w * 0.9, 0.012, d * 0.8), new THREE.MeshStandardMaterial({ color: 0x9fd3e8, transparent: true, opacity: 0.75, roughness: 0.1, metalness: 0.2 }), 0, h + 0.007, 0));
+    for (let i = 0; i < 5; i++) {
+      const can = fit(instance(i % 2 ? 'food/soda-can' : 'food/can'), { height: 0.14 });
+      can.position.set(-w * 0.35 + i * w * 0.175, h - 0.15, 0);
+      g.add(can);
+    }
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.5, 0.12), new THREE.MeshStandardMaterial({ map: textTexture('GELADA', { w: 512, h: 128, size: 92 }), transparent: true }));
+    label.position.set(0, h * 0.45, d / 2 + 0.006);
+    g.add(label);
+  }
+  shadows(g);
+  scene.add(g);
+  return null;
+}
+
+// ------------------------------------------------------------------ entorno
+
+function buildShack(scene: THREE.Scene, x: number, z: number): void {
+  const g = new THREE.Group();
+  const W = 3.4;
+  const H = 1.7;
+  const D = 1.6;
+  g.add(mesh(new THREE.BoxGeometry(W, H, D), std(0xf1dcc4), 0, H / 2, 0));
+  g.add(mesh(new THREE.BoxGeometry(W + 0.02, 0.35, D + 0.02), std(0xd9b08a), 0, 0.175, 0));
+  // Balcão com janela.
+  g.add(mesh(new THREE.BoxGeometry(1.6, 0.6, 0.02), std(0x2b1d22), 0.45, 1.05, D / 2 + 0.005));
+  g.add(mesh(new THREE.BoxGeometry(1.8, 0.07, 0.3), std(0xb36a55), 0.45, 0.74, D / 2 + 0.13));
+  g.add(mesh(new THREE.BoxGeometry(0.6, 1.15, 0.03), std(0x8a4f45), -1.05, 0.58, D / 2 + 0.01));
+  const tv = fit(instance('furniture/televisionVintage'), { height: 0.32 });
+  tv.position.set(0.9, 0.78, D / 2 + 0.1);
+  g.add(tv);
+  const radio = fit(instance('furniture/radio'), { height: 0.16 });
+  radio.position.set(0.05, 0.78, D / 2 + 0.12);
+  g.add(radio);
+  // Telhado de zinco vermelho.
+  const roof = mesh(new THREE.BoxGeometry(W + 0.5, 0.08, D + 0.9), std(0xd8443c, { metalness: 0.2, roughness: 0.6 }), 0, H + 0.12, 0.2);
+  roof.rotation.x = 0.12;
+  g.add(roof);
+  for (let k = -W / 2 - 0.2; k <= W / 2 + 0.2; k += 0.22) {
+    const rib = mesh(new THREE.BoxGeometry(0.03, 0.03, D + 0.9), std(0xb0342f), k, H + 0.18, 0.2);
+    rib.rotation.x = 0.12;
+    g.add(rib);
+  }
+  // Placa.
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.8, 0.45),
+    new THREE.MeshStandardMaterial({ map: textTexture('BAR DO ZÉ', { w: 512, h: 128, bg: 0xffc145, border: 0x2b1d22, color: '#2b1d22', size: 84 }) }),
+  );
+  sign.position.set(0, H + 0.45, D / 2 + 0.55);
+  sign.rotation.x = -0.25;
+  g.add(sign);
+  g.add(mesh(new THREE.BoxGeometry(0.05, 0.5, 0.05), std(0x6a3f37), -0.7, H + 0.22, D / 2 + 0.52));
+  g.add(mesh(new THREE.BoxGeometry(0.05, 0.5, 0.05), std(0x6a3f37), 0.7, H + 0.22, D / 2 + 0.52));
+  // Banquetas, caixa de som e engradados na porta.
+  for (const k of [-0.1, 0.45, 1.0]) {
+    const st = fit(instance('furniture/stoolBar'), { height: 0.5 });
+    st.position.set(k, 0, D / 2 + 0.55);
+    g.add(st);
+  }
+  const speaker = fit(instance('furniture/speaker'), { height: 0.7 });
+  speaker.position.set(-1.55, 0, D / 2 + 0.35);
+  speaker.rotation.y = 0.4;
+  g.add(speaker);
+  g.position.set(x, 0, z);
+  shadows(g);
+  scene.add(g);
+}
+
+function buildPatio(scene: THREE.Scene, x: number, z: number, umbrella: boolean): void {
+  const red = { '*': 0xe0453a };
+  const t = place('furniture/tableRound', x, z, { size: 0.95 });
+  recolor(t, red);
+  scene.add(t);
+  const top = new THREE.Box3().setFromObject(t).max.y;
+  for (const a of [0.3, Math.PI + 0.3]) {
+    const ch = place('furniture/chair', x + Math.cos(a) * 0.7, z + Math.sin(a) * 0.7, { height: 0.55 });
+    ch.rotation.y = -a - Math.PI / 2;
+    recolor(ch, red);
+    scene.add(ch);
+  }
+  scene.add(place('food/soda-bottle', x - 0.1, z, { height: 0.24, y: top }));
+  scene.add(place('food/glass', x + 0.15, z + 0.1, { height: 0.1, y: top }));
+  if (umbrella) {
+    const pole = mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.5, 6), std(0xeeeeee), x, 0.75, z);
+    scene.add(pole);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.32, 8, 1, true));
+    cone.position.set(x, 1.5, z);
+    const colors = new Float32Array(cone.geometry.attributes.position.count * 3);
+    cone.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const pos = cone.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const ang = Math.atan2(pos.getZ(i), pos.getX(i));
+      const seg = Math.floor(((ang + Math.PI) / (Math.PI * 2)) * 8) % 2;
+      const col = new THREE.Color(seg ? 0xe0453a : 0xfff4e6);
+      colors.set([col.r, col.g, col.b], i * 3);
+    }
+    cone.material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true, roughness: 0.8 });
+    cone.castShadow = true;
+    scene.add(cone);
+  }
+}

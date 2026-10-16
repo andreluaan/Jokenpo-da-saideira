@@ -7,7 +7,7 @@ import './style.css';
 import { LocalConnection } from './net/localConnection';
 import type { GameConnection } from './net/connection';
 import { GameScene, type GameSceneData } from './scenes/GameScene';
-import { CharacterSelect } from './ui/characterSelect';
+import { CharacterSelect, MenuBackground } from './ui/characterSelect';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -20,13 +20,17 @@ const difficulty = $<HTMLSelectElement>('#difficulty');
 
 nickname.value = load('ppt.nick') ?? '';
 const savedChar = load('ppt.char') as CharacterId | null;
-const charSelect = new CharacterSelect(
-  $('#char-preview'),
-  $('#char-cards'),
-  savedChar && CHARACTER_IDS.includes(savedChar) ? savedChar : 'fera',
-  (c) => save('ppt.char', c),
+const charSelect = new CharacterSelect($('#char-cards'), savedChar && CHARACTER_IDS.includes(savedChar) ? savedChar : 'fera', (c) =>
+  save('ppt.char', c),
 );
-charSelect.show();
+// Fundo do menu: o quintal com cada personagem no seu ponto de largada.
+const menuBg = new MenuBackground(
+  $('#menu-bg'),
+  $('#menu-side'),
+  () => ({ character: charSelect.value, bots: Number(botCount.value), name: nickname.value.trim().slice(0, 16) }),
+  (c) => charSelect.select(c),
+);
+fontsReady().then(() => menuBg.show());
 
 interface Settings {
   name: string;
@@ -50,10 +54,9 @@ $('#leave').addEventListener('click', () => backToMenu());
 
 async function startMatch(settings: Settings): Promise<void> {
   lastSettings = settings;
-  // O Phaser desenha textos em canvas: a fonte precisa estar carregada antes.
-  await Promise.all(['400', '600', '700'].map((w) => document.fonts.load(`${w} 20px Fredoka`))).catch(() => undefined);
+  await fontsReady();
   teardown();
-  charSelect.hide();
+  menuBg.hide();
   menu.classList.add('hidden');
   matchScreen.classList.remove('hidden');
   endOverlay.classList.add('hidden');
@@ -95,7 +98,7 @@ function backToMenu(): void {
   teardown();
   matchScreen.classList.add('hidden');
   menu.classList.remove('hidden');
-  charSelect.show();
+  menuBg.show();
 }
 
 function teardown(): void {
@@ -103,6 +106,11 @@ function teardown(): void {
   conn = null;
   game?.destroy(true);
   game = null;
+}
+
+/** O Phaser desenha textos em canvas: a fonte precisa estar carregada antes. */
+function fontsReady(): Promise<unknown> {
+  return Promise.all(['400', '600', '700'].map((w) => document.fonts.load(`${w} 20px Fredoka`))).catch(() => undefined);
 }
 
 function load(key: string): string | null {

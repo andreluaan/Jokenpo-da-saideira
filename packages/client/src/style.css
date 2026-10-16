@@ -26,13 +26,14 @@ kbd {
 
 /* ---------- menu ---------- */
 .screen { position: fixed; inset: 0; }
-#menu { display: grid; place-items: center; padding: 16px; overflow: auto;
-  background:
-    radial-gradient(900px 500px at 15% 10%, #d8443c55, transparent),
-    radial-gradient(900px 600px at 90% 0%, #e9b94944, transparent),
-    radial-gradient(1200px 700px at 50% 110%, #d4876a66, transparent), var(--bg); }
-.menu-card { width: min(640px, 100%); background: var(--panel); border: 3px solid var(--wood);
-  border-radius: 22px; padding: 28px; box-shadow: 0 8px 0 #1c1216, 0 24px 60px #0009; }
+#menu { overflow: hidden; background: #d4876a; }
+#menu-bg { position: absolute; inset: 0; }
+#menu-bg canvas { display: block; }
+/* Menu lateral à esquerda, sobre o quintal. */
+.menu-card { position: absolute; top: 0; left: 0; bottom: 0; width: min(400px, 100%); overflow-y: auto;
+  background: linear-gradient(180deg, #3a2830f2, #2b1d22f5); border-right: 4px solid var(--wood);
+  padding: 26px 24px; box-shadow: 8px 0 0 #1c121666, 20px 0 50px #0006; backdrop-filter: blur(3px); }
+.field .hint { font-style: normal; color: #a8968c; font-size: 12px; }
 .logo { margin: 0; font-size: 50px; letter-spacing: -1px; font-weight: 700; line-height: 1; }
 .logo span { color: var(--accent); display: block; font-size: 38px; text-shadow: 0 3px 0 #b0342f; }
 .tagline { margin: 4px 0 22px; color: var(--muted); }
@@ -104,12 +105,12 @@ kbd {
 }
 
 /* ---------- seleção de personagem ---------- */
-#char-preview { width: 100%; aspect-ratio: 760 / 230; border-radius: 14px; overflow: hidden; border: 3px solid var(--wood); cursor: pointer; }
-#char-preview canvas { display: block; width: 100% !important; height: auto !important; }
-#char-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+#char-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .char-card { background: var(--panel-2); border: 2px solid var(--line); border-radius: 10px; padding: 6px; cursor: pointer;
   display: flex; flex-direction: column; gap: 2px; text-align: left; }
 .char-card b { font-size: 13px; }
 .char-card span { font-size: 10.5px; color: var(--muted); line-height: 1.25; }
 .char-card.selected { border-color: var(--accent); background: #6a4a1c; }
-@media (max-width: 520px) { #char-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px) {
+  .menu-card { top: auto; height: 62%; width: 100%; border-right: 0; border-top: 4px solid var(--wood); }
+}

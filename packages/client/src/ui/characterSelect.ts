@@ -1,20 +1,21 @@
 import Phaser from 'phaser';
-import { CHARACTER_IDS, CHARACTER_INFO, PLAYER_COLORS, type CharacterId, type PlayerView } from '@ppt/shared';
+import {
+  CHARACTER_IDS,
+  CHARACTER_INFO,
+  DEFAULT_CONFIG,
+  PLAYER_COLORS,
+  type CharacterId,
+  type PlayerView,
+} from '@ppt/shared';
+import { DEPTH, FONT, buildArena } from '../art/arena';
 import { drawCharacter, drawGroundMarker } from '../art/character';
 import { WobbleRig } from '../art/rig';
-import { PAL } from '../art/palette';
 
-const W = 760;
-const H = 230;
-const R = 26;
-
-/** Prévia animada dos quatro personagens no menu; clicar em um deles (ou no cartão) o seleciona. */
+/** Cartões de personagem no menu lateral. */
 export class CharacterSelect {
-  private game: Phaser.Game | null = null;
   private selected: CharacterId;
 
   constructor(
-    private readonly parent: HTMLElement,
     private readonly cards: HTMLElement,
     initial: CharacterId,
     private readonly onChange: (c: CharacterId) => void,
@@ -26,7 +27,7 @@ export class CharacterSelect {
     this.cards.querySelectorAll<HTMLButtonElement>('.char-card').forEach((b) =>
       b.addEventListener('click', () => this.select(b.dataset.char as CharacterId)),
     );
-    this.renderCards();
+    this.render();
   }
 
   get value(): CharacterId {
@@ -34,60 +35,187 @@ export class CharacterSelect {
   }
 
   select(c: CharacterId): void {
+    if (c === this.selected) return;
     this.selected = c;
-    this.renderCards();
+    this.render();
     this.onChange(c);
   }
 
-  /** Cria a prévia (Phaser) quando o menu fica visível; destrói ao sair, para não rodar em segundo plano. */
+  private render(): void {
+    this.cards.querySelectorAll<HTMLButtonElement>('.char-card').forEach((b) => b.classList.toggle('selected', b.dataset.char === this.selected));
+  }
+}
+
+export interface MenuState {
+  character: CharacterId;
+  bots: number;
+  name: string;
+}
+
+const R = DEFAULT_CONFIG.player.radius;
+const BODY_SCALE = 1.3;
+const WALK_SPEED = 0.42; // px/ms
+/** Onde ficam, perto da porta do bar, os personagens que não estão na partida. */
+const BAR_SPOTS = [
+  { x: 120, y: 290 },
+  { x: 190, y: 300 },
+  { x: 260, y: 290 },
+  { x: 330, y: 300 },
+];
+
+interface Actor {
+  id: CharacterId;
+  x: number;
+  y: number;
+  faceX: number;
+  faceY: number;
+  walk: number;
+  moving: boolean;
+  rig: WobbleRig;
+  body: Phaser.GameObjects.Graphics;
+  label: Phaser.GameObjects.Text;
+}
+
+/**
+ * Fundo do menu: o próprio quintal do Bar do Zé, com cada personagem andando até o ponto
+ * de largada que terá na partida (você no lugar 1, NPCs nos seguintes). Os que não jogam ficam no bar.
+ */
+export class MenuBackground {
+  private game: Phaser.Game | null = null;
+
+  constructor(
+    private readonly parent: HTMLElement,
+    private readonly sidebar: HTMLElement,
+    private readonly state: () => MenuState,
+    private readonly onPick: (c: CharacterId) => void,
+  ) {}
+
   show(): void {
     if (this.game) return;
     const self = this;
-    class Preview extends Phaser.Scene {
-      private bodies: Phaser.GameObjects.Graphics[] = [];
+    const cfg = DEFAULT_CONFIG;
+
+    class MenuScene extends Phaser.Scene {
       private ground!: Phaser.GameObjects.Graphics;
-      private rigs = CHARACTER_IDS.map(() => new WobbleRig());
+      private actors: Actor[] = [];
       private last = performance.now();
+
       create(): void {
-        const bg = this.add.graphics();
-        bg.fillStyle(PAL.ground, 1).fillRect(0, 0, W, H);
-        bg.fillStyle(PAL.dirt, 1).fillEllipse(W / 2, H * 0.62, W * 0.95, H * 0.62);
-        bg.lineStyle(8, PAL.rim, 1).strokeEllipse(W / 2, H * 0.62, W * 0.95, H * 0.62);
-        this.ground = this.add.graphics();
-        this.bodies = CHARACTER_IDS.map(() => this.add.graphics());
+        buildArena(this, cfg);
+        this.ground = this.add.graphics().setDepth(DEPTH.floor + 10);
+        this.actors = CHARACTER_IDS.map((id, i) => ({
+          id,
+          ...BAR_SPOTS[i],
+          faceX: 0,
+          faceY: 1,
+          walk: 0,
+          moving: false,
+          rig: new WobbleRig(),
+          body: this.add.graphics(),
+          label: this.add
+            .text(0, 0, '', { fontFamily: FONT, fontSize: '20px', fontStyle: '700', color: '#fff4e6' })
+            .setOrigin(0.5)
+            .setDepth(DEPTH.ui)
+            .setStroke('#2b1d22', 6),
+        }));
+        // Começa já com todo mundo no lugar (sem a caminhada inicial).
+        const targets = this.targets();
+        for (const a of this.actors) Object.assign(a, targets.get(a.id)!.pos);
+
         this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-          const i = Math.floor((p.x / W) * CHARACTER_IDS.length);
-          const c = CHARACTER_IDS[Math.max(0, Math.min(CHARACTER_IDS.length - 1, i))];
-          self.select(c);
-          this.rigs[i].hit(p.x - 30, p.y, p.x, p.y, 0.8);
+          const hit = this.actors
+            .map((a) => ({ a, d: Math.hypot(a.x - p.worldX, a.y - R * 1.5 - p.worldY) }))
+            .sort((u, v) => u.d - v.d)[0];
+          if (hit && hit.d < R * 3) {
+            hit.a.rig.hit(p.worldX - 30, p.worldY, hit.a.x, hit.a.y, 0.8);
+            self.onPick(hit.a.id);
+          }
         });
+        this.scale.on('resize', () => this.frame());
+        this.frame();
       }
+
+      /** Destino de cada personagem: largada (se joga) ou balcão do bar (se não joga). */
+      private targets(): Map<CharacterId, { pos: { x: number; y: number }; slot: number }> {
+        const s = self.state();
+        const playing = [s.character, ...CHARACTER_IDS.filter((c) => c !== s.character).slice(0, s.bots)];
+        const out = new Map<CharacterId, { pos: { x: number; y: number }; slot: number }>();
+        CHARACTER_IDS.forEach((c, i) => {
+          const slot = playing.indexOf(c);
+          out.set(c, { pos: slot >= 0 ? cfg.spawns[slot] : BAR_SPOTS[i], slot });
+        });
+        return out;
+      }
+
+      /** Enquadra a arena na área livre à direita do menu lateral. */
+      private frame(): void {
+        const W = this.scale.width;
+        const H = this.scale.height;
+        const side = W > 760 ? self.sidebar.getBoundingClientRect().width : 0;
+        const freeW = Math.max(200, W - side);
+        const zoom = Math.min(freeW / ((cfg.arena.rx + 90) * 2), H / ((cfg.arena.ry + 110) * 2), 1.25);
+        const cam = this.cameras.main;
+        cam.setZoom(zoom);
+        cam.centerOn(cfg.arena.cx - side / 2 / zoom, cfg.arena.cy - 20);
+      }
+
       update(): void {
         const now = performance.now();
-        const dt = now - this.last;
+        const dt = Math.min(50, now - this.last);
         this.last = now;
+        this.frame();
+        const s = self.state();
+        const targets = this.targets();
         this.ground.clear();
-        CHARACTER_IDS.forEach((c, i) => {
-          const x = ((i + 0.5) * W) / CHARACTER_IDS.length;
-          const y = H * 0.72;
-          const sel = c === self.selected;
-          const view = fakeView(c, x, y, i, now);
-          this.rigs[i].update(view, dt, now);
-          drawGroundMarker(this.ground, view, R, sel, false, now);
-          drawCharacter(this.bodies[i], view, { R, now, isMe: sel, inGrace: false, walk: 0, moving: false, rig: this.rigs[i] });
-          const hop = sel ? -Math.abs(Math.sin(now / 260)) * 6 : 0;
-          this.bodies[i].setPosition(x, y + R * 0.6 + hop).setRotation(this.rigs[i].tilt).setScale(sel ? 1.7 : 1.45);
-        });
+        for (const a of this.actors) {
+          const t = targets.get(a.id)!;
+          const dx = t.pos.x - a.x;
+          const dy = t.pos.y - a.y;
+          const d = Math.hypot(dx, dy);
+          a.moving = d > 2;
+          if (a.moving) {
+            const stepLen = Math.min(d, WALK_SPEED * dt);
+            a.x += (dx / d) * stepLen;
+            a.y += (dy / d) * stepLen;
+            a.walk += stepLen * 0.11;
+            a.faceX = dx / d;
+            a.faceY = dy / d;
+          } else {
+            // Parado: olha para o centro da arena.
+            const cx = cfg.arena.cx - a.x;
+            const cy = cfg.arena.cy - a.y;
+            const n = Math.hypot(cx, cy) || 1;
+            a.faceX += (cx / n - a.faceX) * 0.08;
+            a.faceY += (cy / n - a.faceY) * 0.08;
+          }
+          const isMe = t.slot === 0;
+          const inMatch = t.slot >= 0;
+          const view = viewOf(a, t.slot);
+          a.rig.update(view, dt, now);
+          if (inMatch) drawGroundMarker(this.ground, view, R, isMe, false, now);
+          drawCharacter(a.body, view, { R, now, isMe, inGrace: false, walk: a.walk, moving: a.moving, rig: a.rig });
+          const hop = isMe && !a.moving ? -Math.abs(Math.sin(now / 280)) * 8 : 0;
+          const scale = BODY_SCALE * (isMe ? 1.25 : 1);
+          a.body
+            .setPosition(a.x, a.y + R * 0.6 + hop)
+            .setRotation(a.rig.tilt)
+            .setScale(scale)
+            .setDepth(a.y + R)
+            .setAlpha(inMatch ? 1 : 0.8);
+          a.label
+            .setText(isMe ? `${s.name || 'Você'} (você)` : inMatch ? CHARACTER_INFO[a.id].name : '')
+            .setColor(isMe ? '#ffc145' : '#fff4e6')
+            .setPosition(a.x, a.y + R + 34);
+        }
       }
     }
+
     this.game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: this.parent,
-      width: W,
-      height: H,
       backgroundColor: '#d4876a',
-      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-      scene: Preview,
+      scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+      scene: MenuScene,
       banner: false,
     });
   }
@@ -96,23 +224,19 @@ export class CharacterSelect {
     this.game?.destroy(true);
     this.game = null;
   }
-
-  private renderCards(): void {
-    this.cards.querySelectorAll<HTMLButtonElement>('.char-card').forEach((b) => b.classList.toggle('selected', b.dataset.char === this.selected));
-  }
 }
 
-function fakeView(character: CharacterId, x: number, y: number, i: number, now: number): PlayerView {
+function viewOf(a: Actor, slot: number): PlayerView {
   return {
-    id: character,
-    name: CHARACTER_INFO[character].name,
-    color: PLAYER_COLORS[i % PLAYER_COLORS.length],
-    character,
-    isBot: false,
-    x,
-    y,
-    faceX: Math.sin(now / 1500 + i) * 0.3,
-    faceY: 0.95,
+    id: a.id,
+    name: CHARACTER_INFO[a.id].name,
+    color: PLAYER_COLORS[Math.max(0, slot) % PLAYER_COLORS.length],
+    character: a.id,
+    isBot: slot !== 0,
+    x: a.x,
+    y: a.y,
+    faceX: a.faceX,
+    faceY: a.faceY,
     hp: 3,
     maxHp: 3,
     focus: 100,

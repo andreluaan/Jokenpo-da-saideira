@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PPT da Saideira</title>
+  </head>
+  <body>
+    <!-- Tela inicial -->
+    <section id="menu" class="screen">
+      <div class="menu-card">
+        <h1 class="logo">PPT <span>da Saideira</span></h1>
+        <p class="tagline">Pedra, papel e tesoura na arena. Leia, blefe, execute.</p>
+
+        <label class="field">
+          <span>Apelido</span>
+          <input id="nickname" maxlength="16" autocomplete="off" placeholder="Seu apelido" />
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span>Adversários (NPC)</span>
+            <select id="bot-count">
+              <option value="1">1 NPC (duelo)</option>
+              <option value="2">2 NPCs</option>
+              <option value="3" selected>3 NPCs (arena cheia)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Dificuldade</span>
+            <select id="difficulty">
+              <option value="easy">Fácil</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Difícil</option>
+            </select>
+          </label>
+        </div>
+
+        <button id="start-training" class="btn primary">Treinar contra NPCs</button>
+        <p class="note">Etapa 1 — protótipo local. Salas online chegam na Etapa 2.</p>
+
+        <details class="howto">
+          <summary>Como jogar</summary>
+          <ul>
+            <li><b>WASD</b> move. <b>Clique</b> em um adversário ou <b>Tab</b> para escolher o alvo.</li>
+            <li><b>1 / 2 / 3</b> (ou J / K / L): ✊ Pedra, ✋ Papel, ✌️ Tesoura. Sem símbolo, inicia um ataque; com símbolo, <b>troca</b> (custa foco).</li>
+            <li>Sendo atacado? Aperte um símbolo para <b>responder</b>: vira um duelo.</li>
+            <li><b>Espaço</b> é a sua <b>Última Palavra</b>: trava o símbolo. Bem quando o anel fecha = <b>PERFEITO</b>. Cedo = BOM garantido. Sem confirmar = <b>FALHA</b>.</li>
+            <li><b>F</b> finta (parece uma troca), <b>X</b> ou botão direito cancela, <b>Shift</b> investida.</li>
+            <li>A vantagem do símbolo sempre vale mais que a execução.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <!-- Partida -->
+    <section id="match" class="screen hidden">
+      <header id="player-cards"></header>
+      <div id="stage">
+        <div id="game-wrap"></div>
+        <aside id="side">
+          <div id="log-title">Confrontos</div>
+          <ol id="log"></ol>
+          <button id="leave" class="btn small ghost" tabindex="-1">Sair para o menu</button>
+        </aside>
+      </div>
+      <footer id="action-bar">
+        <div id="hint"></div>
+        <div class="bar">
+          <button class="sym" data-sym="rock" tabindex="-1"><span class="ico">✊</span>Pedra<kbd>1</kbd></button>
+          <button class="sym" data-sym="paper" tabindex="-1"><span class="ico">✋</span>Papel<kbd>2</kbd></button>
+          <button class="sym" data-sym="scissors" tabindex="-1"><span class="ico">✌️</span>Tesoura<kbd>3</kbd></button>
+          <span class="sep"></span>
+          <button class="act" data-act="commit" tabindex="-1">Confirmar<kbd>Espaço</kbd></button>
+          <button class="act" data-act="feint" tabindex="-1">Finta<kbd>F</kbd></button>
+          <button class="act" data-act="cancel" tabindex="-1">Cancelar<kbd>X</kbd></button>
+          <button class="act" data-act="dash" tabindex="-1">Investida<kbd>Shift</kbd></button>
+        </div>
+      </footer>
+
+      <div id="end-overlay" class="hidden">
+        <div class="end-card">
+          <h2 id="end-title"></h2>
+          <p id="end-sub"></p>
+          <div class="row center">
+            <button id="play-again" class="btn primary">Jogar novamente</button>
+            <button id="to-menu" class="btn ghost">Menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

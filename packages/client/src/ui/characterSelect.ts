@@ -24,11 +24,33 @@ export class CharacterSelect {
     return this.selected;
   }
 
+  /** Personagens já escolhidos por outras pessoas na sala (online). */
+  private taken = new Set<CharacterId>();
+
+  setTaken(taken: Iterable<CharacterId>): void {
+    this.taken = new Set(taken);
+    this.render();
+  }
+
+  isTaken(c: CharacterId): boolean {
+    return this.taken.has(c);
+  }
+
+  /** Muda a seleção sem avisar (quando o servidor decide, ex.: personagem trocado ao entrar). */
+  force(c: CharacterId): void {
+    this.selected = c;
+    this.render();
+  }
+
   select(c: CharacterId): void {
-    if (c === this.selected) return;
+    if (c === this.selected || this.taken.has(c)) return;
     this.selected = c;
     this.render();
     this.onChange(c);
+  }
+
+  portraitOf(c: CharacterId): string {
+    return this.cards.querySelector<HTMLElement>(`.char-card[data-char="${c}"] .portrait`)?.style.backgroundImage ?? '';
   }
 
   setPortrait(c: CharacterId, url: string): void {
@@ -37,6 +59,9 @@ export class CharacterSelect {
   }
 
   private render(): void {
-    this.cards.querySelectorAll<HTMLButtonElement>('.char-card').forEach((b) => b.classList.toggle('selected', b.dataset.char === this.selected));
+    this.cards.querySelectorAll<HTMLButtonElement>('.char-card').forEach((b) => {
+      b.classList.toggle('selected', b.dataset.char === this.selected);
+      b.classList.toggle('taken', this.taken.has(b.dataset.char as CharacterId));
+    });
   }
 }

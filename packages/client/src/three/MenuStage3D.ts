@@ -5,9 +5,12 @@ import { buildArena3D, type ArenaHandles } from './arena3d';
 import { Character3D } from './character3d';
 
 export interface MenuState {
-  character: CharacterId;
-  bots: number;
-  name: string;
+  /** Quem joga, na ordem das largadas (largada 1 = primeiro). */
+  lineup: CharacterId[];
+  /** O seu personagem. */
+  me: CharacterId;
+  /** Apelidos (online/você); quem não tiver usa o nome do personagem. */
+  names: Partial<Record<CharacterId, string>>;
 }
 
 const WALK = 2.3; // unidades/s
@@ -120,11 +123,10 @@ export class MenuStage3D {
     this.actors = [];
   }
 
-  /** Quem joga e em que posição (você no 1, NPCs nos seguintes). */
+  /** Quem joga e em que posição. */
   private slots(): Map<CharacterId, number> {
-    const s = this.state();
-    const playing = [s.character, ...CHARACTER_IDS.filter((c) => c !== s.character).slice(0, s.bots)];
-    return new Map(CHARACTER_IDS.map((c) => [c, playing.indexOf(c)]));
+    const { lineup } = this.state();
+    return new Map(CHARACTER_IDS.map((c) => [c, lineup.indexOf(c)]));
   }
 
   private inArena(p: THREE.Vector3): boolean {
@@ -248,7 +250,7 @@ export class MenuStage3D {
         const toCenter = new THREE.Vector3(-a.pos.x, 0, -a.pos.z).normalize();
         a.face.lerp(toCenter, 0.06);
       }
-      const isMe = a.slot === 0;
+      const isMe = a.id === s.me && a.slot >= 0;
       const view = viewOf(a, a.pos, cfg);
       // Continua sentado enquanto "levanta" (até a hora de sair andando).
       const sitting = a.seated;
@@ -261,7 +263,8 @@ export class MenuStage3D {
       (a.ring.material as THREE.MeshBasicMaterial).color.set(isMe ? 0xffffff : PLAYER_COLORS[Math.max(0, a.slot)]);
       const sp = a.pos.clone().setY(sitting ? 1.5 : 1.75).project(this.camera);
       a.label.style.transform = `translate(${((sp.x + 1) / 2) * W}px, ${((1 - sp.y) / 2) * H}px)`;
-      a.label.textContent = isMe ? `${s.name || 'Você'} (você)` : CHARACTER_INFO[a.id].name;
+      const nm = s.names[a.id] ?? CHARACTER_INFO[a.id].name;
+      a.label.textContent = isMe ? `${nm} (você)` : nm;
       a.label.classList.toggle('me', isMe);
       a.label.classList.toggle('bench', a.slot < 0);
     }

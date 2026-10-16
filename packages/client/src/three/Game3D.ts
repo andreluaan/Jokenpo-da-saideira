@@ -439,8 +439,9 @@ export class Game3D {
       const n = Math.ceil((snap.phaseEndsAt - now) / 1000);
       this.center.textContent = n > 0 ? String(n) : '';
       this.center.classList.remove('flash');
-    } else if (this.lastPhase === 'countdown') {
-      this.center.textContent = 'LUTA!';
+    } else if (this.lastPhase === 'countdown' && !this.center.classList.contains('flash')) {
+      // (online o evento "phase" pode chegar antes do primeiro quadro: garante a animação que some)
+      this.flash('LUTA!');
     }
     this.lastPhase = snap.phase;
     const left = Math.max(0, snap.phaseEndsAt - now);

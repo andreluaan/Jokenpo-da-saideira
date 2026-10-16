@@ -34,27 +34,75 @@
           <input id="nickname" maxlength="16" autocomplete="off" placeholder="Como te chamam no bar?" />
         </label>
 
-        <div class="row">
-          <label class="field">
-            <span class="chalk">Adversários</span>
-            <select id="bot-count">
-              <option value="1">1 NPC (duelo)</option>
-              <option value="2">2 NPCs</option>
-              <option value="3" selected>3 NPCs (mesa cheia)</option>
-            </select>
-          </label>
-          <label class="field">
-            <span class="chalk">Dificuldade</span>
-            <select id="difficulty">
-              <option value="easy">Fácil</option>
-              <option value="normal" selected>Normal</option>
-              <option value="hard">Difícil</option>
-            </select>
-          </label>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-mode="training">Treino (NPCs)</button>
+          <button type="button" class="tab" data-mode="online">Online com a turma</button>
         </div>
 
-        <button id="start-training" class="btn primary">🍺 Disputar a gelada</button>
-        <p class="note">Treino contra NPCs (local). Salas online chegam na Etapa 2.</p>
+        <!-- Treino local contra NPCs -->
+        <div id="mode-training">
+          <div class="row">
+            <label class="field">
+              <span class="chalk">Adversários</span>
+              <select id="bot-count">
+                <option value="1">1 NPC (duelo)</option>
+                <option value="2">2 NPCs</option>
+                <option value="3" selected>3 NPCs (mesa cheia)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="chalk">Dificuldade</span>
+              <select id="difficulty">
+                <option value="easy">Fácil</option>
+                <option value="normal" selected>Normal</option>
+                <option value="hard">Difícil</option>
+              </select>
+            </label>
+          </div>
+          <button id="start-training" class="btn primary">🍺 Disputar a gelada</button>
+          <p class="note">Treino no seu computador, contra NPCs.</p>
+        </div>
+
+        <!-- Online: salas com código -->
+        <div id="mode-online" class="hidden">
+          <div id="online-out">
+            <button id="room-create" class="btn primary">🍻 Abrir uma mesa (criar sala)</button>
+            <div class="join-row">
+              <input id="room-code" maxlength="4" autocomplete="off" placeholder="CÓDIGO" />
+              <button id="room-join" class="btn">Sentar na mesa</button>
+            </div>
+          </div>
+          <div id="online-in" class="hidden">
+            <div class="room-head">
+              <div><span class="chalk">Mesa</span> <b id="room-code-label" class="room-code"></b></div>
+              <button id="room-copy" class="btn small ghost" type="button">Copiar código</button>
+            </div>
+            <ul id="room-players"></ul>
+            <div class="row" id="room-host-settings">
+              <label class="field">
+                <span class="chalk">NPCs na mesa</span>
+                <select id="room-bots">
+                  <option value="0">Nenhum</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="chalk">Dificuldade</span>
+                <select id="room-difficulty">
+                  <option value="easy">Fácil</option>
+                  <option value="normal">Normal</option>
+                  <option value="hard">Difícil</option>
+                </select>
+              </label>
+            </div>
+            <button id="room-ready" class="btn primary">Estou pronto</button>
+            <button id="room-start" class="btn primary">🍺 Começar a disputa</button>
+            <button id="room-leave" class="btn small ghost" type="button">Levantar da mesa (sair)</button>
+          </div>
+          <p id="online-status" class="note"></p>
+        </div>
 
         <details class="howto">
           <summary>Como jogar</summary>

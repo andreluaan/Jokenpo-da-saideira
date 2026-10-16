@@ -191,3 +191,34 @@ kbd {
 }
 
 .menulabel3d.bench { opacity: .75; font-size: 13px; background: #2b1d2299; }
+
+/* ---------- abas e lobby online ---------- */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 12px; }
+.tab { padding: 8px 6px; border-radius: 10px; border: 2px dashed #fff4e655; background: transparent; cursor: pointer; font-family: var(--chalk); font-size: 19px; color: #e9e2d4; }
+.tab.active { border-style: solid; border-color: var(--accent); background: #ffc14522; color: #fff4e6; }
+.join-row { display: flex; gap: 8px; margin-top: 10px; }
+.join-row input { flex: 1; min-width: 0; text-transform: uppercase; letter-spacing: 6px; text-align: center; font-size: 22px; font-weight: 700;
+  background: #ffffff10; border: 2px dashed #fff4e655; border-radius: 10px; padding: 8px; color: #fff4e6; outline: none; }
+.join-row input:focus { border-color: var(--accent); border-style: solid; }
+.room-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.room-code { font-size: 30px; letter-spacing: 6px; color: var(--accent); }
+#room-players { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#room-players li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: #ffffff10; border: 2px solid #ffffff18; }
+#room-players li.me { border-color: var(--accent); }
+#room-players li.off { opacity: .5; }
+#room-players .face { width: 34px; height: 34px; border-radius: 50%; background: #e8d6b8 center/120% no-repeat; flex: none; }
+#room-players .who { flex: 1; min-width: 0; }
+#room-players .who b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#room-players .who span { font-size: 11px; color: #c8d6c9; }
+#room-players .st { font-size: 13px; font-weight: 700; }
+#room-players .st.ok { color: var(--good); }
+#room-players .st.wait { color: #c8d6c9; }
+#room-ready.on { background: linear-gradient(#7fe0b0, #4cc28c); box-shadow: 0 5px 0 #2f8a5f; }
+#room-start:disabled, #room-ready:disabled { opacity: .5; cursor: default; }
+#online-in .btn.primary { margin-bottom: 8px; }
+#online-status.err { color: var(--bad); opacity: 1; font-weight: 600; }
+.char-card.taken { opacity: .45; cursor: not-allowed; }
+.char-card.taken::after { content: 'ocupado'; position: absolute; right: 6px; top: 4px; font-size: 10px; font-weight: 700; color: #b0342f; }
+.net-banner { position: absolute; left: 50%; top: 110px; translate: -50% 0; z-index: 8; padding: 8px 16px; border-radius: 999px;
+  background: var(--bad); color: #fff; font-weight: 700; border: 3px solid #2b1d22; }
+.ping3d { position: absolute; left: 12px; top: 74px; z-index: 6; font-size: 12px; color: #fff4e6; background: #2b1d22aa; padding: 2px 8px; border-radius: 999px; }

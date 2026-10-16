@@ -16,7 +16,8 @@ type Anim =
   | 'attack-melee-right'
   | 'holding-right'
   | 'emote-yes'
-  | 'interact-right';
+  | 'interact-right'
+  | 'sit';
 
 interface Look {
   base: string;
@@ -202,6 +203,8 @@ export interface CharacterState {
   pump: number;
   /** 0–1 progresso bebendo; <0 = não bebendo. */
   drink: number;
+  /** Sentado no banquinho (menu). */
+  sit?: boolean;
 }
 
 /**
@@ -373,7 +376,8 @@ export class Character3D {
         this.current = null;
       }
       if (!this.oneShot) {
-        if (s.drink >= 0) this.play('holding-right');
+        if (s.sit) this.play('sit');
+        else if (s.drink >= 0) this.play('holding-right');
         else if (s.speed > 30 && !p.stunned) this.play(s.speed > 260 ? 'sprint' : 'walk');
         else this.play('idle');
       }

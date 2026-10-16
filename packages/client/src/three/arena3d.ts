@@ -35,9 +35,19 @@ function flat(shape: THREE.Shape, m: THREE.Material, y: number, segs = 96): THRE
   return o;
 }
 
+export interface Seat {
+  pos: THREE.Vector3;
+  /** Para onde o personagem sentado olha (a mesa). */
+  face: THREE.Vector3;
+}
+
 export interface ArenaHandles {
   /** Onde fica a long neck em cima da mesa (para mostrar/esconder). */
   beerSpot: THREE.Vector3;
+  /** Porteira: um ponto do lado de fora e outro do lado de dentro da arena. */
+  gate: { outside: THREE.Vector3; inside: THREE.Vector3 };
+  /** Banquinhos da mesa do lado de fora do bar. */
+  seats: Seat[];
   update(dt: number, now: number): void;
 }
 
@@ -95,9 +105,34 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
       posts.push(p);
     }
   }
+  // A porteira fica no painel mais próximo deste ângulo (lado do bar).
+  const GATE_ANGLE = -2.75;
+  const angDist = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  let gateIdx = 0;
+  posts.forEach((p, i) => {
+    const q = posts[(i + 1) % posts.length];
+    const m = p.clone().add(q).multiplyScalar(0.5);
+    const best = posts[gateIdx].clone().add(posts[(gateIdx + 1) % posts.length]).multiplyScalar(0.5);
+    if (angDist(Math.atan2(m.z / fz, m.x / fx), GATE_ANGLE) < angDist(Math.atan2(best.z / fz, best.x / fx), GATE_ANGLE)) gateIdx = i;
+  });
+  const gate = { outside: new THREE.Vector3(), inside: new THREE.Vector3() };
   posts.forEach((p, i) => {
     const q = posts[(i + 1) % posts.length];
     const mid = p.clone().add(q).multiplyScalar(0.5);
+    if (i === gateIdx) {
+      // Porteira aberta para dentro.
+      const gtf = place('nature/fence_gate', mid.x, mid.z, { height: 0.5 });
+      gtf.rotation.y = -Math.atan2(q.z - p.z, q.x - p.x);
+      gtf.scale.x *= p.distanceTo(q) / (panel * 0.98) || 1;
+      const leaf = gtf.getObjectByName('gate');
+      if (leaf) leaf.rotation.y = -1.35;
+      scene.add(gtf);
+      for (const end of [p, q]) scene.add(mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.75, 6), std(0x6a3f37), end.x, 0.37, end.z));
+      const n = mid.clone().normalize();
+      gate.outside.copy(mid).addScaledVector(n, 1.0);
+      gate.inside.copy(mid).addScaledVector(n, -1.1);
+      return;
+    }
     const f = place('nature/fence_simple', mid.x, mid.z, { height: 0.5 });
     f.rotation.y = -Math.atan2(q.z - p.z, q.x - p.x);
     f.scale.x *= p.distanceTo(q) / (panel * 0.98) || 1;
@@ -143,12 +178,13 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
 
   // --- entorno: Bar do Zé, árvores, mesas, horta ---
   buildShack(scene, -8.1, -5.1);
+  const seats = buildOutdoorTable(scene, -9.25, -1.3);
   for (const [x, z, h, kind] of [
     [8.6, -5.4, 2.6, 'tree_oak_fall'],
     [10.2, -2.6, 2.2, 'tree_fat_fall'],
     [6.4, -6.8, 2.0, 'tree_default_fall'],
-    [-10.0, 0.2, 2.4, 'tree_detailed_fall'],
-    [-9.4, -2.6, 2.0, 'tree_oak_fall'],
+    [-10.9, 1.4, 2.4, 'tree_detailed_fall'],
+    [-10.9, -3.3, 2.0, 'tree_oak_fall'],
     [-2.6, -6.9, 2.1, 'tree_fat_fall'],
     [10.6, 2.6, 2.3, 'tree_default_fall'],
     [-10.6, 3.4, 2.1, 'tree_fat_fall'],
@@ -228,6 +264,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
 
   return {
     beerSpot,
+    gate,
+    seats,
     update(dt, now) {
       for (const sm of smokes) {
         sm.t += dt / 2.6;
@@ -417,6 +455,34 @@ function buildShack(scene: THREE.Scene, x: number, z: number): void {
   g.position.set(x, 0, z);
   shadows(g);
   scene.add(g);
+}
+
+/** Mesa de madeira com quatro banquinhos do lado de fora do bar (onde a turma espera a vez). */
+function buildOutdoorTable(scene: THREE.Scene, x: number, z: number): Seat[] {
+  const t = place('furniture/tableRound', x, z, { size: 0.9 });
+  scene.add(t);
+  const top = new THREE.Box3().setFromObject(t).max.y;
+  scene.add(place('food/mug', x - 0.12, z + 0.05, { height: 0.14, y: top }));
+  scene.add(place('food/soda-bottle', x + 0.12, z - 0.08, { height: 0.22, y: top }));
+  scene.add(place('food/plate', x + 0.05, z + 0.18, { size: 0.2, y: top }));
+  const seats: Seat[] = [];
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI / 4 + (i * Math.PI) / 2;
+    const sx = x + Math.cos(a) * 0.72;
+    const sz = z + Math.sin(a) * 0.72;
+    const stool = new THREE.Group();
+    stool.add(mesh(new THREE.CylinderGeometry(0.2, 0.19, 0.06, 10), std(0xb36a55), 0, 0.33, 0));
+    for (let k = 0; k < 3; k++) {
+      const la = (k * Math.PI * 2) / 3;
+      const leg = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.32, 5), std(0x6a3f37), Math.cos(la) * 0.12, 0.16, Math.sin(la) * 0.12);
+      leg.rotation.set(Math.sin(la) * 0.15, 0, -Math.cos(la) * 0.15);
+      stool.add(leg);
+    }
+    stool.position.set(sx, 0, sz);
+    scene.add(stool);
+    seats.push({ pos: new THREE.Vector3(sx, 0.36, sz), face: new THREE.Vector3(x - sx, 0, z - sz).normalize() });
+  }
+  return seats;
 }
 
 function buildPatio(scene: THREE.Scene, x: number, z: number, umbrella: boolean): void {

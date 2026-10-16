@@ -27,6 +27,7 @@ export const MODELS = {
     'tree_fat_fall',
     'tree_detailed_fall',
     'fence_simple',
+    'fence_gate',
     'campfire_stones',
     'crop_carrot',
     'crop_pumpkin',

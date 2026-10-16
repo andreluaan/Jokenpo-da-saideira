@@ -96,9 +96,13 @@ function showEnd(winnerId: string | null): void {
   if (!conn) return;
   const me = conn.localPlayerId;
   const winner = conn.latest()?.players.find((p) => p.id === winnerId);
-  $('#end-title').textContent = winnerId === me ? 'Vitória! 🍻' : winnerId ? 'Derrota — a saideira é sua' : 'Empate';
+  $('#end-title').textContent = winnerId === me ? 'A gelada é sua! 🍺' : winnerId ? 'Ficou pra próxima' : 'Empate';
   $('#end-sub').textContent =
-    winnerId === me ? 'Você foi o último de pé no quintal do Bar do Zé.' : winner ? `${winner.name} venceu. Quem perde paga a saideira!` : 'Ninguém levou a melhor. Rodada dividida.';
+    winnerId === me
+      ? 'Você foi o último de pé no quintal do Bar do Zé e levou a cerveja.'
+      : winner
+        ? `${winner.name} ficou de pé por último e levou a cerveja.`
+        : 'Ninguém ficou de pé sozinho. A cerveja volta pro freezer.';
   endOverlay.classList.remove('hidden');
 }
 

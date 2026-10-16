@@ -466,7 +466,13 @@ export class Game3D {
           faceZ: pose ? pose.y : p.faceY,
           speed: a.speed,
           pump: this.pumpFor(p, snap, now),
-          drink: p.drinkingUntil > now ? 1 - (p.drinkingUntil - now) / cfg.beer.drinkMs : -1,
+          // No fim, quem ficou de pé por último leva a cerveja — e toma ali mesmo.
+          drink:
+            p.drinkingUntil > now
+              ? 1 - (p.drinkingUntil - now) / cfg.beer.drinkMs
+              : snap.phase === 'ended' && p.id === snap.winnerId && p.alive
+                ? (now % 2200) / 2200
+                : -1,
         },
         w.x,
         w.z,

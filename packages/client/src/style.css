@@ -189,3 +189,5 @@ kbd {
   .menu-card { top: auto; height: 60%; left: 8px; right: 8px; width: auto; bottom: 8px; }
   #side { display: none; }
 }
+
+.menulabel3d.bench { opacity: .75; font-size: 13px; background: #2b1d2299; }

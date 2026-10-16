@@ -30,6 +30,9 @@ export interface GameConfig {
     radius: number;
     maxHp: number;
     speed: number;
+    /** Inércia "de bêbado": aceleração até a velocidade desejada e desaceleração ao soltar (px/s²). */
+    accel: number;
+    decel: number;
     /** Multiplicador de velocidade enquanto segura um símbolo. */
     holdingSpeedMul: number;
     maxFocus: number;
@@ -116,27 +119,29 @@ export const DEFAULT_CONFIG: GameConfig = {
   player: {
     radius: 26,
     maxHp: 3,
-    speed: 250,
+    speed: 200,
+    accel: 800,
+    decel: 650,
     holdingSpeedMul: 0.75,
     maxFocus: 100,
     startFocus: 60,
-    focusRegen: 12,
+    focusRegen: 9,
   },
   attack: {
     engageRange: 250,
     hitRange: 175,
-    windupMs: 1000,
-    minResponseMs: 500,
-    responseCutoffMs: 200,
+    windupMs: 1500,
+    minResponseMs: 700,
+    responseCutoffMs: 300,
     earlyLockSpeedup: 0.7,
-    minAfterLockMs: 250,
+    minAfterLockMs: 400,
     damage: 1,
   },
   qte: {
-    leadMs: 450,
-    perfectMs: 70,
-    lateMs: 150,
-    maxRewindMs: 150,
+    leadMs: 650,
+    perfectMs: 100,
+    lateMs: 220,
+    maxRewindMs: 200,
   },
   costs: {
     swap: 20,
@@ -146,14 +151,14 @@ export const DEFAULT_CONFIG: GameConfig = {
     maxSwaps: 2,
   },
   timings: {
-    afterResolveMs: 350,
-    whiffMs: 650,
-    cancelMs: 500,
-    hitstunMs: 450,
-    softenedHitstunMs: 280,
-    punishedHitstunMs: 650,
-    graceMs: 900,
-    staggerMs: 450,
+    afterResolveMs: 550,
+    whiffMs: 900,
+    cancelMs: 700,
+    hitstunMs: 700,
+    softenedHitstunMs: 450,
+    punishedHitstunMs: 950,
+    graceMs: 1300,
+    staggerMs: 700,
   },
   knockback: {
     normal: 120,
@@ -161,11 +166,11 @@ export const DEFAULT_CONFIG: GameConfig = {
     softened: 70,
     clank: 60,
     protectedPush: 40,
-    tauMs: 90,
+    tauMs: 140,
   },
-  dash: { distance: 150, durationMs: 150, cooldownMs: 1600 },
+  dash: { distance: 150, durationMs: 230, cooldownMs: 2200 },
   perfectFocusBonus: 15,
-  match: { countdownMs: 3000, durationMs: 180_000 },
+  match: { countdownMs: 3000, durationMs: 240_000 },
 };
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? (T[K] extends unknown[] ? T[K] : DeepPartial<T[K]>) : T[K] };

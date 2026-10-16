@@ -31,7 +31,7 @@ kbd {
     radial-gradient(900px 500px at 15% 10%, #d8443c55, transparent),
     radial-gradient(900px 600px at 90% 0%, #e9b94944, transparent),
     radial-gradient(1200px 700px at 50% 110%, #d4876a66, transparent), var(--bg); }
-.menu-card { width: min(540px, 100%); background: var(--panel); border: 3px solid var(--wood);
+.menu-card { width: min(640px, 100%); background: var(--panel); border: 3px solid var(--wood);
   border-radius: 22px; padding: 28px; box-shadow: 0 8px 0 #1c1216, 0 24px 60px #0009; }
 .logo { margin: 0; font-size: 50px; letter-spacing: -1px; font-weight: 700; line-height: 1; }
 .logo span { color: var(--accent); display: block; font-size: 38px; text-shadow: 0 3px 0 #b0342f; }
@@ -102,3 +102,14 @@ kbd {
   #stage { grid-template-columns: 1fr; }
   #side { display: none; }
 }
+
+/* ---------- seleção de personagem ---------- */
+#char-preview { width: 100%; aspect-ratio: 760 / 230; border-radius: 14px; overflow: hidden; border: 3px solid var(--wood); cursor: pointer; }
+#char-preview canvas { display: block; width: 100% !important; height: auto !important; }
+#char-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.char-card { background: var(--panel-2); border: 2px solid var(--line); border-radius: 10px; padding: 6px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.char-card b { font-size: 13px; }
+.char-card span { font-size: 10.5px; color: var(--muted); line-height: 1.25; }
+.char-card.selected { border-color: var(--accent); background: #6a4a1c; }
+@media (max-width: 520px) { #char-cards { grid-template-columns: repeat(2, 1fr); } }

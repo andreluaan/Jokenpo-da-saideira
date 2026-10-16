@@ -22,7 +22,7 @@ export interface BotProfile {
 
 export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
   easy: {
-    reactionMs: [380, 600],
+    reactionMs: [480, 750],
     timingSigmaMs: 140,
     earlyLockChance: 0.5,
     readChance: 0.15,
@@ -30,10 +30,10 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     feintChance: 0.05,
     respondChance: 0.45,
     dashChance: 0.15,
-    aggression: 0.6,
+    aggression: 0.35,
   },
   normal: {
-    reactionMs: [250, 420],
+    reactionMs: [330, 540],
     timingSigmaMs: 85,
     earlyLockChance: 0.35,
     readChance: 0.4,
@@ -41,10 +41,10 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     feintChance: 0.15,
     respondChance: 0.7,
     dashChance: 0.3,
-    aggression: 1.0,
+    aggression: 0.55,
   },
   hard: {
-    reactionMs: [170, 280],
+    reactionMs: [230, 380],
     timingSigmaMs: 50,
     earlyLockChance: 0.25,
     readChance: 0.65,
@@ -52,7 +52,7 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     feintChance: 0.25,
     respondChance: 0.85,
     dashChance: 0.45,
-    aggression: 1.4,
+    aggression: 0.8,
   },
 };
 

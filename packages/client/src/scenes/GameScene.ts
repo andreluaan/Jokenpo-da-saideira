@@ -4,7 +4,8 @@ import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { DENY_TEXT, WHIFF_TEXT, describeExchange } from '../ui/describe';
 import { DEPTH, FONT, buildArena } from '../art/arena';
-import { drawAim, drawCharacter } from '../art/character';
+import { drawAim, drawCharacter, drawGroundMarker } from '../art/character';
+import { WobbleRig } from '../art/rig';
 
 export interface GameSceneData {
   conn: GameConnection;
@@ -13,12 +14,20 @@ export interface GameSceneData {
 
 const SYM_KEYS: Record<string, Rps> = { ONE: 'rock', TWO: 'paper', THREE: 'scissors', J: 'rock', K: 'paper', L: 'scissors' };
 const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#fff4e6', fail: '#ff5a5f' };
+/** Escala visual do personagem (a colisão continua com o raio da config). */
+const BODY_SCALE = 1.3;
 const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
 
 interface Labels {
   name: Phaser.GameObjects.Text;
   hand: Phaser.GameObjects.Text;
   body: Phaser.GameObjects.Graphics;
+  /** Para animar a caminhada a partir do deslocamento entre quadros. */
+  px: number;
+  py: number;
+  walk: number;
+  movingUntil: number;
+  rig: WobbleRig;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -38,6 +47,7 @@ export class GameScene extends Phaser.Scene {
   private unsubscribe: (() => void) | null = null;
   private ended = false;
   private lastPhase = '';
+  private lastFrame = 0;
 
   constructor() {
     super('game');
@@ -196,6 +206,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'exchange': {
+          this.ragdollExchange(e);
           const { headline, line } = describeExchange(e, this.nameOf);
           const involved = e.attackerId === meId || e.defenderId === meId;
           const tone = !involved ? '' : e.damagedId === meId ? 'me-loss' : e.winnerId === meId ? 'me-win' : '';
@@ -220,6 +231,12 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'whiff': {
+          // Golpe no vazio: tropeça para a frente, embalado.
+          const tgt = this.posOf(e.targetId);
+          for (const id of e.playerIds) {
+            const q = this.posOf(id);
+            if (q && tgt) this.labels.get(id)?.rig.hit(q.x - (tgt.x - q.x), q.y - (tgt.y - q.y), q.x, q.y, 0.7);
+          }
           const p = this.posOf(e.playerIds[0]);
           if (p) this.floatText(p.x, p.y - 40, WHIFF_TEXT[e.reason], '#8b93a8', 15);
           if (e.playerIds.includes(meId)) this.hud.addLog(`Você: ${WHIFF_TEXT[e.reason]}`);
@@ -233,6 +250,8 @@ export class GameScene extends Phaser.Scene {
         }
         case 'eliminated': {
           const p = this.posOf(e.playerId);
+          const killer = e.byId ? this.posOf(e.byId) : undefined;
+          if (p) this.labels.get(e.playerId)?.rig.knockOut(killer?.x ?? p.x - 1, p.x);
           if (p) this.floatText(p.x, p.y, 'ELIMINADO', '#ef476f', 26, 1600);
           this.hud.addLog(`${this.nameOf(e.playerId)} foi eliminado${e.byId ? ` por ${this.nameOf(e.byId)}` : ''}.`);
           break;
@@ -247,6 +266,33 @@ export class GameScene extends Phaser.Scene {
         case 'attackStart':
           break;
       }
+    }
+  }
+
+  /** Reação física do ragdoll a cada troca (só visual). */
+  private ragdollExchange(e: Extract<GameEvent, { type: 'exchange' }>): void {
+    const a = this.posOf(e.attackerId);
+    const d = this.posOf(e.defenderId);
+    if (!a || !d) return;
+    const rigOf = (id: string) => this.labels.get(id)?.rig;
+    const pos = (id: string) => (id === e.attackerId ? a : d);
+    const other = (id: string) => (id === e.attackerId ? d : a);
+    if (e.damagedId) {
+      const v = pos(e.damagedId);
+      const w = other(e.damagedId);
+      rigOf(e.damagedId)?.hit(w.x, w.y, v.x, v.y, 1.1);
+      if (e.winnerId) rigOf(e.winnerId)?.hit(v.x, v.y, w.x, w.y, 0.25);
+    } else if (e.protectedId) {
+      const v = pos(e.protectedId);
+      const w = other(e.protectedId);
+      rigOf(e.protectedId)?.hit(w.x, w.y, v.x, v.y, 0.45);
+    } else if (e.kind === 'clank' || e.kind === 'wasted' || e.kind === 'tie-stagger') {
+      rigOf(e.attackerId)?.hit(d.x, d.y, a.x, a.y, 0.5);
+      rigOf(e.defenderId)?.hit(a.x, a.y, d.x, d.y, 0.5);
+      if (e.staggeredId) rigOf(e.staggeredId)?.hit(other(e.staggeredId).x, other(e.staggeredId).y, pos(e.staggeredId).x, pos(e.staggeredId).y, 0.7);
+    } else {
+      // Errou o golpe: o atacante perde o equilíbrio.
+      rigOf(e.attackerId)?.hit(a.x - (d.x - a.x), a.y, a.x, a.y, 0.6);
     }
   }
 
@@ -302,6 +348,8 @@ export class GameScene extends Phaser.Scene {
     const ground = this.ground;
     const cfg = this.conn.config;
     const R = cfg.player.radius;
+    const frameDt = this.lastFrame ? performance.now() - this.lastFrame : 16;
+    this.lastFrame = performance.now();
     g.clear();
     ground.clear();
 
@@ -333,14 +381,28 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Jogadores (cada um na sua profundidade, para ordenar com o cenário).
-    snap.players.forEach((p, index) => {
+    for (const p of snap.players) {
       const lab = this.labelsFor(p);
-      lab.body.setDepth(p.alive ? p.y + R * 0.55 : p.y - 100);
-      drawCharacter(lab.body, p, { index, R, now, isMe: p.id === me?.id, inGrace: now < p.graceUntil });
+      const step = Math.hypot(p.x - lab.px, p.y - lab.py);
+      lab.px = p.x;
+      lab.py = p.y;
+      lab.walk += step * 0.11;
+      if (step > 0.4 && !p.stunned) lab.movingUntil = now + 90;
+      const inGrace = now < p.graceUntil;
+      lab.rig.update(p, frameDt, now);
+      drawGroundMarker(ground, p, R, p.id === me?.id, inGrace, now);
+      drawCharacter(lab.body, p, { R, now, isMe: p.id === me?.id, inGrace, walk: lab.walk, moving: now < lab.movingUntil, rig: lab.rig });
+      // O Graphics inteiro gira e amassa em torno dos pés: é aqui que o "bêbado" ganha vida.
+      const sq = Math.max(-0.2, Math.min(0.3, lab.rig.squash * 0.25));
+      lab.body
+        .setPosition(p.x, p.y + R * 0.6)
+        .setRotation(lab.rig.tilt)
+        .setScale(BODY_SCALE * (1 + sq * 0.6), BODY_SCALE * (1 - sq))
+        .setDepth(p.alive ? p.y + R * 0.6 : p.y - 100);
       lab.name.setPosition(p.x, p.y + R + 26).setAlpha(p.alive ? 1 : 0.45);
       if (!p.alive) {
         lab.hand.setText('');
-        return;
+        continue;
       }
       // Vida e foco abaixo do nome.
       for (let i = 0; i < p.maxHp; i++) {
@@ -355,8 +417,8 @@ export class GameScene extends Phaser.Scene {
       if (p.holding) hand = p.symbol ? RPS_ICON[p.symbol] : '❔';
       if (p.locked) hand += '🔒';
       if (!p.holding && p.id === me?.id && snap.players.some((o) => o.alive && o.targetId === p.id)) hand = '❗';
-      lab.hand.setText(hand).setPosition(p.x, p.y - R * 2.5);
-    });
+      lab.hand.setText(hand).setPosition(p.x + Math.sin(lab.rig.tilt) * R * 3.5, p.y - R * 4.1);
+    }
 
     this.drawQte(snap, now, me);
   }
@@ -370,13 +432,13 @@ export class GameScene extends Phaser.Scene {
     const T = Math.min(...impacts.filter((t) => t + qte.lateMs >= now));
     if (!Number.isFinite(T)) return;
     const g = this.gfx;
-    const baseR = player.radius + 22;
-    const cy = me.y - player.radius * 0.4;
+    const baseR = player.radius + 30;
+    const cy = me.y - player.radius * 0.6;
     const dt = T - now;
 
     g.lineStyle(5, 0xfff4e6, 0.9).strokeCircle(me.x, cy, baseR);
     if (me.locked) {
-      this.qteText.setText('TRAVADO').setColor('#8ecae6').setPosition(me.x, me.y - player.radius * 3.6);
+      this.qteText.setText('TRAVADO').setColor('#8ecae6').setPosition(me.x, me.y - player.radius * 5.2);
       return;
     }
     const r = baseR + Math.max(0, dt) * 0.09;
@@ -389,7 +451,7 @@ export class GameScene extends Phaser.Scene {
     this.qteText
       .setText(perfect ? 'AGORA!' : inWindow ? 'ESPAÇO' : 'confirmar cedo = BOM')
       .setColor(perfect ? '#5ad19a' : inWindow ? '#ffc145' : '#fff4e6')
-      .setPosition(me.x, me.y - player.radius * 3.6);
+      .setPosition(me.x, me.y - player.radius * 5.2);
   }
 
   private labelsFor(p: PlayerView): Labels {
@@ -410,7 +472,7 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(DEPTH.ui + 2);
       const body = this.add.graphics();
-      l = { name, hand, body };
+      l = { name, hand, body, px: p.x, py: p.y, walk: 0, movingUntil: 0, rig: new WobbleRig() };
       this.labels.set(p.id, l);
     }
     return l;

@@ -1,9 +1,12 @@
 import {
   BOT_PROFILES,
   BotBrain,
+  CHARACTER_IDS,
+  CHARACTER_INFO,
   DEFAULT_CONFIG,
   GameSimulation,
   type BotDifficulty,
+  type CharacterId,
   type GameConfig,
   type GameEvent,
   type PlayerInput,
@@ -13,12 +16,12 @@ import {
 import type { GameConnection } from './connection';
 
 const STEP_MS = 1000 / 60;
-const BOT_NAMES = ['Zé da Esquina', 'Tia do Bar', 'Garçom Juca'];
 
 export interface LocalMatchOptions {
   playerName: string;
   botCount: number;
   difficulty: BotDifficulty;
+  character: CharacterId;
   config?: GameConfig;
 }
 
@@ -39,8 +42,13 @@ export class LocalConnection implements GameConnection {
   constructor(opts: LocalMatchOptions) {
     this.config = opts.config ?? DEFAULT_CONFIG;
     const count = Math.max(1, Math.min(3, opts.botCount));
-    const setups: PlayerSetup[] = [{ id: this.localPlayerId, name: opts.playerName || 'Jogador' }];
-    for (let i = 0; i < count; i++) setups.push({ id: `bot${i}`, name: BOT_NAMES[i], isBot: true });
+    const setups: PlayerSetup[] = [{ id: this.localPlayerId, name: opts.playerName || 'Jogador', character: opts.character }];
+    // NPCs ficam com os personagens que sobraram e usam o nome deles.
+    const others = CHARACTER_IDS.filter((c) => c !== opts.character);
+    for (let i = 0; i < count; i++) {
+      const character = others[i];
+      setups.push({ id: `bot${i}`, name: CHARACTER_INFO[character].name, isBot: true, character });
+    }
     this.sim = new GameSimulation(setups, this.config);
     const seed = Math.floor(Math.random() * 1e9);
     this.bots = setups

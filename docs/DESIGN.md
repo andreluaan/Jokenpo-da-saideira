@@ -91,8 +91,8 @@ Valores entre colchetes são os padrões de `config.ts`.
 
 ### 5.2 Iniciar ataque (Etapa A)
 - Requisitos: estar livre (sem mão, sem atordoamento, sem recuperação, sem investida), alvo vivo a ≤ [250 px].
-- T = agora + [1000 ms]. Todos veem uma linha de preparação até o alvo, sem o símbolo.
-- **Resposta / Duelo**: se o alvo escolhido já está atacando você e ainda faltam ≥ [200 ms] para o impacto dele, forma-se um **duelo**: T compartilhado = máx(T dele, agora + [500 ms]). Um duelo resolve os dois ataques numa única troca.
+- T = agora + [1500 ms]. Todos veem uma linha de preparação até o alvo, sem o símbolo.
+- **Resposta / Duelo**: se o alvo escolhido já está atacando você e ainda faltam ≥ [300 ms] para o impacto dele, forma-se um **duelo**: T compartilhado = máx(T dele, agora + [500 ms]). Um duelo resolve os dois ataques numa única troca.
 - Segurar mão reduz a velocidade a [75%].
 
 ### 5.3 Janela de blefe e Última Palavra (Etapas B e C)
@@ -105,14 +105,15 @@ Enquanto a mão **não estiver travada**:
 **Confirmar (Espaço) = a sua Última Palavra.** Trava a mão (🔒 público). A nota de QTE para cada impacto T em que você participa é:
 | Momento da trava | Nota |
 |---|---|
-| \|trava − T\| ≤ [70 ms] | **Perfeito** |
-| qualquer outro momento até T + [150 ms] | **Bom** |
-| não travou até T + [150 ms] | **Falha** |
+| \|trava − T\| ≤ [100 ms] | **Perfeito** |
+| qualquer outro momento até T + [220 ms] | **Bom** |
+| não travou até T + [220 ms] | **Falha** |
 
-- **Confirmar cedo** (antes de T − [450 ms]): Bom garantido e, se for ataque simples (não duelo), o impacto é acelerado (restante × [0,7], mín. [250 ms]). Custa: você não reage mais a sinais.
+- **Confirmar cedo** (antes de T − [650 ms]): Bom garantido e, se for ataque simples (não duelo), o impacto é acelerado (restante × [0,7], mín. [400 ms]). Custa: você não reage mais a sinais.
 - **Esperar**: mantém trocas/fintas disponíveis e chance de Perfeito; risco de Falha.
-- Janela visual de QTE: de T − 450 a T + 150 = **600 ms** (ajustável).
-- A resolução acontece em T + [150 ms].
+- Janela visual de QTE: de T − 650 a T + 220 = **870 ms** (ajustável; ritmo desacelerado na v0.3).
+- A resolução acontece em T + [220 ms].
+- Movimento com inércia "de bêbado" (aceleração 800 px/s², desaceleração 650 px/s², velocidade 200 px/s).
 
 ### 5.4 Resolução de uma troca (Etapa D)
 Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, ou sem mão).

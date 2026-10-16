@@ -1,6 +1,10 @@
 export type Rps = 'rock' | 'paper' | 'scissors';
 export const RPS_LIST: readonly Rps[] = ['rock', 'paper', 'scissors'];
 
+/** Personagem é só cosmético: todos jogam exatamente igual. */
+export type CharacterId = 'fera' | 'principe' | 'panca' | 'sonolento';
+export const CHARACTER_IDS: readonly CharacterId[] = ['fera', 'principe', 'panca', 'sonolento'];
+
 export type Grade = 'perfect' | 'good' | 'fail';
 export type Phase = 'countdown' | 'playing' | 'ended';
 
@@ -22,6 +26,7 @@ export interface PlayerView {
   id: string;
   name: string;
   color: number;
+  character: CharacterId;
   isBot: boolean;
   x: number;
   y: number;

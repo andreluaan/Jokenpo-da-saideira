@@ -4,3 +4,4 @@ export * from './rules';
 export * from './geometry';
 export * from './simulation';
 export * from './bot';
+export * from './characters';

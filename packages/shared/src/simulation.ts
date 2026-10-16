@@ -1,7 +1,9 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
 import { clamp, clampInArena, dist, lineBlocked, normalize, pushOutOfObstacle } from './geometry';
 import { gradeLock, resolveExchange } from './rules';
+import { CHARACTER_IDS } from './types';
 import type {
+  CharacterId,
   DenyReason,
   ExchangeEvent,
   GameEvent,
@@ -19,6 +21,7 @@ export interface PlayerSetup {
   id: string;
   name: string;
   isBot?: boolean;
+  character?: CharacterId;
 }
 
 interface Attack {
@@ -35,6 +38,7 @@ interface Player {
   id: string;
   name: string;
   color: number;
+  character: CharacterId;
   isBot: boolean;
   x: number;
   y: number;
@@ -42,6 +46,9 @@ interface Player {
   moveY: number;
   faceX: number;
   faceY: number;
+  /** Velocidade de caminhada (px/ms), com inércia. */
+  vx: number;
+  vy: number;
   /** Velocidade de empurrão em px/ms, decai exponencialmente. */
   kbX: number;
   kbY: number;
@@ -78,13 +85,18 @@ export class GameSimulation {
   constructor(setups: PlayerSetup[], config: GameConfig = DEFAULT_CONFIG) {
     if (setups.length < 2 || setups.length > 4) throw new Error('A partida precisa de 2 a 4 jogadores');
     this.config = config;
+    // Quem não escolheu personagem recebe um livre, na ordem padrão.
+    const taken = new Set(setups.map((s) => s.character).filter(Boolean));
+    const free = CHARACTER_IDS.filter((c) => !taken.has(c));
     setups.forEach((s, i) => {
+      const character = s.character ?? free.shift() ?? CHARACTER_IDS[i % CHARACTER_IDS.length];
       const spawn = config.spawns[i % config.spawns.length];
       const face = normalize(config.arena.cx - spawn.x, config.arena.cy - spawn.y);
       const p: Player = {
         id: s.id,
         name: s.name,
         color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+        character,
         isBot: !!s.isBot,
         x: spawn.x,
         y: spawn.y,
@@ -92,6 +104,8 @@ export class GameSimulation {
         moveY: 0,
         faceX: face.x,
         faceY: face.y,
+        vx: 0,
+        vy: 0,
         kbX: 0,
         kbY: 0,
         hp: config.player.maxHp,
@@ -267,19 +281,31 @@ export class GameSimulation {
     const decay = Math.exp(-dt / knockback.tauMs);
     for (const p of this.players) {
       if (!p.alive) continue;
-      let vx = 0;
-      let vy = 0;
       if (this.now - dt < p.dashUntil) {
         const v = dash.distance / dash.durationMs;
-        vx = p.dashX * v;
-        vy = p.dashY * v;
-      } else if (this.now >= p.stunUntil) {
-        const speed = (player.speed / 1000) * (p.attack ? player.holdingSpeedMul : 1);
-        vx = p.moveX * speed;
-        vy = p.moveY * speed;
+        p.vx = p.dashX * v;
+        p.vy = p.dashY * v;
+      } else {
+        // Inércia: acelera até a velocidade desejada; ao soltar (ou atordoado) escorrega até parar.
+        const stunned = this.now < p.stunUntil;
+        const speed = stunned ? 0 : (player.speed / 1000) * (p.attack ? player.holdingSpeedMul : 1);
+        const tx = p.moveX * speed;
+        const ty = p.moveY * speed;
+        const dvx = tx - p.vx;
+        const dvy = ty - p.vy;
+        const dv = Math.hypot(dvx, dvy);
+        const speeding = tx * tx + ty * ty >= p.vx * p.vx + p.vy * p.vy;
+        const maxStep = ((speeding ? player.accel : player.decel) / 1e6) * dt;
+        if (dv <= maxStep) {
+          p.vx = tx;
+          p.vy = ty;
+        } else {
+          p.vx += (dvx / dv) * maxStep;
+          p.vy += (dvy / dv) * maxStep;
+        }
       }
-      vx += p.kbX;
-      vy += p.kbY;
+      const vx = p.vx + p.kbX;
+      const vy = p.vy + p.kbY;
       p.kbX *= decay;
       p.kbY *= decay;
       p.x += vx * dt;
@@ -291,6 +317,11 @@ export class GameSimulation {
         p.y = pos.y;
       }
       const inside = clampInArena(p.x, p.y, player.radius, arena);
+      if (inside.x !== p.x || inside.y !== p.y) {
+        // Bateu na cerca: perde o embalo.
+        p.vx *= 0.5;
+        p.vy *= 0.5;
+      }
       p.x = inside.x;
       p.y = inside.y;
 
@@ -497,6 +528,7 @@ export class GameSimulation {
         id: p.id,
         name: p.name,
         color: p.color,
+        character: p.character,
         isBot: p.isBot,
         x: p.x,
         y: p.y,

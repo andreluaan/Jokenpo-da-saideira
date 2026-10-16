@@ -1,6 +1,6 @@
 # PPT da Saideira — Direção de Arte
 
-> v0.2 · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
+> v0.3 · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
 
 ## 1. Pilares
 
@@ -22,21 +22,29 @@
 
 ## 3. Personagens (cosméticos, jogabilidade idêntica)
 
-Todos têm o mesmo corpo, os mesmos tempos e o mesmo alcance. O que muda é só a silhueta da cabeça, o acessório e a cor da camisa (cor do jogador).
+Quatro frequentadores **originais**, inspirados em arquétipos de anime e cartoon escolhidos pelo cliente. As referências foram usadas só como vibe: nenhum design, nome ou marca registrada é copiado, para o jogo poder ser publicado (Etapa 4).
 
-| Arquétipo | Silhueta / acessório | Personalidade (idle · ataque · dano · vitória) |
-|---|---|---|
-| **Zé da Esquina** (boné) | Boné com aba, camisa larga | Coça a nuca · avança confiante · segura o boné · gira o boné no dedo |
-| **Tia do Bar** (chapéu de palha) | Chapéu de abas largas com faixa vermelha | Abana-se · firme e calma · chapéu voa · aponta "eu avisei" |
-| **Garçom Juca** (coque) | Coque alto, faixa na cor da camisa | Equilibra bandeja imaginária · rápido · tropeça · reverência |
-| **Seu Bigode** (bigode) | Careca com laterais, bigodão | Alisa o bigode · encara · bigode arrepia · risada silenciosa |
-| *Futuros:* Dona Lurdinha (rolinhos no cabelo), Caminhoneiro (boné de tela) | — | — |
+| Personagem | Silhueta / acessório | Pose parada | Personalidade |
+|---|---|---|---|
+| **Fera Verde** | Cabelo tigelinha preto brilhante, sobrancelhonas, óculos escuros roxos, macacão verde, cinto vermelho, antebraços enfaixados, polainas laranja | Garrafa verde **sem rótulo** na mão | Energia de academia, "fogo da juventude" |
+| **Príncipe Marrento** | Cabelo espetado em chama com entradas em V, macacão azul, peitoral branco, ombreiras e faixa douradas, luvas e botas brancas | **Braços cruzados** | Arrogante, nunca paga a rodada |
+| **Seu Pança** | Careca com fiapos, barba por fazer, olhos grandes, barrigão de camisa branca, calça azul-clara. Pele natural, **não amarela** | Caneca de chope com espuma | Paizão bonachão |
+| **Sonolento** | Rabo de cavalo espetado, olhos meio fechados, colete tático verde com bolsos, faixa na coxa | Mão no bolso, "z" flutuando, **palito de dente** (sem cigarro) | Preguiçoso, mas estrategista |
 
-**Regras de legibilidade (personagem ~55 px de altura):**
-- A cabeça ocupa cerca de 40% da altura: o acessório é o que identifica o personagem de longe.
-- A camisa é sempre a cor do jogador, e o anel no chão repete essa cor.
-- Contorno escuro (`#2b1d22`) em textos; sombra roxa translúcida sob tudo.
-- **Pose ao segurar símbolo:** mãos juntas e fechadas na frente do corpo. É a mesma pose para os três símbolos.
+**Regras:**
+- A cor do jogador fica no **anel do chão**. A roupa é fixa de cada personagem.
+- **Pose ao segurar símbolo:** punhos juntos e fechados na frente do corpo, igual para os três símbolos. Os adereços (garrafa, caneca) somem enquanto o personagem segura um símbolo.
+- Escala visual 1,3× o raio de colisão. A cabeça ocupa cerca de 40% da altura.
+
+### 3.1 Movimento "bêbado" (inspirado em Gang Beasts)
+- **Simulação (vale para todos, autoritativa):** movimento com inércia. Acelera em 800 px/s², desacelera em 650 px/s² (escorrega ao parar) e perde o embalo ao bater na cerca.
+- **Visual (cliente, `art/rig.ts`):** ragdoll ativo simplificado com molas pouco amortecidas:
+  - o corpo inteiro inclina em torno dos pés: balanço contínuo de bêbado + inclinação na direção do movimento, passando do ponto ao parar;
+  - a cabeça atrasa e bamboleia; os braços são molas soltas que a aceleração arremessa;
+  - ao levar golpe, o corpo é arremessado, amassa (squash) e chacoalha; no choque, os dois chacoalham; no golpe no vazio, o atacante tropeça para a frente;
+  - atordoado: balanço 2,6× mais forte e braços se debatendo;
+  - eliminado: desaba de lado como ragdoll, com olhos em X.
+- Nada disso depende do símbolo escolhido.
 
 ## 4. Símbolos ✊ ✋ ✌️
 

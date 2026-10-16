@@ -2,6 +2,7 @@
 
 ## Testes automáticos
 `npm test` (Vitest, `packages/shared/test`): `rules.test.ts` (tabela RPS/QTE), `simulation.test.ts` (ataque, duelo, blefe, multi-jogador, informação oculta, fim, arena, cerveja), `bot.test.ts` (partida 4 NPCs termina, determinismo). Hoje: **46 testes**.
+`packages/server/test/server.test.ts`: rede real (servidor numa porta livre + `socket.io-client`). Total hoje: **56 testes**.
 Helpers de teste: `newSim(n)` posiciona A(780,520) B(880,520) C(880,420) D(1300,900); `advanceTo(sim, t)`.
 
 ## Estatística bot × bot (balanceamento)

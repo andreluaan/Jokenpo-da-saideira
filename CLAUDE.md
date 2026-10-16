@@ -8,13 +8,15 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 ## Estado atual (atualize a cada etapa)
 - **Etapa 1 (protótipo + NPCs): feita**, mais passes de arte: visual 3D (Three.js + modelos CC0 Kenney), personagens,
   Jo-Ken-Pô/rasteira, cerveja que cura, menu em lousa com quintal 3D (turma sentada → porteira → ringue).
-- **Próxima: Etapa 2 — multiplayer real** (servidor Node + Socket.IO). Plano em [`docs/tech/10-roadmap.md`](docs/tech/10-roadmap.md).
+- **Etapa 2 (multiplayer real): feita** — servidor Node + Socket.IO autoritativo, salas por código, lobby, reconexão (ver `docs/tech/11-multiplayer.md`).
+- **Próxima:** voltar à **arte** (pedido do usuário) e depois Etapa 3 (testes/balanceamento). Pendências em `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.
 
 ## Comandos
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # servidor (3001) + cliente Vite (http://localhost:5173)
+npm start          # build + servidor entregando o jogo em http://<IP>:3001
 npm test           # Vitest (regras + simulação + NPCs)
 npm run typecheck
 npm run build
@@ -28,6 +30,7 @@ npm run build
 - Não deixar botões sem comportamento; não simular multiplayer sem avisar.
 - **Propriedade intelectual:** personagens são originais *inspirados* em arquétipos (sem copiar Naruto/DBZ/Simpsons);
   marcas reais (Skol, Heineken…) **não** — usar a marca fictícia **"GELADA"**.
+- **Commits menores**, um por pedaço funcionando (pedido do usuário).
 - Downloads de assets: só CC0/licença clara, pedindo permissão com nome, origem e tamanho.
 - **Documentação viva:** ao mexer num setor do código, atualize o arquivo correspondente em `docs/tech/`
   (conceito, arquivos, decisões, armadilhas) de forma enxuta. Mudou algo do estado do projeto → atualize este arquivo.
@@ -45,5 +48,6 @@ npm run build
 | Assets 3D (Kenney), como adicionar modelos | `docs/tech/08-assets.md` |
 | Testes, depuração, capturas de tela | `docs/tech/09-testes-e-depuracao.md` |
 | Roadmap e problemas conhecidos | `docs/tech/10-roadmap.md` |
+| Multiplayer: servidor, salas, protocolo, relógio | `docs/tech/11-multiplayer.md` |
 
 Documentos de design (para humanos): `docs/DESIGN.md` (regras de jogo) e `docs/ART_DIRECTION.md` (direção de arte).

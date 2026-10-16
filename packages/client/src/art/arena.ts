@@ -140,52 +140,156 @@ function shadow(g: G, x: number, y: number, w: number, h: number): void {
 
 export function drawObstacle(scene: Phaser.Scene, o: Obstacle): void {
   const g = scene.add.graphics();
-  if (o.kind === 'circle' && o.prop === 'table') {
-    g.setDepth(o.y + o.r * 0.4);
-    const { x, y, r } = o;
-    shadow(g, x, y + 8, r * 2.1, r * 1.5);
-    g.fillStyle(PAL.woodDark, 1).fillRect(x - 9, y - 10, 18, 26);
-    g.fillStyle(PAL.woodDark, 1).fillEllipse(x, y + 16, 46, 16);
-    const ty = y - 26;
-    g.fillStyle(PAL.woodDark, 1).fillEllipse(x, ty + 7, r * 2, r * 1.7);
-    g.fillStyle(PAL.wood, 1).fillEllipse(x, ty, r * 2, r * 1.7);
-    g.lineStyle(2, PAL.woodDark, 0.5);
-    for (let k = -2; k <= 2; k++) g.lineBetween(x - r * 0.9 + Math.abs(k) * 8, ty + k * 16, x + r * 0.9 - Math.abs(k) * 8, ty + k * 16);
-    g.lineStyle(2, PAL.woodLight, 0.9).strokeEllipse(x, ty, r * 2 - 6, r * 1.7 - 6);
-    // Copos e uma garrafa em cima da mesa.
-    for (const [dx, dy] of [[-22, -8], [18, -14], [8, 16]]) {
-      g.fillStyle(0xffffff, 0.55).fillCircle(x + dx, ty + dy, 7);
-      g.fillStyle(PAL.sign, 0.95).fillCircle(x + dx, ty + dy, 5);
-      g.fillStyle(0xffffff, 0.95).fillCircle(x + dx - 1, ty + dy - 2, 2.5);
-    }
-    g.fillStyle(PAL.bottle, 1).fillCircle(x - 4, ty + 4, 8);
-    g.fillStyle(PAL.bottleCap, 1).fillCircle(x - 4, ty + 2, 3);
-    return;
+  switch (o.prop) {
+    case 'beerTable':
+      if (o.kind === 'circle') drawBeerTable(scene, g, o.x, o.y, o.r);
+      return;
+    case 'grill':
+      if (o.kind === 'circle') drawGrill(scene, g, o.x, o.y, o.r);
+      return;
+    case 'freezer':
+      if (o.kind === 'rect') drawFreezer(scene, g, o.x, o.y, o.w, o.h);
+      return;
+    case 'cooler':
+      if (o.kind === 'rect') drawCooler(g, o.x, o.y, o.w, o.h);
+      return;
+    case 'crates':
+      if (o.kind === 'rect') {
+        const { x, y, w, h } = o;
+        g.setDepth(y + h);
+        shadow(g, x + w / 2, y + h - 4, w * 1.15, h * 0.9);
+        drawCrate(g, x, y, w, h, 30, PAL.crateYellow, PAL.crateYellowDark);
+        drawCrate(g, x + 10, y + 6, w - 22, h - 18, 60, PAL.crateGreen, PAL.crateGreenDark);
+      }
+      return;
   }
-  if (o.kind === 'circle') {
-    // Barril de chope.
-    g.setDepth(o.y + o.r * 0.5);
-    const { x, y, r } = o;
-    const H = 40;
-    shadow(g, x, y + 4, r * 2.2, r * 1.3);
-    g.fillStyle(PAL.barrelDark, 1).fillEllipse(x, y, r * 2, r * 1.2);
-    g.fillStyle(PAL.barrel, 1).fillRect(x - r, y - H, r * 2, H);
-    g.fillStyle(PAL.barrelDark, 0.35).fillRect(x + r * 0.35, y - H, r * 0.65, H);
-    g.fillStyle(PAL.hoop, 1).fillRect(x - r, y - H + 7, r * 2, 5).fillRect(x - r, y - 12, r * 2, 5);
-    g.fillStyle(PAL.barrelDark, 1).fillEllipse(x, y - H, r * 2, r * 1.2);
-    g.fillStyle(PAL.woodLight, 1).fillEllipse(x, y - H, r * 1.7, r * 0.98);
-    g.lineStyle(1.5, PAL.barrelDark, 0.6).lineBetween(x - r * 0.7, y - H, x + r * 0.7, y - H);
-    g.fillStyle(0xc9c3c8, 1).fillCircle(x, y - H, 5);
-    g.fillStyle(PAL.hoop, 1).fillCircle(x, y - H, 2);
-    return;
+}
+
+/** Mesa de plástico amarela de boteco, com 4 cadeiras e a marca fictícia "GELADA". */
+function drawBeerTable(scene: Phaser.Scene, g: G, x: number, y: number, r: number): void {
+  const yellow = 0xf6c514;
+  const yellowDark = 0xc99a06;
+  const red = 0xd8443c;
+  g.setDepth(y + r * 0.35);
+  shadow(g, x, y + 10, r * 2.5, r * 1.6);
+  // Cadeiras (atrás e dos lados primeiro).
+  for (const [dx, dy] of [
+    [0, -r * 0.95],
+    [-r * 1.0, -r * 0.1],
+    [r * 1.0, -r * 0.1],
+  ]) {
+    drawPlasticChair(g, x + dx, y + dy, yellow, yellowDark);
   }
-  // Pilha de engradados de cerveja (amarelos e verdes).
-  const { x, y, w, h } = o;
+  // Pé e tampo.
+  g.fillStyle(yellowDark, 1).fillRect(x - 8, y - 20, 16, 34);
+  g.fillStyle(yellowDark, 1).fillEllipse(x, y + 14, 50, 16);
+  const ty = y - 30;
+  const tr = r * 0.78;
+  g.fillStyle(yellowDark, 1).fillEllipse(x, ty + 8, tr * 2, tr * 1.6);
+  g.fillStyle(yellow, 1).fillEllipse(x, ty, tr * 2, tr * 1.6);
+  g.lineStyle(3, 0xffe066, 1).strokeEllipse(x, ty, tr * 2 - 8, tr * 1.6 - 8);
+  // Logo fictícia (a mesa clássica de cerveja, sem marca registrada).
+  g.fillStyle(red, 1).fillEllipse(x, ty - 2, tr * 1.25, tr * 0.5);
+  scene.add
+    .text(x, ty - 2, 'GELADA', { fontFamily: FONT, fontSize: '17px', fontStyle: '700', color: '#fff4e6' })
+    .setOrigin(0.5)
+    .setDepth(y + r * 0.35 + 0.5);
+  // Copo americano e petisco.
+  g.fillStyle(0xffffff, 0.6).fillCircle(x - tr * 0.55, ty + tr * 0.32, 7);
+  g.fillStyle(PAL.sign, 1).fillCircle(x - tr * 0.55, ty + tr * 0.32, 5);
+  g.fillStyle(0xffffff, 0.95).fillCircle(x - tr * 0.55 - 1, ty + tr * 0.32 - 2, 2.5);
+  g.fillStyle(0xffffff, 1).fillEllipse(x + tr * 0.5, ty + tr * 0.35, 26, 12);
+  for (const k of [-6, 0, 6]) g.fillStyle(0xd98a2b, 1).fillCircle(x + tr * 0.5 + k, ty + tr * 0.33, 3.5);
+  // Cadeira da frente (por cima da mesa).
+  const front = scene.add.graphics().setDepth(y + r + 2);
+  drawPlasticChair(front, x, y + r * 0.85, yellow, yellowDark, true);
+}
+
+function drawPlasticChair(g: G, x: number, y: number, color: number, dark: number, backFront = false): void {
+  g.fillStyle(PAL.shadow, SHADOW_ALPHA).fillEllipse(x + 4, y + 12, 44, 18);
+  g.fillStyle(dark, 1).fillRoundedRect(x - 18, y - 20, 36, 32, 6);
+  g.fillStyle(color, 1).fillRoundedRect(x - 18, y - 26, 36, 30, 6);
+  if (backFront) g.fillStyle(dark, 1).fillRoundedRect(x - 18, y - 8, 36, 12, 5);
+  else g.fillStyle(dark, 1).fillRoundedRect(x - 18, y - 40, 36, 12, 5);
+}
+
+/** Churrasqueira de tambor com carvão em brasa, espetinhos e fumaça. */
+function drawGrill(scene: Phaser.Scene, g: G, x: number, y: number, r: number): void {
+  g.setDepth(y + r * 0.5);
+  shadow(g, x, y + 6, r * 2.4, r * 1.2);
+  // Pernas.
+  g.lineStyle(4, 0x2a2a30, 1).lineBetween(x - r * 0.7, y - 8, x - r * 0.9, y + 10).lineBetween(x + r * 0.7, y - 8, x + r * 0.9, y + 10);
+  const top = y - 30;
+  g.fillStyle(0x2f3036, 1).fillEllipse(x, top + 14, r * 2.3, r * 1.3);
+  g.fillStyle(0x45464e, 1).fillEllipse(x, top, r * 2.3, r * 1.15);
+  g.fillStyle(0xff7a2f, 1).fillEllipse(x, top, r * 1.9, r * 0.85);
+  g.fillStyle(0xffc145, 0.8).fillEllipse(x - 6, top - 2, r * 1.0, r * 0.4);
+  g.lineStyle(1.5, 0x2a2a30, 0.9);
+  for (let k = -3; k <= 3; k++) g.lineBetween(x + k * 9, top - r * 0.38, x + k * 9, top + r * 0.38);
+  // Espetinhos.
+  for (const dy of [-6, 6]) {
+    g.lineStyle(2, 0xc9a77a, 1).lineBetween(x - r * 0.95, top + dy, x + r * 0.95, top + dy);
+    for (const k of [-14, -4, 6, 16]) g.fillStyle(0x8a3a24, 1).fillRoundedRect(x + k - 4, top + dy - 4, 8, 8, 2);
+  }
+  // Fumaça subindo (animada).
+  for (let i = 0; i < 4; i++) {
+    const puff = scene.add.circle(x, top - 10, 9, 0xf3ece8, 0.45).setDepth(DEPTH.fenceFront - 10);
+    scene.tweens.add({
+      targets: puff,
+      y: top - 110,
+      x: x + 18,
+      scale: { from: 0.6, to: 2.2 },
+      alpha: { from: 0.5, to: 0 },
+      duration: 2600,
+      delay: i * 650,
+      repeat: -1,
+    });
+  }
+}
+
+/** Freezer horizontal de bar: branco, faixa vermelha e tampa de vidro. */
+function drawFreezer(scene: Phaser.Scene, g: G, x: number, y: number, w: number, h: number): void {
   g.setDepth(y + h);
-  shadow(g, x + w / 2, y + h - 4, w * 1.15, h * 0.9);
-  const H = 30;
-  drawCrate(g, x, y, w, h, H, PAL.crateYellow, PAL.crateYellowDark);
-  drawCrate(g, x + 10, y + 6, w - 22, h - 18, H * 2, PAL.crateGreen, PAL.crateGreenDark);
+  shadow(g, x + w / 2, y + h - 2, w * 1.15, h * 0.9);
+  const H = 40;
+  g.fillStyle(0xd9d4d6, 1).fillRoundedRect(x, y + h - H, w, H, 6);
+  g.fillStyle(0xd8443c, 1).fillRect(x, y + h - H + 10, w, 9);
+  g.fillStyle(0x4a3a40, 1).fillRect(x + w / 2 - 12, y + h - H + 26, 24, 4);
+  g.fillStyle(0xf7f5f5, 1).fillRoundedRect(x, y - H, w, h, 6);
+  g.fillStyle(0x9fd3e8, 0.85).fillRoundedRect(x + 8, y - H + 6, w - 16, h - 12, 4);
+  // Latinhas e garrafas lá dentro.
+  for (let i = 0; i < 6; i++) {
+    const cx = x + 18 + i * ((w - 36) / 5);
+    g.fillStyle(i % 2 ? 0xd8443c : 0x3dbf7a, 1).fillCircle(cx, y - H + h / 2 - 4, 6);
+    g.fillStyle(0xc9c3c8, 1).fillCircle(cx, y - H + h / 2 - 5, 3);
+  }
+  g.fillStyle(0xffffff, 0.45).fillRect(x + 12, y - H + 8, w * 0.35, 4);
+  scene.add
+    .text(x + w / 2, y + h - H + 14, 'GELADA', { fontFamily: FONT, fontSize: '11px', fontStyle: '700', color: '#fff4e6' })
+    .setOrigin(0.5)
+    .setDepth(y + h + 0.5);
+}
+
+/** Isopor com gelo e latinhas. */
+function drawCooler(g: G, x: number, y: number, w: number, h: number): void {
+  g.setDepth(y + h);
+  shadow(g, x + w / 2, y + h - 2, w * 1.1, h * 0.85);
+  const H = 32;
+  g.fillStyle(0xe4e1dc, 1).fillRoundedRect(x, y + h - H, w, H, 5);
+  g.fillStyle(0xd0ccc5, 1).fillRect(x + 6, y + h - H + 8, w - 12, 3);
+  g.fillStyle(0xfafaf7, 1).fillRoundedRect(x, y - H, w, h, 5);
+  g.fillStyle(0xbfe4f0, 1).fillRoundedRect(x + 6, y - H + 6, w - 12, h - 12, 4);
+  for (let i = 0; i < 9; i++) g.fillStyle(0xffffff, 0.8).fillRect(x + 10 + (i % 3) * 26 + (i * 7) % 9, y - H + 10 + Math.floor(i / 3) * 14, 10, 8);
+  for (const [cx, cy, c] of [
+    [x + 28, y - H + h / 2, 0xd8443c],
+    [x + 52, y - H + h / 2 + 6, 0xf6c514],
+    [x + 70, y - H + h / 2 - 6, 0x3b9be8],
+  ] as const) {
+    g.fillStyle(c, 1).fillCircle(cx, cy, 7);
+    g.fillStyle(0xc9c3c8, 1).fillCircle(cx, cy - 1, 3.5);
+  }
+  // Tampa encostada de lado.
+  g.fillStyle(0xf2efe9, 1).fillRoundedRect(x + w - 10, y - H - 6, 14, h + 10, 4);
 }
 
 function drawCrate(g: G, x: number, y: number, w: number, h: number, H: number, color: number, dark: number): void {

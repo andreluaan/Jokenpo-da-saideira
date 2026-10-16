@@ -51,4 +51,6 @@ export const DENY_TEXT: Record<DenyReason, string> = {
   limit: 'Limite de trocas',
   phase: 'Aguarde',
   cooldown: 'Investida recarregando',
+  full: 'Vida cheia',
+  empty: 'Garçom ainda não trouxe',
 };

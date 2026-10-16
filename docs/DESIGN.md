@@ -153,3 +153,16 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 | **2. Multiplayer real** | Servidor Node + Socket.IO, salas por código, lobby com pronto, 2–4 jogadores reais, sincronização, interpolação, desconexão/reconexão, bots opcionais. |
 | **3. Testes e balanceamento** | Simulações em massa bot × bot, métricas (estratégia × execução), ajustes de config, testes de latência entre computadores. |
 | **4. Acabamento e publicação** | Arte, áudio, menus, acessibilidade, build de produção, hospedagem. |
+
+## 7. Cerveja na mesa (v0.4)
+
+- A **mesa amarela** do centro (`prop: 'beerTable'`) tem uma cerveja. Perto dela (borda + raio + [36 px]), sem símbolo em mãos, sem atordoamento e com vida abaixo do máximo, o jogador aperta **E**.
+- Fica **parado bebendo [2,2 s]**, sem poder atacar nem investir. Ao terminar: **+[1] ❤** (até o máximo).
+- **Levar dano enquanto bebe derrama a cerveja** (sem cura). Durante a graça não derrama.
+- Só uma cerveja por vez: quem pega reserva. Depois de bebida ou derramada, o garçom traz outra em **[25 s]**.
+- Visível para todos: quem está bebendo (`drinkingUntil`) e quando a cerveja volta (`beers[].readyAt`).
+
+## 8. Jo-Ken-Pô (apresentação do QTE)
+
+- Os punhos de quem segura símbolo batem a cada [400 ms] e descem exatamente em T − 800 (**JO**), T − 400 (**KEN**) e T (**PÔ!**). Apertar Espaço no **PÔ!** = Perfeito.
+- A pose é idêntica para os três símbolos. Só na resolução os dois viram de frente e mostram o sinal com a mão. O perdedor toma uma **rasteira** (visual; o dano/empurrão continuam vindo da simulação).

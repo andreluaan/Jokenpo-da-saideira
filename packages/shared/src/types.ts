@@ -18,7 +18,9 @@ export type PlayerInput =
   | { type: 'commit'; at?: number }
   | { type: 'cancel' }
   | { type: 'feint' }
-  | { type: 'dash'; x?: number; y?: number };
+  | { type: 'dash'; x?: number; y?: number }
+  /** Beber a cerveja da mesa mais próxima (recupera vida). */
+  | { type: 'drink' };
 
 // ---------- Visão filtrada enviada a cada jogador ----------
 
@@ -50,6 +52,15 @@ export interface PlayerView {
   dashReadyAt: number;
   /** Só preenchido na visão do próprio jogador. */
   swapsLeft: number | null;
+  /** > agora enquanto está bebendo (público). */
+  drinkingUntil: number;
+}
+
+export interface BeerView {
+  x: number;
+  y: number;
+  /** Instante em que a cerveja estará na mesa (≤ now = disponível). */
+  readyAt: number;
 }
 
 export interface Snapshot {
@@ -58,12 +69,13 @@ export interface Snapshot {
   phaseEndsAt: number;
   winnerId: string | null;
   players: PlayerView[];
+  beers: BeerView[];
 }
 
 // ---------- Eventos (feedback; todos públicos) ----------
 
 export type SignalKind = 'swap' | 'lock' | 'cancel';
-export type DenyReason = 'busy' | 'range' | 'target' | 'focus' | 'locked' | 'limit' | 'phase' | 'cooldown';
+export type DenyReason = 'busy' | 'range' | 'target' | 'focus' | 'locked' | 'limit' | 'phase' | 'cooldown' | 'full' | 'empty';
 export type WhiffReason = 'range' | 'blocked' | 'gone';
 export type ExchangeKind =
   | 'defenseless'
@@ -101,4 +113,5 @@ export type GameEvent =
   | { type: 'whiff'; at: number; playerIds: string[]; targetId: string; reason: WhiffReason }
   | ExchangeEvent
   | { type: 'eliminated'; at: number; playerId: string; byId: string | null }
-  | { type: 'phase'; at: number; phase: Phase; winnerId: string | null };
+  | { type: 'phase'; at: number; phase: Phase; winnerId: string | null }
+  | { type: 'drink'; at: number; playerId: string; stage: 'start' | 'done' | 'spilled'; hp: number };

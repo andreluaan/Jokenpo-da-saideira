@@ -15,6 +15,20 @@ export interface DrawOpts {
   moving: boolean;
   /** Molas do ragdoll (balanço de cabeça e braços). */
   rig?: RigPose;
+  /** Progresso (0–1) bebendo cerveja; ausente = não está bebendo. */
+  drink?: number;
+  /** Altura (0–1) do punho no "Jo-Ken-Pô" (bate no ritmo do QTE). */
+  pump?: number;
+  /** Revelação: lado (-1/1) do braço estendido com o sinal; 0 = nenhum. */
+  signDir?: number;
+  /** Rasteira: extensão (0–1) da perna e lado (-1/1). */
+  kick?: number;
+  kickDir?: number;
+}
+
+/** Ponto local (pés na origem) onde fica a mão estendida na revelação. Multiplique pela escala do corpo. */
+export function signAnchor(R: number, dir: number): { x: number; y: number } {
+  return { x: dir * R * 1.45, y: -R * 0.95 };
 }
 
 interface Frame {
@@ -40,6 +54,12 @@ interface Frame {
   rX: number;
   rY: number;
   ko: boolean;
+  drink: number;
+  pump: number;
+  signDir: number;
+  kick: number;
+  kickDir: number;
+  character: PlayerView['character'];
 }
 
 const INK = 0x1e1418;
@@ -86,7 +106,22 @@ export function drawCharacter(g: G, p: PlayerView, o: DrawOpts): void {
     rX: rig?.rX ?? 0,
     rY: rig?.rY ?? 0,
     ko,
+    drink: ko || o.drink === undefined ? -1 : o.drink,
+    pump: o.pump ?? 0,
+    signDir: ko ? 0 : (o.signDir ?? 0),
+    kick: ko ? 0 : (o.kick ?? 0),
+    kickDir: o.kickDir ?? 1,
+    character: p.character,
   };
+  if (f.drink >= 0) {
+    // Cabeça para trás no gole.
+    f.hy -= 3 + Math.sin(o.now / 120) * 1.5;
+    f.idle = false;
+  }
+  if (f.signDir) {
+    f.hold = false;
+    f.idle = false;
+  }
 
   switch (p.character) {
     case 'fera':
@@ -102,6 +137,8 @@ export function drawCharacter(g: G, p: PlayerView, o: DrawOpts): void {
       drawSonolento(g, f);
       break;
   }
+
+  if (f.drink >= 0) drawDrinking(g, f);
 
   if (ko) {
     // Olhos em X por cima do rosto.
@@ -152,6 +189,15 @@ function legs(g: G, f: Frame, color: number, footColor: number, footH = 0.22): v
     [-1, swing],
     [1, -swing],
   ] as const) {
+    if (f.kick > 0 && side === f.kickDir) {
+      // Perna esticada varrendo o chão (rasteira).
+      const hipX = x + side * R * 0.3;
+      const footX = hipX + side * R * 1.5 * f.kick;
+      const footY = top + h * (1 - 0.15 * f.kick);
+      g.lineStyle(R * 0.38, color, a).lineBetween(hipX, top + 4, footX, footY - R * 0.1);
+      g.fillStyle(footColor, a).fillEllipse(footX + side * 3, footY - 2, R * 0.55, R * 0.32);
+      continue;
+    }
     const lx = x + side * R * 0.3 - R * 0.19;
     g.fillStyle(color, a).fillRoundedRect(lx, top + s * 0.4, R * 0.38, h, 5);
     g.fillStyle(footColor, a).fillRoundedRect(lx - 1, top + h - R * footH + s * 0.4, R * 0.4, R * footH + 3, 4);
@@ -168,10 +214,19 @@ function torso(g: G, f: Frame, color: number, w = 1.5, h = 1.3): void {
 /** Braços laterais (andando/parado) ou mãos juntas na frente (segurando símbolo). */
 function arms(g: G, f: Frame, sleeve: number, hand: number, forearm?: (hx: number, hy: number) => void): { rx: number; ry: number } {
   const { x, by, R, a, hold, swing } = f;
+  if (f.signDir) {
+    // Revelação: um braço estendido na direção do adversário (a mão/sinal é desenhada pela cena).
+    const side = f.signDir;
+    const anchor = signAnchor(R, side);
+    g.fillStyle(sleeve, a).fillCircle(x - R * 0.62, by - R * 0.05, R * 0.3).fillCircle(x + R * 0.62, by - R * 0.05, R * 0.3);
+    g.lineStyle(R * 0.32, sleeve, a).lineBetween(x + side * R * 0.62, by - R * 0.1, anchor.x - side * R * 0.25, anchor.y);
+    g.fillStyle(hand, a).fillCircle(x - side * R * 0.8 + f.lX, by + R * 0.05 + f.lY, R * 0.23);
+    return { rx: anchor.x, ry: anchor.y };
+  }
   if (hold) {
-    // Punhos juntos e fechados: tremem com o rig, mas nunca mudam conforme o símbolo.
+    // Punhos juntos e fechados: batem no ritmo do Jo-Ken-Pô, mas nunca mudam conforme o símbolo.
     const jx = (f.lX + f.rX) * 0.25;
-    const jy = (f.lY + f.rY) * 0.25;
+    const jy = (f.lY + f.rY) * 0.25 - f.pump * R * 0.55;
     g.fillStyle(sleeve, a).fillCircle(x - R * 0.62, by - R * 0.05, R * 0.3).fillCircle(x + R * 0.62, by - R * 0.05, R * 0.3);
     g.fillStyle(hand, a).fillCircle(x - R * 0.28 + jx, by + R * 0.18 + jy, R * 0.25).fillCircle(x + R * 0.28 + jx, by + R * 0.18 + jy, R * 0.25);
     g.fillStyle(shade(hand, 0.8), a).fillCircle(x + jx, by + R * 0.22 + jy, R * 0.22);
@@ -182,6 +237,8 @@ function arms(g: G, f: Frame, sleeve: number, hand: number, forearm?: (hx: numbe
     [x + R * 0.85 + f.rX, by + R * 0.05 + swing * 0.5 + f.rY],
   ];
   g.fillStyle(sleeve, a).fillCircle(x - R * 0.68, by - R * 0.12, R * 0.3).fillCircle(x + R * 0.68, by - R * 0.12, R * 0.3);
+  const right = { rx: pts[1][0], ry: pts[1][1] };
+  if (f.drink >= 0) pts.pop(); // a mão direita está segurando a bebida (desenhada depois da cabeça)
   for (const [hx, hy] of pts) {
     // "Braço" ligando o ombro à mão solta (dá a sensação de membro mole).
     const sx = hx < x ? x - R * 0.68 : x + R * 0.68;
@@ -189,7 +246,7 @@ function arms(g: G, f: Frame, sleeve: number, hand: number, forearm?: (hx: numbe
     forearm?.(hx, hy);
     g.fillStyle(hand, a).fillCircle(hx, hy, R * 0.23);
   }
-  return { rx: pts[1][0], ry: pts[1][1] };
+  return right;
 }
 
 function head(g: G, f: Frame, skin: number, scale = 1): void {
@@ -225,10 +282,6 @@ function drawFera(g: G, f: Frame): void {
     g.lineBetween(hx - f.R * 0.17, hy - f.R * 0.16, hx + f.R * 0.17, hy - f.R * 0.08);
   };
   const h = arms(g, f, suit, skin, bandage);
-  if (f.hold) {
-    bandage(f.x - f.R * 0.28, f.by + f.R * 0.18);
-    bandage(f.x + f.R * 0.28, f.by + f.R * 0.18);
-  }
   if (!f.hold) bottle(g, h.rx, h.ry, f);
   head(g, f, skin);
   const { hx, hy, hr, a } = f;
@@ -421,6 +474,51 @@ function drawSonolento(g: G, f: Frame): void {
       g.lineBetween(zx, zy, zx + 7, zy).lineBetween(zx + 7, zy, zx, zy + 7).lineBetween(zx, zy + 7, zx + 7, zy + 7);
     }
   }
+}
+
+// ------------------------------------------------------------------ bebendo
+
+const SLEEVE: Record<PlayerView['character'], number> = { fera: 0x3f9a3a, principe: 0x2e5fd1, panca: 0xfafafa, sonolento: 0x2c3328 };
+const HAND: Record<PlayerView['character'], number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
+
+/** Braço levando a garrafa (ou a caneca do Seu Pança) à boca, com bolhas do gole. */
+function drawDrinking(g: G, f: Frame): void {
+  const { R, a, hx, hy, hr, now } = f;
+  const sip = 0.5 + Math.sin(now / 140) * 0.5;
+  const mx = hx + hr * 0.35;
+  const my = hy + hr * 0.45;
+  const handX = mx + R * 0.55;
+  const handY = my + R * 0.25 - sip * 2;
+  g.lineStyle(R * 0.3, SLEEVE[f.character], a).lineBetween(f.x + R * 0.68, f.by - R * 0.12, handX, handY);
+  if (f.character === 'panca') {
+    // Caneca de chope inclinada.
+    g.fillStyle(0xffffff, 0.55 * a).fillPoints(rot(handX - 4, handY - 6, R * 0.5, R * 0.62, -0.8), true);
+    g.fillStyle(PAL.crateYellow, a).fillPoints(rot(handX - 4, handY - 6, R * 0.42, R * 0.5, -0.8), true);
+    g.fillStyle(0xffffff, a).fillCircle(mx + 3, my - 2, R * 0.16);
+  } else {
+    // Long neck marrom, gargalo na boca.
+    g.fillStyle(0x6b3a1f, a).fillPoints(rot(handX - 2, handY - 4, R * 0.3, R * 0.75, -1.0), true);
+    g.lineStyle(R * 0.13, 0x6b3a1f, a).lineBetween(handX - 6, handY - 10, mx + 2, my);
+    g.fillStyle(0xe8d9a0, a).fillRect(handX - 8, handY - 8, 7, 4);
+  }
+  g.fillStyle(HAND[f.character], a).fillCircle(handX, handY, R * 0.23);
+  // Bolhas do gole.
+  for (let i = 0; i < 3; i++) {
+    const t = ((now / 500 + i / 3) % 1 + 1) % 1;
+    g.fillStyle(0xffffff, (1 - t) * 0.8 * a).fillCircle(mx + 8 + i * 4, my - 6 - t * 26, 2.5 + t * 2);
+  }
+}
+
+/** Retângulo girado em torno de (cx, cy). */
+function rot(cx: number, cy: number, w: number, h: number, ang: number): { x: number; y: number }[] {
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  return [
+    [-w / 2, -h / 2],
+    [w / 2, -h / 2],
+    [w / 2, h / 2],
+    [-w / 2, h / 2],
+  ].map(([x, y]) => ({ x: cx + x * c - y * s, y: cy + x * s + y * c }));
 }
 
 // ------------------------------------------------------------------ mira

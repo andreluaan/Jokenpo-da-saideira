@@ -1,6 +1,6 @@
 # PPT da Saideira — Direção de Arte
 
-> v0.3 · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
+> v0.4 · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
 
 ## 1. Pilares
 
@@ -59,14 +59,15 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 
 | Elemento | Onde | Sólido? | Requisito de leitura |
 |---|---|---|---|
-| Mesa redonda de bar | Centro | Sim (círculo r 62) | Tampo de madeira com copos e garrafa; é o "pilar" central |
-| Pilhas de engradados | 4 diagonais | Sim (retângulo 96×72) | Amarelo embaixo e verde em cima, tampinhas visíveis |
-| Barris de chope | 4 pontos cardeais | Sim (círculo r 34) | Madeira com aros escuros, torneira no topo |
-| Cerca + varal de luzes | Borda | Limite da arena | A metade de trás fica atrás dos jogadores e a da frente na frente (falso 3D) |
-| Bar do Zé | Canto sup. esq. | Decoração | Telhado de zinco vermelho, placa amarela |
-| Campo seco, árvores de outono | Canto sup. dir. e laterais | Decoração | Copas em 3 tons de laranja/vermelho |
-| Mesas e cadeiras de plástico, guarda-sol | Canto inf. dir. | Decoração | Vermelho plástico clássico de boteco |
-| Horta e lousa "SAIDEIRA" | Canto inf. esq. | Decoração | Lousa com "quem perde paga" |
+| **Mesa de plástico amarela** com cadeiras, marca fictícia **"GELADA"** | Centro | Sim (círculo r 70) | É a mesa da cerveja: long neck brilhando quando há cerveja, relógio âmbar enquanto o garçom não traz |
+| Engradados de garrafa (amarelo + verde) | 2 diagonais | Sim | Tampinhas visíveis |
+| Isopor com gelo e latinhas | 2 diagonais | Sim | Branco, tampa encostada |
+| Freezer horizontal "GELADA" | Topo e base | Sim | Branco com faixa vermelha, vidro com latas |
+| Churrasqueira de tambor com espetinhos | Laterais | Sim (círculo r 34) | Brasa laranja e fumaça subindo (animada) |
+| Cerca + varal de luzes | Borda | Limite da arena | Metade de trás atrás dos jogadores, metade da frente na frente |
+| Bar do Zé, campo seco, árvores, mesas vermelhas, horta, lousa | Fora da arena | Decoração | — |
+
+> Marcas reais (Skol, Heineken etc.) **não** são usadas: a mesa amarela clássica de boteco leva a marca fictícia "GELADA".
 
 **Profundidade:** objetos de cenário e jogadores são ordenados pelo `y` da base. Os obstáculos são desenhados com extrusão vertical: tampo ou topo mais claro, face da frente mais escura. A sombra fica sempre deslocada para baixo e para a direita.
 
@@ -113,6 +114,15 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 | Eliminado | Personagem deitado com olhos em X, texto grande |
 
 **Proibido animar:** formato da mão ao preparar, cor do símbolo antes da revelação, som diferente por símbolo antes do impacto, qualquer diferença visual entre troca e finta.
+
+### 8.1 Jo-Ken-Pô e rasteira
+- Na preparação, os punhos fechados batem no ritmo e aparece **JO… KEN… PÔ!** sobre você. O PÔ! é o instante perfeito do QTE.
+- Na revelação, os dois viram de frente e estendem o braço com o sinal desenhado (punho, palma ou "V"), na cor da mão de cada personagem (faixa do Fera, luva do Príncipe).
+- O vencedor varre a perna; o perdedor tomba (molas do ragdoll), levanta cambaleando, solta poeira e aparece "RASTEIRA!". No empate, os dois se esbarram.
+
+### 8.2 Bebendo
+- O braço leva a long neck (ou a caneca do Seu Pança) à boca, a cabeça vai para trás e sobem bolhas. No fim aparecem **+1 ❤** e **"hic!"**, e o personagem fica 2,2× mais cambaleante por 6 s.
+- Se apanhar bebendo: **"Derramou!"**.
 
 ## 9. Áudio (direção)
 

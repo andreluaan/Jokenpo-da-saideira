@@ -9,6 +9,7 @@ export interface HudActions {
   feint(): void;
   cancel(): void;
   dash(): void;
+  drink(): void;
 }
 
 /** Interface DOM ao redor da arena: cartões de jogadores, log, barra de ações e dicas. */
@@ -43,7 +44,7 @@ export class Hud {
     this.cleanups.forEach((f) => f());
   }
 
-  update(snap: Snapshot, now: number): void {
+  update(snap: Snapshot, now: number, canDrink = false): void {
     // Cartões só são reconstruídos quando algo visível muda.
     const key = snap.players.map((p) => `${p.id}:${p.hp}:${p.alive}:${Math.round(p.focus / 5)}`).join('|');
     if (key !== this.cardsKey) {
@@ -71,7 +72,11 @@ export class Hud {
       const act = b.dataset.act;
       b.disabled =
         !playing ||
-        (act === 'dash' ? me.holding || now < me.dashReadyAt : !me.holding || me.locked);
+        (act === 'drink'
+          ? !canDrink
+          : act === 'dash'
+            ? me.holding || now < me.dashReadyAt || me.drinkingUntil > now
+            : !me.holding || me.locked);
     }
 
     const attackers = snap.players.filter((p) => p.alive && p.targetId === this.meId);
@@ -79,14 +84,18 @@ export class Hud {
     let warn = false;
     if (!me.alive) text = 'Você foi eliminado. Assista ao fim da partida.';
     else if (snap.phase !== 'playing') text = '';
-    else if (me.stunned) text = 'Atordoado!';
+    else if (me.drinkingUntil > now) {
+      warn = attackers.length > 0;
+      text = 'Glub, glub… bebendo! Se levar um golpe agora, derrama.';
+    } else if (me.stunned) text = 'Atordoado!';
     else if (me.holding && !me.locked) {
       text = `Segurando ${me.symbol ? labelOf(me.symbol) : ''} — troque (1/2/3), finte (F), cancele (X) ou dê a Última Palavra (Espaço). Trocas restantes: ${me.swapsLeft}`;
     } else if (me.holding) text = 'Símbolo travado. Aguarde o impacto.';
     else if (attackers.length) {
       warn = true;
       text = `${attackers.map((a) => a.name).join(' e ')} está atacando você! Responda (1/2/3), afaste-se ou use a investida (Shift).`;
-    } else if (me.busy) text = 'Recuperando…';
+    } else if (canDrink) text = 'Tem uma gelada na mesa: aperte E para beber e recuperar 1 ❤ (fica parado e vulnerável).';
+    else if (me.busy) text = 'Recuperando…';
     else text = 'Escolha um alvo (clique/Tab) e um símbolo (1/2/3) para atacar.';
     this.hint.textContent = text;
     this.hint.classList.toggle('warn', warn);

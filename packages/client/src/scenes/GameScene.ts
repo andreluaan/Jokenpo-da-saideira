@@ -6,6 +6,7 @@ import { DENY_TEXT, WHIFF_TEXT, describeExchange } from '../ui/describe';
 import { DEPTH, FONT, buildArena } from '../art/arena';
 import { drawAim, drawCharacter, drawGroundMarker } from '../art/character';
 import { WobbleRig } from '../art/rig';
+import { DuelFx } from './duelFx';
 
 export interface GameSceneData {
   conn: GameConnection;
@@ -48,6 +49,10 @@ export class GameScene extends Phaser.Scene {
   private ended = false;
   private lastPhase = '';
   private lastFrame = 0;
+  private duel!: DuelFx;
+  private beerGfx!: Phaser.GameObjects.Graphics;
+  private beerHint!: Phaser.GameObjects.Text;
+  private canDrink = false;
 
   constructor() {
     super('game');
@@ -85,8 +90,19 @@ export class GameScene extends Phaser.Scene {
       .setDepth(DEPTH.popup)
       .setStroke('#2b1d22', 6);
 
+    this.duel = new DuelFx(this, cfg.player.radius, BODY_SCALE, (id) => this.labels.get(id)?.rig);
+    const table = cfg.obstacles.find((o) => o.prop === 'beerTable');
+    this.beerGfx = this.add.graphics().setDepth(table ? table.y + (table.kind === 'circle' ? table.r : table.h) * 0.35 + 1 : 0);
+    this.beerHint = this.add
+      .text(0, 0, '[E] Beber', { fontFamily: FONT, fontSize: '22px', fontStyle: '700', color: '#ffc145' })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.popup)
+      .setStroke('#2b1d22', 6)
+      .setVisible(false);
+
     this.setupInput();
     this.hud = new Hud(this.conn.localPlayerId, {
+      drink: () => this.conn.send({ type: 'drink' }),
       symbol: (s) => this.pressSymbol(s),
       commit: () => this.conn.send({ type: 'commit' }),
       feint: () => this.conn.send({ type: 'feint' }),
@@ -116,6 +132,7 @@ export class GameScene extends Phaser.Scene {
     kb.on('keydown-X', () => this.conn.send({ type: 'cancel' }));
     kb.on('keydown-SHIFT', () => this.pressDash());
     kb.on('keydown-TAB', () => this.cycleTarget());
+    kb.on('keydown-E', () => this.conn.send({ type: 'drink' }));
 
     this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -206,14 +223,12 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'exchange': {
-          this.ragdollExchange(e);
+          this.duel.onExchange(e);
           const { headline, line } = describeExchange(e, this.nameOf);
           const involved = e.attackerId === meId || e.defenderId === meId;
           const tone = !involved ? '' : e.damagedId === meId ? 'me-loss' : e.winnerId === meId ? 'me-win' : '';
           this.hud.addLog(line, tone);
-          const icons = `${RPS_ICON[e.attackerSymbol]}  ×  ${e.defenderSymbol ? RPS_ICON[e.defenderSymbol] : '∅'}`;
-          this.floatText(e.x, e.y - 40, icons, '#ffffff', 34, 1300);
-          this.floatText(e.x, e.y + 2, headline, e.damagedId ? '#ffb703' : '#c7cddb', 18, 1300);
+          this.floatText(e.x, e.y - this.conn.config.player.radius * 5.2, headline, e.damagedId ? '#ffc145' : '#fff4e6', 20, 1500);
           const a = this.posOf(e.attackerId);
           const d = this.posOf(e.defenderId);
           if (a) this.floatText(a.x, a.y + 42, GRADE_LABEL[e.attackerGrade], GRADE_COLOR[e.attackerGrade], 14);
@@ -265,34 +280,26 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'attackStart':
           break;
+        case 'drink': {
+          const p = this.posOf(e.playerId);
+          const R = this.conn.config.player.radius;
+          if (e.stage === 'done') {
+            if (p) {
+              this.floatText(p.x, p.y - R * 4.5, '+1 ❤', '#5ad19a', 26, 1300);
+              this.time.delayedCall(450, () => {
+                const q = this.posOf(e.playerId);
+                if (q) this.floatText(q.x + 30, q.y - R * 5.5, 'hic!', '#fff4e6', 20, 900);
+              });
+            }
+            this.labels.get(e.playerId)?.rig.drunk(this.conn.now(), 6000);
+            this.hud.addLog(`${this.nameOf(e.playerId)} tomou uma gelada e recuperou 1 ❤.`, e.playerId === meId ? 'me-win' : '');
+          } else if (e.stage === 'spilled') {
+            if (p) this.floatText(p.x, p.y - R * 4.5, 'Derramou!', '#ff5a5f', 22, 1100);
+            this.hud.addLog(`${this.nameOf(e.playerId)} levou um golpe e derramou a cerveja.`, e.playerId === meId ? 'me-loss' : '');
+          }
+          break;
+        }
       }
-    }
-  }
-
-  /** Reação física do ragdoll a cada troca (só visual). */
-  private ragdollExchange(e: Extract<GameEvent, { type: 'exchange' }>): void {
-    const a = this.posOf(e.attackerId);
-    const d = this.posOf(e.defenderId);
-    if (!a || !d) return;
-    const rigOf = (id: string) => this.labels.get(id)?.rig;
-    const pos = (id: string) => (id === e.attackerId ? a : d);
-    const other = (id: string) => (id === e.attackerId ? d : a);
-    if (e.damagedId) {
-      const v = pos(e.damagedId);
-      const w = other(e.damagedId);
-      rigOf(e.damagedId)?.hit(w.x, w.y, v.x, v.y, 1.1);
-      if (e.winnerId) rigOf(e.winnerId)?.hit(v.x, v.y, w.x, w.y, 0.25);
-    } else if (e.protectedId) {
-      const v = pos(e.protectedId);
-      const w = other(e.protectedId);
-      rigOf(e.protectedId)?.hit(w.x, w.y, v.x, v.y, 0.45);
-    } else if (e.kind === 'clank' || e.kind === 'wasted' || e.kind === 'tie-stagger') {
-      rigOf(e.attackerId)?.hit(d.x, d.y, a.x, a.y, 0.5);
-      rigOf(e.defenderId)?.hit(a.x, a.y, d.x, d.y, 0.5);
-      if (e.staggeredId) rigOf(e.staggeredId)?.hit(other(e.staggeredId).x, other(e.staggeredId).y, pos(e.staggeredId).x, pos(e.staggeredId).y, 0.7);
-    } else {
-      // Errou o golpe: o atacante perde o equilíbrio.
-      rigOf(e.attackerId)?.hit(a.x - (d.x - a.x), a.y, a.x, a.y, 0.6);
     }
   }
 
@@ -340,7 +347,7 @@ export class GameScene extends Phaser.Scene {
 
     if (me) this.currentTarget(snap, me);
     this.draw(snap, now, me);
-    this.hud.update(snap, now);
+    this.hud.update(snap, now, this.canDrink);
   }
 
   private draw(snap: Snapshot, now: number, me: PlayerView | undefined): void {
@@ -389,9 +396,24 @@ export class GameScene extends Phaser.Scene {
       lab.walk += step * 0.11;
       if (step > 0.4 && !p.stunned) lab.movingUntil = now + 90;
       const inGrace = now < p.graceUntil;
+      const pose = this.duel.poseFor(p.id, snap.players);
+      const view = pose ? { ...p, faceX: pose.faceX, faceY: pose.faceY } : p;
       lab.rig.update(p, frameDt, now);
-      drawGroundMarker(ground, p, R, p.id === me?.id, inGrace, now);
-      drawCharacter(lab.body, p, { R, now, isMe: p.id === me?.id, inGrace, walk: lab.walk, moving: now < lab.movingUntil, rig: lab.rig });
+      drawGroundMarker(ground, view, R, p.id === me?.id, inGrace, now);
+      drawCharacter(lab.body, view, {
+        R,
+        now,
+        isMe: p.id === me?.id,
+        inGrace,
+        walk: lab.walk,
+        moving: now < lab.movingUntil,
+        rig: lab.rig,
+        pump: this.duel.pumpFor(p, snap, now),
+        drink: p.drinkingUntil > now ? 1 - (p.drinkingUntil - now) / cfg.beer.drinkMs : undefined,
+        signDir: pose?.signDir,
+        kick: pose?.kick,
+        kickDir: pose?.kickDir,
+      });
       // O Graphics inteiro gira e amassa em torno dos pés: é aqui que o "bêbado" ganha vida.
       const sq = Math.max(-0.2, Math.min(0.3, lab.rig.squash * 0.25));
       lab.body
@@ -420,7 +442,46 @@ export class GameScene extends Phaser.Scene {
       lab.hand.setText(hand).setPosition(p.x + Math.sin(lab.rig.tilt) * R * 3.5, p.y - R * 4.1);
     }
 
+    this.duel.draw(g, snap.players, now);
+    this.duel.chant(snap, this.conn.localPlayerId, now);
+    this.drawBeer(snap, now, me);
     this.drawQte(snap, now, me);
+  }
+
+  /** Long neck em cima da mesa quando o garçom já trouxe; senão, um relógio enchendo. */
+  private drawBeer(snap: Snapshot, now: number, me: PlayerView | undefined): void {
+    const g = this.beerGfx;
+    const cfg = this.conn.config;
+    g.clear();
+    this.canDrink = false;
+    this.beerHint.setVisible(false);
+    for (const b of snap.beers) {
+      const table = cfg.obstacles.find((o) => o.prop === 'beerTable' && o.x === b.x && o.y === b.y);
+      const r = table?.kind === 'circle' ? table.r : 60;
+      const bx = b.x + 14;
+      const by = b.y - 46;
+      if (b.readyAt <= now) {
+        const shine = 0.5 + Math.sin(now / 300) * 0.5;
+        g.fillStyle(0xffc145, 0.25 + shine * 0.2).fillCircle(bx, by - 10, 26);
+        g.fillStyle(0x6b3a1f, 1).fillRoundedRect(bx - 7, by - 20, 14, 30, 5);
+        g.fillStyle(0x6b3a1f, 1).fillRect(bx - 3, by - 34, 6, 16);
+        g.fillStyle(0xe8d9a0, 1).fillRect(bx - 4, by - 37, 8, 4);
+        g.fillStyle(0xfff4e6, 1).fillRect(bx - 7, by - 10, 14, 9);
+        g.fillStyle(0xffffff, 0.5).fillRect(bx - 4, by - 18, 3, 22);
+        if (me?.alive && !me.holding && me.hp < me.maxHp && me.drinkingUntil <= now) {
+          const d = Math.hypot(me.x - b.x, me.y - b.y);
+          if (d <= r + cfg.player.radius + cfg.beer.reach) {
+            this.canDrink = true;
+            this.beerHint.setVisible(true).setPosition(b.x, b.y - 110 - Math.abs(Math.sin(now / 250)) * 6);
+          }
+        }
+      } else if (Number.isFinite(b.readyAt)) {
+        const frac = 1 - (b.readyAt - now) / cfg.beer.respawnMs;
+        g.fillStyle(0x2b1d22, 0.6).fillCircle(bx, by - 6, 13);
+        g.lineStyle(4, 0xffc145, 0.9).beginPath();
+        g.arc(bx, by - 6, 11, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, frac)), false).strokePath();
+      }
+    }
   }
 
   /** Anel do QTE: fecha no instante do impacto. Cinza = confirmar cedo, amarelo = janela, verde = perfeito. */

@@ -82,6 +82,8 @@ async function startMatch(settings: Settings): Promise<void> {
   });
   game.scene.add('game', GameScene, true, data);
   conn.start();
+  // Só em desenvolvimento: acesso à partida pelo console, para testes manuais.
+  if (import.meta.env.DEV) Object.assign(window, { __ppt: conn, __pptGame: game });
 }
 
 function showEnd(winnerId: string | null): void {

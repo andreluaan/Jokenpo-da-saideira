@@ -8,7 +8,8 @@ export interface Rect {
 }
 
 /** Elementos de cenário dentro da arena; todos bloqueiam movimento e linha de visão. */
-export type PropKind = 'table' | 'crates' | 'barrel';
+/** `beerTable` é a mesa amarela de boteco: além de obstáculo, é onde se bebe para recuperar vida. */
+export type PropKind = 'beerTable' | 'crates' | 'cooler' | 'freezer' | 'grill';
 
 export type Obstacle = ({ kind: 'rect' } & Rect & { prop: PropKind }) | { kind: 'circle'; x: number; y: number; r: number; prop: PropKind };
 
@@ -93,6 +94,15 @@ export interface GameConfig {
   };
   dash: { distance: number; durationMs: number; cooldownMs: number };
   perfectFocusBonus: number;
+  beer: {
+    /** Tempo parado bebendo (vulnerável: levar dano derrama a cerveja). */
+    drinkMs: number;
+    heal: number;
+    /** O garçom traz outra cerveja depois deste tempo. */
+    respawnMs: number;
+    /** Distância extra, além da borda da mesa, em que dá para alcançar a cerveja. */
+    reach: number;
+  };
   match: { countdownMs: number; durationMs: number };
 }
 
@@ -100,15 +110,16 @@ export const DEFAULT_CONFIG: GameConfig = {
   // Quintal do Bar do Zé: elipse 1520 × 940 (≈ 22% mais área que o retângulo da v0.1).
   arena: { width: 1920, height: 1200, cx: 960, cy: 600, rx: 760, ry: 470 },
   obstacles: [
-    { kind: 'circle', x: 960, y: 600, r: 62, prop: 'table' },
+    // Boteco brasileiro: mesa amarela no centro (é onde se bebe), engradados, isopores, freezers e churrasqueiras de tambor.
+    { kind: 'circle', x: 960, y: 600, r: 70, prop: 'beerTable' },
     { kind: 'rect', x: 640, y: 395, w: 96, h: 72, prop: 'crates' },
-    { kind: 'rect', x: 1184, y: 395, w: 96, h: 72, prop: 'crates' },
-    { kind: 'rect', x: 640, y: 733, w: 96, h: 72, prop: 'crates' },
+    { kind: 'rect', x: 1184, y: 395, w: 96, h: 64, prop: 'cooler' },
+    { kind: 'rect', x: 640, y: 733, w: 96, h: 64, prop: 'cooler' },
     { kind: 'rect', x: 1184, y: 733, w: 96, h: 72, prop: 'crates' },
-    { kind: 'circle', x: 960, y: 290, r: 34, prop: 'barrel' },
-    { kind: 'circle', x: 960, y: 910, r: 34, prop: 'barrel' },
-    { kind: 'circle', x: 520, y: 600, r: 34, prop: 'barrel' },
-    { kind: 'circle', x: 1400, y: 600, r: 34, prop: 'barrel' },
+    { kind: 'rect', x: 900, y: 255, w: 120, h: 62, prop: 'freezer' },
+    { kind: 'rect', x: 900, y: 880, w: 120, h: 62, prop: 'freezer' },
+    { kind: 'circle', x: 520, y: 600, r: 34, prop: 'grill' },
+    { kind: 'circle', x: 1400, y: 600, r: 34, prop: 'grill' },
   ],
   spawns: [
     { x: 440, y: 400 },
@@ -170,6 +181,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   },
   dash: { distance: 150, durationMs: 230, cooldownMs: 2200 },
   perfectFocusBonus: 15,
+  beer: { drinkMs: 2200, heal: 1, respawnMs: 25_000, reach: 36 },
   match: { countdownMs: 3000, durationMs: 240_000 },
 };
 

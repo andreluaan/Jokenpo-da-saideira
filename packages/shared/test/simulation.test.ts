@@ -317,3 +317,64 @@ describe('arena', () => {
     expect(sim.debugPlayer('A').x).toBeLessThanOrEqual(520 - 34 - cfg.player.radius + 0.01);
   });
 });
+
+describe('cerveja na mesa', () => {
+  const nearTable = (sim: GameSimulation, id: string) => sim.debugPlace(id, 960, 480);
+  const B = cfg.beer;
+
+  it('beber perto da mesa recupera vida e consome a cerveja até o garçom trazer outra', () => {
+    const sim = newSim();
+    sim.debugSet('A', { hp: 1 });
+    nearTable(sim, 'A');
+    sim.applyInput('A', { type: 'drink' });
+    expect(sim.snapshotFor('B').players.find((p) => p.id === 'A')!.drinkingUntil).toBeGreaterThan(sim.now);
+    expect(sim.snapshotFor('A').beers[0].readyAt).toBe(Number.POSITIVE_INFINITY);
+    const ev = advanceTo(sim, sim.now + B.drinkMs + 20);
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'drink', playerId: 'A', stage: 'done', hp: 2 }));
+    expect(sim.debugPlayer('A').hp).toBe(1 + B.heal);
+    const readyAt = sim.snapshotFor('A').beers[0].readyAt;
+    expect(readyAt).toBeGreaterThan(sim.now);
+    sim.applyInput('A', { type: 'drink' });
+    expect(sim.debugPlayer('A').drinkingUntil).toBe(0); // mesa vazia
+    advanceTo(sim, readyAt + 1);
+    sim.applyInput('A', { type: 'drink' });
+    expect(sim.debugPlayer('A').drinkingUntil).toBeGreaterThan(sim.now);
+  });
+
+  it('não bebe com vida cheia nem longe da mesa', () => {
+    const sim = newSim();
+    nearTable(sim, 'A');
+    sim.applyInput('A', { type: 'drink' });
+    expect(sim.debugPlayer('A').drinkingUntil).toBe(0);
+    sim.debugSet('B', { hp: 1 });
+    sim.debugPlace('B', 700, 560); // longe da mesa
+    sim.applyInput('B', { type: 'drink' });
+    expect(sim.debugPlayer('B').drinkingUntil).toBe(0);
+  });
+
+  it('bebendo fica parado e não pode atacar', () => {
+    const sim = newSim();
+    sim.debugSet('A', { hp: 2 });
+    nearTable(sim, 'A');
+    sim.applyInput('A', { type: 'drink' });
+    sim.applyInput('A', { type: 'move', x: 1, y: 0 });
+    advanceTo(sim, sim.now + 500);
+    expect(sim.debugPlayer('A').x).toBeCloseTo(960, 0);
+    sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
+    expect(sim.debugPlayer('A').attack).toBeNull();
+  });
+
+  it('levar dano enquanto bebe derrama a cerveja (sem cura)', () => {
+    const sim = newSim();
+    sim.debugSet('B', { hp: 2 });
+    sim.debugPlace('B', 960, 480);
+    sim.debugPlace('A', 960, 380);
+    sim.applyInput('B', { type: 'drink' });
+    sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
+    sim.applyInput('A', { type: 'commit' });
+    const ev = advanceTo(sim, impactOf(sim, 'A') + LATE + 1);
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'drink', playerId: 'B', stage: 'spilled' }));
+    advanceTo(sim, sim.now + B.drinkMs);
+    expect(sim.debugPlayer('B').hp).toBe(1);
+  });
+});

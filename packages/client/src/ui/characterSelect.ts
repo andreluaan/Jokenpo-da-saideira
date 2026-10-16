@@ -252,5 +252,6 @@ function viewOf(a: Actor, slot: number): PlayerView {
     graceUntil: 0,
     dashReadyAt: 0,
     swapsLeft: null,
+    drinkingUntil: 0,
   };
 }

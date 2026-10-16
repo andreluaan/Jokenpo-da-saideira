@@ -18,6 +18,8 @@ export interface BotProfile {
   dashChance: number;
   /** Ataques iniciados por segundo quando em alcance e livre. */
   aggression: number;
+  /** Chance de ir beber quando machucado e sem ameaça por perto. */
+  beerGreed: number;
 }
 
 export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
@@ -31,6 +33,7 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     respondChance: 0.45,
     dashChance: 0.15,
     aggression: 0.35,
+    beerGreed: 0.5,
   },
   normal: {
     reactionMs: [330, 540],
@@ -42,6 +45,7 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     respondChance: 0.7,
     dashChance: 0.3,
     aggression: 0.55,
+    beerGreed: 0.7,
   },
   hard: {
     reactionMs: [230, 380],
@@ -53,6 +57,7 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     respondChance: 0.85,
     dashChance: 0.45,
     aggression: 0.8,
+    beerGreed: 0.85,
   },
 };
 
@@ -86,6 +91,8 @@ export class BotBrain {
   private strafeDir = 1;
   private strafeUntil = 0;
   private lastStep = 0;
+  private wantsBeer = false;
+  private beerDecisionAt = 0;
 
   constructor(
     readonly id: string,
@@ -232,7 +239,30 @@ export class BotBrain {
       this.reaction = null;
     }
 
-    // 2) Caça o adversário mais próximo (com preferência por quem tem menos vida).
+    // 2) Machucado e sem ninguém perto? Vai até a mesa tomar uma.
+    if (me.drinkingUntil > now) {
+      out.push({ type: 'move', x: 0, y: 0 });
+      return;
+    }
+    if (now >= this.beerDecisionAt) {
+      this.beerDecisionAt = now + 800;
+      this.wantsBeer = me.hp < me.maxHp && this.rng() < this.profile.beerGreed;
+    }
+    const beer = view.beers.find((b) => b.readyAt <= now);
+    const table = beer && cfg.obstacles.find((o) => o.prop === 'beerTable' && o.x === beer.x && o.y === beer.y);
+    const safe = !others.some((o) => dist(me.x, me.y, o.x, o.y) < 300);
+    if (beer && table && this.wantsBeer && safe && me.hp < me.maxHp) {
+      const r = table.kind === 'circle' ? table.r : Math.max(table.w, table.h) / 2;
+      const d = dist(me.x, me.y, beer.x, beer.y);
+      if (d <= r + cfg.player.radius + cfg.beer.reach - 10) {
+        out.push({ type: 'move', x: 0, y: 0 }, { type: 'drink' });
+      } else {
+        out.push(this.steer(me, beer.x - me.x, beer.y - me.y));
+      }
+      return;
+    }
+
+    // 3) Caça o adversário mais próximo (com preferência por quem tem menos vida).
     const target = others
       .map((p) => ({ p, score: dist(me.x, me.y, p.x, p.y) + p.hp * 40 }))
       .sort((a, b) => a.score - b.score)[0]?.p;

@@ -44,6 +44,9 @@ export class WobbleRig implements RigPose {
   private px = NaN;
   private py = NaN;
   private koDir = 0;
+  private sweepDir = 0;
+  private sweepUntil = 0;
+  private drunkUntil = 0;
   private readonly phase = Math.random() * Math.PI * 2;
 
   get tilt(): number {
@@ -93,12 +96,13 @@ export class WobbleRig implements RigPose {
     if (p.alive) this.koDir = 0;
 
     // Balanço de bêbado: soma de senos lentos, mais forte quando atordoado.
-    const drunk = p.stunned ? 2.6 : p.holding ? 0.6 : 1;
+    const drunk = (p.stunned ? 2.6 : p.holding ? 0.6 : 1) * (now < this.drunkUntil ? 2.2 : 1);
     const ts = now / 1000;
     const sway = (Math.sin(ts * 1.7 + this.phase) * 0.07 + Math.sin(ts * 2.9 + this.phase * 2) * 0.04) * drunk;
     const lean = Math.max(-0.28, Math.min(0.28, (this.vx / 200) * 0.2));
-    const tiltTarget = this.koDir !== 0 ? this.koDir * 1.45 : lean + sway;
-    step(this.t, tiltTarget, this.koDir !== 0 ? 40 : 55, this.koDir !== 0 ? 5 : 5.5, dt);
+    const swept = now < this.sweepUntil;
+    const tiltTarget = this.koDir !== 0 ? this.koDir * 1.45 : swept ? this.sweepDir * 1.5 : lean + sway;
+    step(this.t, tiltTarget, this.koDir !== 0 ? 40 : swept ? 90 : 55, this.koDir !== 0 ? 5 : swept ? 9 : 5.5, dt);
 
     // Cabeça atrasa em relação ao corpo e balança.
     const bob = Math.sin(ts * 2.2 + this.phase) * 1.5 * drunk;
@@ -139,6 +143,24 @@ export class WobbleRig implements RigPose {
     this.ly.v += -260 * strength;
     this.ry.v += -260 * strength;
     this.sq.v += 6 * strength;
+  }
+
+  /** Rasteira: as pernas somem de baixo do corpo, ele vai ao chão e depois levanta cambaleando. */
+  sweep(dir: number, now: number, ms = 650): void {
+    this.sweepDir = dir >= 0 ? 1 : -1;
+    this.sweepUntil = now + ms;
+    this.t.v += this.sweepDir * 10;
+    this.hy.v -= 200;
+    this.lx.v -= 300;
+    this.rx.v += 300;
+    this.ly.v -= 350;
+    this.ry.v -= 350;
+    this.sq.v += 4;
+  }
+
+  /** Depois da cerveja: fica mais "alegre" (balança mais) por um tempo. */
+  drunk(now: number, ms: number): void {
+    this.drunkUntil = now + ms;
   }
 
   /** Nocaute: desaba para o lado oposto de quem bateu, como ragdoll. */

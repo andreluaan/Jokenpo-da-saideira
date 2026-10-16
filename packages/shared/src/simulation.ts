@@ -61,6 +61,8 @@ interface Player {
   graceUntil: number;
   dashUntil: number;
   dashReadyAt: number;
+  drinkingUntil: number;
+  drinkStation: number;
   dashX: number;
   dashY: number;
 }
@@ -81,6 +83,8 @@ export class GameSimulation {
   private readonly players: Player[] = [];
   private readonly byId = new Map<string, Player>();
   private events: GameEvent[] = [];
+  /** Mesas de cerveja (índices em config.obstacles) e quando cada cerveja fica pronta. */
+  private readonly stations: { index: number; readyAt: number }[];
 
   constructor(setups: PlayerSetup[], config: GameConfig = DEFAULT_CONFIG) {
     if (setups.length < 2 || setups.length > 4) throw new Error('A partida precisa de 2 a 4 jogadores');
@@ -117,6 +121,8 @@ export class GameSimulation {
         graceUntil: 0,
         dashUntil: 0,
         dashReadyAt: 0,
+        drinkingUntil: 0,
+        drinkStation: -1,
         dashX: 0,
         dashY: 0,
       };
@@ -124,6 +130,7 @@ export class GameSimulation {
       this.byId.set(p.id, p);
     });
     this.phaseEndsAt = config.match.countdownMs;
+    this.stations = config.obstacles.flatMap((o, index) => (o.prop === 'beerTable' ? [{ index, readyAt: 0 }] : []));
   }
 
   get playerIds(): string[] {
@@ -154,13 +161,15 @@ export class GameSimulation {
         return this.cancel(p);
       case 'dash':
         return this.dash(p, input.x, input.y);
+      case 'drink':
+        return this.drink(p);
     }
   }
 
   private startAttack(p: Player, symbol: Rps, targetId: string | undefined): void {
     if (!isRps(symbol)) return;
     const now = this.now;
-    if (now < p.busyUntil || now < p.stunUntil || now < p.dashUntil) return this.deny(p, 'busy');
+    if (now < p.busyUntil || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
     const t = targetId ? this.byId.get(targetId) : undefined;
     if (!t || t === p || !t.alive) return this.deny(p, 'target');
 
@@ -241,10 +250,40 @@ export class GameSimulation {
     }
   }
 
+  /** Beber: fica parado e vulnerável; se completar, recupera vida. */
+  private drink(p: Player): void {
+    const now = this.now;
+    if (p.attack || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
+    if (p.hp >= this.config.player.maxHp) return this.deny(p, 'full');
+    const { reach } = this.config.beer;
+    const near = this.stations.find((s) => {
+      const o = this.config.obstacles[s.index];
+      const r = o.kind === 'circle' ? o.r : Math.max(o.w, o.h) / 2;
+      return dist(p.x, p.y, o.x, o.y) <= r + this.config.player.radius + reach;
+    });
+    if (!near) return this.deny(p, 'range');
+    if (now < near.readyAt) return this.deny(p, 'empty');
+    near.readyAt = Number.POSITIVE_INFINITY; // cerveja na mão de quem pegou
+    p.drinkStation = this.stations.indexOf(near);
+    p.drinkingUntil = now + this.config.beer.drinkMs;
+    p.vx = p.vy = 0;
+    this.emit({ type: 'drink', at: now, playerId: p.id, stage: 'start', hp: p.hp });
+  }
+
+  /** Interrompe a bebida (levou dano): a cerveja é derramada e o garçom traz outra depois. */
+  private spill(p: Player): void {
+    if (p.drinkingUntil <= this.now) return;
+    p.drinkingUntil = 0;
+    const s = this.stations[p.drinkStation];
+    if (s) s.readyAt = this.now + this.config.beer.respawnMs;
+    p.drinkStation = -1;
+    this.emit({ type: 'drink', at: this.now, playerId: p.id, stage: 'spilled', hp: p.hp });
+  }
+
   private dash(p: Player, x?: number, y?: number): void {
     const now = this.now;
     if (p.attack) return this.deny(p, 'busy');
-    if (now < p.stunUntil || now < p.dashUntil) return this.deny(p, 'busy');
+    if (now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
     if (now < p.dashReadyAt) return this.deny(p, 'cooldown');
     if (p.focus < this.config.costs.dash) return this.deny(p, 'focus');
     let dir = normalize(x ?? 0, y ?? 0);
@@ -268,6 +307,7 @@ export class GameSimulation {
     }
     if (this.phase === 'playing') {
       this.integrate(dtMs);
+      this.finishDrinks();
       this.resolveDue();
       this.checkEnd();
     }
@@ -287,7 +327,7 @@ export class GameSimulation {
         p.vy = p.dashY * v;
       } else {
         // Inércia: acelera até a velocidade desejada; ao soltar (ou atordoado) escorrega até parar.
-        const stunned = this.now < p.stunUntil;
+        const stunned = this.now < p.stunUntil || this.now < p.drinkingUntil;
         const speed = stunned ? 0 : (player.speed / 1000) * (p.attack ? player.holdingSpeedMul : 1);
         const tx = p.moveX * speed;
         const ty = p.moveY * speed;
@@ -352,6 +392,18 @@ export class GameSimulation {
           b.y += n.y * push;
         }
       }
+    }
+  }
+
+  private finishDrinks(): void {
+    for (const p of this.players) {
+      if (!p.alive || p.drinkingUntil === 0 || this.now < p.drinkingUntil) continue;
+      p.drinkingUntil = 0;
+      p.hp = Math.min(this.config.player.maxHp, p.hp + this.config.beer.heal);
+      const s = this.stations[p.drinkStation];
+      if (s) s.readyAt = this.now + this.config.beer.respawnMs;
+      p.drinkStation = -1;
+      this.emit({ type: 'drink', at: this.now, playerId: p.id, stage: 'done', hp: p.hp });
     }
   }
 
@@ -446,6 +498,7 @@ export class GameSimulation {
       this.push(loser, winner.x, winner.y, this.config.knockback.protectedPush);
       return true;
     }
+    this.spill(loser);
     loser.hp = Math.max(0, loser.hp - this.config.attack.damage);
     this.consume(loser, 0);
     loser.stunUntil = this.now + stunMs;
@@ -548,10 +601,15 @@ export class GameSimulation {
         busy: now < p.busyUntil,
         graceUntil: p.graceUntil,
         dashReadyAt: p.dashReadyAt,
+        drinkingUntil: now < p.drinkingUntil ? p.drinkingUntil : 0,
         swapsLeft: self && p.attack ? this.config.costs.maxSwaps - p.attack.swaps : null,
       };
     });
-    return { now, phase: this.phase, phaseEndsAt: this.phaseEndsAt, winnerId: this.winnerId, players };
+    const beers = this.stations.map((s) => {
+      const o = this.config.obstacles[s.index];
+      return { x: o.x, y: o.y, readyAt: s.readyAt };
+    });
+    return { now, phase: this.phase, phaseEndsAt: this.phaseEndsAt, winnerId: this.winnerId, players, beers };
   }
 
   // ------------------------------------------------------------------ apoio a testes

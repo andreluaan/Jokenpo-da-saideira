@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CHARACTER_IDS, CHARACTER_INFO, DEFAULT_CONFIG, PLAYER_COLORS, type CharacterId, type PlayerView } from '@ppt/shared';
 import { S, toWorld } from './assets';
-import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
+import { BAR, BAR_EXTENT, buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D } from './character3d';
 import { Ambient3D } from './ambient3d';
 
@@ -174,11 +174,24 @@ export class MenuStage3D {
     // Enquadra a arena e a mesa do lado de fora do bar.
     const halfW = cfg.arena.rx * S + 2.5;
     const halfH = cfg.arena.ry * S + 1.4;
-    const dist = Math.max(halfW / (t * (freeW / H)), halfH / t, 9);
-    const target = new THREE.Vector3(-1.6, 0, 0.5);
+    let dist = Math.max(halfW / (t * (freeW / H)), halfH / t, 9);
+    const target = new THREE.Vector3(-1.6, 0, -0.4);
     const dir = new THREE.Vector3(0, 1, 0.95).normalize();
-    this.camera.position.copy(target).addScaledVector(dir, dist);
-    this.camera.lookAt(target);
+    // Afasta até o Bar do Zé caber inteiro (telhado incluído) na área livre, com uma folguinha.
+    const e = BAR_EXTENT;
+    const corners: THREE.Vector3[] = [];
+    for (const x of [-e.halfW, e.halfW]) for (const z of [-e.back, e.front]) for (const y of [0, e.top]) corners.push(new THREE.Vector3(BAR.x + x, y, BAR.z + z));
+    const p = new THREE.Vector3();
+    const left = -1 + (2 * side) / W;
+    for (let k = 0; k < 40; k++) {
+      this.camera.position.copy(target).addScaledVector(dir, dist);
+      this.camera.lookAt(target);
+      this.camera.updateMatrixWorld();
+      this.camera.updateProjectionMatrix();
+      const fits = corners.every((c) => (p.copy(c).project(this.camera), p.y < 0.9 && p.x > left + 0.03));
+      if (fits) break;
+      dist *= 1.03;
+    }
     this.camera.userData.base = this.camera.position.clone();
     this.camera.userData.target = target;
     this.camera.updateProjectionMatrix();

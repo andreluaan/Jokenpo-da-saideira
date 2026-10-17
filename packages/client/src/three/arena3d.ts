@@ -83,7 +83,9 @@ const ROAD: [number, number][] = [
   [-8.4, -5.35],
 ];
 /** Bar do Zé (v0.9): maior, com varanda coberta, recuado da arena. Frente virada para +z. */
-const BAR = { x: -7.6, z: -8.0 };
+export const BAR = { x: -7.6, z: -8.0 };
+/** Caixa do bar inteiro (casinha + varanda + telhado), relativa a BAR — usada para enquadrar a câmera do menu. */
+export const BAR_EXTENT = { halfW: 2.7, back: 2.5, front: 2.6, top: 3.3 };
 /** Mesa onde os personagens jogáveis esperam a vez (menu) e a área reservada em volta. */
 const PLAYERS_TABLE = { x: -9.25, z: -1.3, r: 1.75 };
 /** Mesas vermelhas em volta (x, z, guarda-sol). */

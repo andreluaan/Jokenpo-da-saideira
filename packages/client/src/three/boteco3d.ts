@@ -17,7 +17,6 @@ export interface BotecoDeps {
   /** Personagem 3D de cada jogador (para animações e efeitos presos ao corpo). */
   character(id: string): Character3D | undefined;
   puff(at: THREE.Vector3, color: number, n: number): void;
-  popup(at: THREE.Vector3, text: string, color: string, size?: number, ms?: number): void;
   localId: string;
   simNow(): number;
 }
@@ -204,7 +203,6 @@ export class Boteco3D {
         const at = this.w(e.x, e.y, 0.4);
         d.puff(at, 0xff7a2f, 12);
         d.puff(at.clone().setY(1.2), 0x6b5b55, 6);
-        d.popup(at.clone().setY(1.9), 'AI, QUENTE!', '#ff7a2f', 22, 1100);
         const c = d.character(e.playerId);
         c?.hit(at.x, at.z - 1, at.x, at.z, 1.3, d.simNow());
         // Pulinho de dor.
@@ -233,18 +231,12 @@ export class Boteco3D {
           const s = this.shields.get(e.playerId);
           const at = s ? s.position.clone() : new THREE.Vector3();
           d.puff(at, 0xbfe9ff, 14);
-          d.popup(at.clone().setY(1.8), 'O gelo segurou!', '#8ecae6', 20, 1100);
-        }
-        if (e.stage === 'ready' && e.playerId === d.localId) {
-          const s = this.shields.get(e.playerId);
-          if (s) d.popup(s.position.clone().setY(1.8), '🧊 Escudo de gelo!', '#bfe9ff', 18, 1200);
         }
         break;
       }
       case 'waiterBump': {
         const at = this.w(e.x, e.y, 0.4);
         d.puff(at, 0xffffff, 6);
-        d.popup(at.clone().setY(1.8), 'Opa, licença!', '#fff4e6', 18, 900);
         if (this.waiter) this.waiter.wobble = 1;
         d.character(e.playerId)?.hit(at.x - 0.5, at.z, at.x, at.z, 1.1, d.simNow());
         break;
@@ -472,7 +464,6 @@ export class Boteco3D {
       e.play('walk');
       this.d.scene.add(e.root);
       this.waiter = { e, tray, wobble: 0 };
-      this.d.popup(this.w(w.x, w.y, 2), '🍽️ Olha o garçom!', '#fff4e6', 18, 1200);
     }
     const { e, tray } = this.waiter;
     e.root.position.copy(this.w(w.x, w.y));

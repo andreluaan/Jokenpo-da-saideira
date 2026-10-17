@@ -126,7 +126,6 @@ export class Ambient3D {
     scene: THREE.Scene,
     private readonly cfg: GameConfig,
     arena: ArenaHandles,
-    private readonly popup: (at: THREE.Vector3, text: string, color: string, size?: number, ms?: number) => void = () => {},
   ) {
     const rng = this.rng;
     const pickLook = () => {
@@ -273,7 +272,6 @@ export class Ambient3D {
   private bark(i: number): void {
     const d = this.dogs[i];
     if (!d) return;
-    this.popup(d.root.position.clone().setY(1), 'Au! Au!', '#fff4e6', 16, 900);
     d.restUntil = this.time + 1.2;
   }
 

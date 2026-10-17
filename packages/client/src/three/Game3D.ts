@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { GRADE_LABEL, RPS_ICON, qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type Grade, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
+import { RPS_ICON, qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
-import { DENY_TEXT, WHIFF_TEXT, describeExchange } from '../ui/describe';
+import { WHIFF_TEXT, describeExchange } from '../ui/describe';
 import { S, toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
@@ -12,7 +12,6 @@ import { Boteco3D } from './boteco3d';
 import { BarEventFx } from '../ui/barEventFx';
 import { Ambient3D } from './ambient3d';
 
-const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#ffc145', caught: '#ff5a5f', fail: '#c9b5a8' };
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
 /** Batidas do Jo-Ken-Pô: o "PÔ!" cai exatamente no impacto (QTE perfeito). */
 const BEAT_MS = 400;
@@ -108,12 +107,11 @@ export class Game3D {
       arena: this.arena,
       character: (id) => this.actors.get(id)?.c,
       puff: (at, color, n) => this.puff(at, color, n),
-      popup: (at, text, color, size, ms) => this.popup(at, text, color, size, ms),
       localId: conn.localPlayerId,
       simNow: () => this.conn.now(),
     });
     this.barFx = new BarEventFx(this.overlay);
-    this.ambient = new Ambient3D(this.scene, conn.config, this.arena, (at, text, color, size, ms) => this.popup(at, text, color, size, ms));
+    this.ambient = new Ambient3D(this.scene, conn.config, this.arena);
 
     // Anel de seleção de alvo.
     this.selRing = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.7, 40), new THREE.MeshBasicMaterial({ color: 0xfff4e6, transparent: true, opacity: 0.9 }));
@@ -273,7 +271,7 @@ export class Game3D {
     const snap = this.conn.latest();
     const me = snap && this.me(snap);
     if (!snap || !me) return;
-    if (!me.holding) return this.popup(this.world(me.x, me.y, 1.6), 'Desafie primeiro (Espaço)', '#c9b5a8', 16);
+    if (!me.holding) return;
     if (!me.locked && this.localLock === null) this.localLock = this.conn.now();
     this.conn.send({ type: 'symbol', symbol: s });
   }
@@ -284,7 +282,7 @@ export class Game3D {
     const me = snap && this.me(snap);
     if (!snap || !me || me.holding) return;
     const target = this.currentTarget(snap, me);
-    if (!target) return this.popup(this.world(me.x, me.y, 1.6), 'Sem alvo', '#c9b5a8', 18);
+    if (!target) return;
     this.conn.send({ type: 'challenge', targetId: target.id });
   }
 
@@ -320,47 +318,17 @@ export class Game3D {
     return p ? this.world(p.x, p.y, h) : null;
   }
 
-  /** Tem a ver com você? (você, seu alvo, ou quem está te atacando) — o resto não vira pop-up, só log. */
-  private relevant(id: string): boolean {
-    const snap = this.conn.latest();
-    const meId = this.conn.localPlayerId;
-    if (id === meId) return true;
-    const me = snap?.players.find((p) => p.id === meId);
-    if (me?.targetId === id) return true;
-    return !!snap?.players.find((p) => p.id === id && p.targetId === meId);
-  }
-
   private handleEvents(events: GameEvent[]): void {
     const meId = this.conn.localPlayerId;
     for (const e of events) {
       this.boteco.onEvent(e);
       this.ambient.onEvent(e);
       switch (e.type) {
-        case 'pick': {
-          // Pego no ato: todo mundo vê o malandro que passou do ponto.
-          const p = this.pos(e.playerId, 1.8);
-          if (p && e.grade === 'caught') this.popup(p, 'ROUBOU!', '#ff5a5f', 24, 1100);
-          else if (p && e.grade === 'good' && this.relevant(e.playerId)) this.popup(p.add(new THREE.Vector3(0.45, 0, 0)), 'cedo…', '#ffc145', 15, 800);
-          break;
-        }
-        case 'duel': {
-          const a = this.pos(e.a, 1.4);
-          const b = this.pos(e.b, 1.4);
-          if (a && b && (e.a === meId || e.b === meId)) this.popup(a.add(b).multiplyScalar(0.5), e.b === meId ? 'TE CHAMARAM!' : 'JO-KEN-PÔ!', '#ffc145', 20, 900);
-          break;
-        }
         case 'exchange': {
           this.reveals.push({ e, start: performance.now(), stage: 0, signs: [] });
-          const { headline, line } = describeExchange(e, this.nameOf);
+          const { line } = describeExchange(e, this.nameOf);
           const involved = e.attackerId === meId || e.defenderId === meId;
           this.hud.addLog(line, !involved ? '' : e.damagedId === meId ? 'me-loss' : e.winnerId === meId ? 'me-win' : '');
-          if (involved) {
-            // Só os confrontos com você viram texto na tela; os outros ficam no log (menos poluição).
-            this.popup(this.world(e.x, e.y, 2.3), headline, e.damagedId ? '#ffc145' : '#fff4e6', 20, 1400);
-            const myGrade = e.attackerId === meId ? e.attackerGrade : e.defenderGrade;
-            const mp = this.pos(meId, -0.1);
-            if (mp) this.popup(mp, GRADE_LABEL[myGrade], GRADE_COLOR[myGrade], 18, 1100);
-          }
           if (e.damagedId === meId) this.shake = 0.18;
           else if (e.winnerId === meId) this.shake = 0.08;
           break;
@@ -372,37 +340,20 @@ export class Game3D {
             const q = this.pos(id);
             if (a && q && t) a.c.hit(q.x - (t.x - q.x), q.z - (t.z - q.z), q.x, q.z, 0.7, this.conn.now());
           }
-          const p = this.pos(e.playerIds[0], 1.6);
-          if (p && e.playerIds.includes(meId)) this.popup(p, WHIFF_TEXT[e.reason], '#c9b5a8', 18);
           if (e.playerIds.includes(meId)) this.hud.addLog(`Você: ${WHIFF_TEXT[e.reason]}`);
           break;
         }
-        case 'denied': {
-          if (e.playerId !== meId || e.reason === 'phase') break;
-          const p = this.pos(meId, 1.9);
-          if (p) this.popup(p, DENY_TEXT[e.reason], '#c9b5a8', 16, 800);
-          break;
-        }
         case 'eliminated': {
-          const p = this.pos(e.playerId, 1.2);
-          if (p) this.popup(p, 'ELIMINADO', '#ff5a5f', 34, 1800);
           this.hud.addLog(`${this.nameOf(e.playerId)} foi eliminado${e.byId ? ` por ${this.nameOf(e.byId)}` : ''}.`);
           break;
         }
         case 'drink': {
-          const p = this.pos(e.playerId, 1.8);
           // Guarda o início do gole: a animação usa a duração real (mesa ou cerveja do chão).
           if (e.stage === 'start') this.drinkStart.set(e.playerId, e.at);
           if (e.stage === 'done') {
-            if (p) this.popup(p, '+1 ❤', '#5ad19a', 32, 1400);
-            setTimeout(() => {
-              const q = this.pos(e.playerId, 2.1);
-              if (q) this.popup(q.add(new THREE.Vector3(0.4, 0, 0)), 'hic!', '#fff4e6', 24, 900);
-            }, 450);
             this.actors.get(e.playerId)?.c.drunk(this.conn.now(), 6000);
             this.hud.addLog(`${this.nameOf(e.playerId)} tomou uma gelada e recuperou 1 ❤.`, e.playerId === meId ? 'me-win' : '');
           } else if (e.stage === 'spilled') {
-            if (p) this.popup(p, 'Derramou!', '#ff5a5f', 28, 1200);
             this.hud.addLog(`${this.nameOf(e.playerId)} levou um golpe e derramou a cerveja.`, e.playerId === meId ? 'me-loss' : '');
           }
           break;
@@ -416,21 +367,6 @@ export class Game3D {
           break;
       }
     }
-  }
-
-  private popup(at: THREE.Vector3, text: string, color: string, size = 20, ms = 1000): void {
-    const s = this.screen(at);
-    if (!s.ok) return;
-    const el = document.createElement('div');
-    el.className = 'pop3d';
-    el.textContent = text;
-    el.style.left = `${s.x}px`;
-    el.style.top = `${s.y}px`;
-    el.style.color = color;
-    el.style.fontSize = `${size}px`;
-    el.style.animationDuration = `${ms}ms`;
-    this.overlay.appendChild(el);
-    setTimeout(() => el.remove(), ms);
   }
 
   private flash(text: string): void {
@@ -757,7 +693,6 @@ export class Game3D {
           const v = posOf(e.protectedId);
           const w = otherOf(e.protectedId);
           this.actors.get(e.protectedId)?.c.hit(w.x, w.z, v.x, v.z, 0.5, simNow);
-          if (e.protectedId === this.conn.localPlayerId) this.popup(v.clone().setY(1.9), 'Protegido', '#8ecae6', 22);
         } else if (e.kind === 'clank' || e.kind === 'tie-stagger') {
           A.c.hit(wd.x, wd.z, wa.x, wa.z, 0.6, simNow);
           D.c.hit(wa.x, wa.z, wd.x, wd.z, 0.6, simNow);
@@ -955,10 +890,11 @@ export class Game3D {
       // Mesma regra do servidor (gradePick): antes do verde = cedo; verde = perfeito; vermelho = roubou.
       const d = lockAt - T;
       state = d < -qte.greenBeforeMs ? 'good' : d <= qte.greenAfterMs ? 'perfect' : 'fail';
-      text = state === 'perfect' ? 'PERFEITO!' : state === 'good' ? 'CEDO! (já viram)' : 'ROUBOU!';
+      // Sem texto depois de apertar: a cor do enchimento já mostra (verde, amarelo ou vermelho).
+      text = '';
     } else if (now > t1) {
       state = 'fail';
-      text = 'NADA!';
+      text = '';
     } else if (now > T + qte.greenAfterMs) {
       state = 'fail live';
       text = 'VAI DAR ROUBO!';

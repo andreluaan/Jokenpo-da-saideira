@@ -1,4 +1,4 @@
-import { GRADE_LABEL, RPS_ICON, RPS_LABEL, type DenyReason, type ExchangeEvent, type Grade, type Rps, type WhiffReason } from '@ppt/shared';
+import { GRADE_LABEL, RPS_ICON, RPS_LABEL, type ExchangeEvent, type Grade, type Rps, type WhiffReason } from '@ppt/shared';
 
 export type NameOf = (id: string) => string;
 
@@ -59,19 +59,4 @@ export const WHIFF_TEXT: Record<WhiffReason, string> = {
   range: 'Escapou! (longe demais)',
   blocked: 'Errou! (bloqueado)',
   gone: 'Alvo eliminado',
-};
-
-export const DENY_TEXT: Record<DenyReason, string> = {
-  busy: 'Ocupado',
-  range: 'Longe demais',
-  target: 'Sem alvo',
-  focus: 'Sem foco',
-  locked: 'Já botou',
-  phase: 'Aguarde',
-  cooldown: 'Investida recarregando',
-  full: 'Vida cheia',
-  empty: 'Garçom ainda não trouxe',
-  engaged: 'Já está num duelo',
-  grace: 'Acabou de apanhar, espera',
-  noduel: 'Desafie alguém (Espaço)',
 };

@@ -67,10 +67,9 @@ export interface GameConfig {
   };
   costs: {
     swap: number;
-    feint: number;
     cancel: number;
     dash: number;
-    /** Trocas + fintas por ação. */
+    /** Trocas de símbolo por ação. */
     maxSwaps: number;
   };
   timings: {
@@ -166,9 +165,8 @@ export const DEFAULT_CONFIG: GameConfig = {
   },
   costs: {
     swap: 20,
-    feint: 20,
     cancel: 15,
-    dash: 20,
+    dash: 50,
     maxSwaps: 2,
   },
   timings: {
@@ -189,7 +187,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     protectedPush: 40,
     tauMs: 140,
   },
-  dash: { distance: 150, durationMs: 230, cooldownMs: 2200 },
+  // Investida curta e cara: no máximo 2 por barra de foco cheia.
+  dash: { distance: 65, durationMs: 170, cooldownMs: 1400 },
   finisher: {
     graceMs: 2000,
     // Mão de pedra cai em cima: quase não empurra, mas prende no chão.

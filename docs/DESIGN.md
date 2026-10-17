@@ -10,7 +10,7 @@
 | Risco | Mitigação |
 |---|---|
 | RPS em tempo real vira "quem aperta primeiro" | O símbolo é escolhido **antes** do QTE; o QTE só avalia *precisão* em torno de um instante conhecido, nunca velocidade de reação. Vantagem de símbolo sempre vence (QTE perfeito não reverte). |
-| Blefe sem informação = puro chute | Sinais públicos e ambíguos: **troca (↻)**, **trava (🔒)** e **cancelamento (✖)**. A finta emite o mesmo sinal da troca e custa o mesmo foco — impossível distinguir pelo HUD. |
+| Blefe sem informação = puro chute | Sinais públicos e ambíguos: **troca (↻)**, **trava (🔒)** e **cancelamento (✖)**. (A finta foi removida na v0.5: não servia para muita coisa.) |
 | Fugir sempre é melhor que lutar | Segurar símbolo reduz a velocidade só de quem segura; investida (dash) custa foco e tem recarga; arena fechada com obstáculos. Tudo configurável. |
 | 2–3 jogadores "ganking" um alvo | Teto de 1 de dano por janela de proteção (graça de 900 ms após levar dano) + **uma mão só**: o símbolo do defensor vale contra todos que o atacam. |
 | Falha de QTE = eliminação | Falha apenas rebaixa um degrau (vitória → empate); dano é sempre 1. |
@@ -73,7 +73,7 @@ PPT Da saideira/
 
 ## 4. Fluxo de comunicação (Etapa 2, já respeitado na Etapa 1)
 
-1. Cliente → servidor: `input` (`move`, `symbol`, `commit`, `cancel`, `feint`, `dash`). Só intenções.
+1. Cliente → servidor: `input` (`move`, `symbol`, `commit`, `cancel`, `dash`). Só intenções.
 2. Servidor aplica as entradas na simulação, roda `step()` em 30 Hz.
 3. Servidor → cada cliente: `snapshot` filtrado (`snapshotFor`) a 20 Hz + `events` (sinais, confrontos, dano, eliminação, fim).
 4. Cliente renderiza a partir do snapshot (interpolado) e usa os eventos para feedback.
@@ -98,8 +98,7 @@ Valores entre colchetes são os padrões de `config.ts`.
 ### 5.3 Janela de blefe e Última Palavra (Etapas B e C)
 Enquanto a mão **não estiver travada**:
 - **Trocar** símbolo: [20 foco], ↻ público.
-- **Finta**: [20 foco], ↻ público idêntico ao da troca, símbolo não muda.
-- Trocas + fintas ≤ [2] por ação.
+- Trocas ≤ [2] por ação. (Finta removida na v0.5.)
 - **Cancelar**: [15 foco], ✖ público, [500 ms] de hesitação (não pode atacar), em duelo o adversário continua atacando você — você fica indefeso.
 
 **Confirmar (Espaço) = a sua Última Palavra.** Trava a mão (🔒 público). A nota de QTE para cada impacto T em que você participa é:
@@ -110,7 +109,7 @@ Enquanto a mão **não estiver travada**:
 | não travou até T + [220 ms] | **Falha** |
 
 - **Confirmar cedo** (antes de T − [650 ms]): Bom garantido e, se for ataque simples (não duelo), o impacto é acelerado (restante × [0,7], mín. [400 ms]). Custa: você não reage mais a sinais.
-- **Esperar**: mantém trocas/fintas disponíveis e chance de Perfeito; risco de Falha.
+- **Esperar**: mantém trocas disponíveis e chance de Perfeito; risco de Falha.
 - Janela visual de QTE: de T − 650 a T + 220 = **870 ms** (ajustável; ritmo desacelerado na v0.3).
 - A resolução acontece em T + [220 ms].
 - Movimento com inércia "de bêbado" (aceleração 800 px/s², desaceleração 650 px/s², velocidade 200 px/s).
@@ -143,7 +142,7 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 - Dano: −1 vida, atordoamento [450 ms], **graça** [900 ms] (sem dano), empurrão [120 px | 190 forte | 70 amortecido], perde a mão.
 - Atacante após resolver: recuperação [350 ms] (pode se mover, não pode atacar).
 - Alvo que **vence defendendo** (não duelo) mantém a própria ação.
-- Investida (Shift): [150 px] em [150 ms], [20 foco], recarga [1,6 s], só sem mão.
+- Investida (Shift): curta, [65 px] em [170 ms], [50 foco] (no máximo 2 por barra cheia), recarga [1,4 s], só sem mão.
 
 ### 5.6 Vários jogadores
 - Impactos são processados em ordem de T (desempate por id). Determinístico.

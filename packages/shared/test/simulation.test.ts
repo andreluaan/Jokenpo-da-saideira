@@ -180,7 +180,7 @@ describe('duelo (resposta)', () => {
   });
 });
 
-describe('blefe: troca, finta e cancelamento', () => {
+describe('blefe: troca e cancelamento', () => {
   it('troca custa foco, emite sinal e tem limite', () => {
     const sim = newSim();
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
@@ -193,17 +193,6 @@ describe('blefe: troca, finta e cancelamento', () => {
     sim.applyInput('A', { type: 'symbol', symbol: 'scissors' });
     sim.applyInput('A', { type: 'symbol', symbol: 'rock' }); // 3ª troca: negada
     expect(sim.debugPlayer('A').attack!.symbol).toBe('scissors');
-  });
-
-  it('finta é indistinguível da troca para os outros (mesmo sinal, mesmo custo)', () => {
-    const sim = newSim();
-    sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
-    const f0 = sim.debugPlayer('A').focus;
-    sim.applyInput('A', { type: 'feint' });
-    const ev = sim.step(1);
-    expect(sim.debugPlayer('A').attack!.symbol).toBe('rock');
-    expect(f0 - sim.debugPlayer('A').focus).toBeCloseTo(cfg.costs.swap, 5);
-    expect(ev).toContainEqual(expect.objectContaining({ type: 'signal', kind: 'swap', playerId: 'A' }));
   });
 
   it('depois de travar não é possível trocar nem cancelar', () => {

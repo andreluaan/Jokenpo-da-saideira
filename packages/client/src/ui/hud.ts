@@ -6,7 +6,6 @@ const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 export interface HudActions {
   symbol(s: Rps): void;
   commit(): void;
-  feint(): void;
   cancel(): void;
   dash(): void;
   drink(): void;
@@ -89,7 +88,7 @@ export class Hud {
       text = 'Glub, glub… bebendo! Se levar um golpe agora, derrama.';
     } else if (me.stunned) text = 'Atordoado!';
     else if (me.holding && !me.locked) {
-      text = `Segurando ${me.symbol ? labelOf(me.symbol) : ''} — troque (1/2/3), finte (F), cancele (X) ou dê a Última Palavra (Espaço). Trocas restantes: ${me.swapsLeft}`;
+      text = `Segurando ${me.symbol ? labelOf(me.symbol) : ''} — troque (1/2/3), cancele (X) ou dê a Última Palavra (Espaço). Trocas restantes: ${me.swapsLeft}`;
     } else if (me.holding) text = 'Símbolo travado. Aguarde o impacto.';
     else if (attackers.length) {
       warn = true;

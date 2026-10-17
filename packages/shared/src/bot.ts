@@ -13,7 +13,6 @@ export interface BotProfile {
   /** Chance de usar o histórico do adversário em vez de escolher ao acaso. */
   readChance: number;
   swapOnSignalChance: number;
-  feintChance: number;
   respondChance: number;
   dashChance: number;
   /** Ataques iniciados por segundo quando em alcance e livre. */
@@ -29,7 +28,6 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     earlyLockChance: 0.5,
     readChance: 0.15,
     swapOnSignalChance: 0.1,
-    feintChance: 0.05,
     respondChance: 0.45,
     dashChance: 0.15,
     aggression: 0.35,
@@ -41,7 +39,6 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     earlyLockChance: 0.35,
     readChance: 0.4,
     swapOnSignalChance: 0.3,
-    feintChance: 0.15,
     respondChance: 0.7,
     dashChance: 0.3,
     aggression: 0.55,
@@ -53,7 +50,6 @@ export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
     earlyLockChance: 0.25,
     readChance: 0.65,
     swapOnSignalChance: 0.4,
-    feintChance: 0.25,
     respondChance: 0.85,
     dashChance: 0.45,
     aggression: 0.8,
@@ -84,7 +80,6 @@ export class BotBrain {
   private signals: { playerId: string; at: number }[] = [];
   private plannedImpact: number | null = null;
   private commitAt: number | null = null;
-  private feintAt: number | null = null;
   private reactedSignalAt = -1;
   private reaction: { at: number; attackerId: string } | null = null;
   private handledAttackKey = '';
@@ -134,7 +129,7 @@ export class BotBrain {
       this.reaction = null;
       this.thinkHolding(view, me, incoming, out);
     } else {
-      this.plannedImpact = this.commitAt = this.feintAt = null;
+      this.plannedImpact = this.commitAt = null;
       this.thinkFree(view, me, others, incoming, dt, out);
     }
     return out;
@@ -159,9 +154,6 @@ export class BotBrain {
       } else {
         this.commitAt = T + this.gauss() * this.profile.timingSigmaMs;
       }
-      if (this.feintAt === null && this.rng() < this.profile.feintChance) {
-        this.feintAt = now + this.rng() * Math.max(0, T - now - qte.leadMs);
-      }
     }
 
     if (!me.locked) {
@@ -175,10 +167,6 @@ export class BotBrain {
           const next = this.choose(opp, me.symbol);
           if (next !== me.symbol) out.push({ type: 'symbol', symbol: next });
         }
-      }
-      if (this.feintAt !== null && now >= this.feintAt) {
-        this.feintAt = Number.POSITIVE_INFINITY;
-        if ((me.swapsLeft ?? 0) > 0 && me.focus >= this.config.costs.feint) out.push({ type: 'feint' });
       }
       if (this.commitAt !== null && now >= this.commitAt) {
         out.push({ type: 'commit', at: this.commitAt });

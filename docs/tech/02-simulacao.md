@@ -18,7 +18,7 @@ o mesmo `step(dt)` e as mesmas entradas. Regras de design em `docs/DESIGN.md` (s
 
 ## Entradas (`applyInput`)
 `move` (sempre aceito) · `symbol` (sem mão: inicia ataque contra `targetId`; com mão destravada: troca) · `commit` (trava; `at` com recuo ≤ `maxRewindMs`) ·
-`feint` · `cancel` · `dash` · `drink`. Recusas emitem `denied` com `DenyReason`.
+`cancel` · `dash` · `drink`. Recusas emitem `denied` com `DenyReason`.
 
 ## Pontos-chave
 - **Golpe final:** `resolveExchange` marca `finisher` quando o vencedor não falhou; `resolveAttack` aplica `config.finisher[símbolo]` (empurrão, atordoamento, `graceMs` único) e preenche `ExchangeEvent.finisher`. Tesoura seta `slowUntil` (view `slowed`; `integrate` multiplica a velocidade). Vencedor com Falha = golpe simples (não existe mais `wasted`).
@@ -30,7 +30,7 @@ o mesmo `step(dt)` e as mesmas entradas. Regras de design em `docs/DESIGN.md` (s
 - **Cerveja:** obstáculo `prop: 'beerTable'` vira estação; `drink` perto (raio + `beer.reach`), parado `drinkMs`, +`heal`; dano → `spill` (evento `drink` stage `spilled`); `respawnMs`. Snapshot `beers[].readyAt` (∞ = alguém pegou).
 
 ## Valores atuais (ritmo "lento", v0.4)
-windup 1500 · QTE: lead 650 / perfect ±100 / late 220 · speed 200, accel 800, decel 650 · hitstun 700 · grace 1300 · dash 150px/230ms cd 2200 · partida 240 s · HP 3.
+windup 1500 · QTE: lead 650 / perfect ±100 / late 220 · speed 200, accel 800, decel 650 · hitstun 700 · grace 1300 · dash 65px/170ms custo 50 cd 1400 · golpe final: graça 2000, pedra stun 1700, tesoura slow 2500 · partida 240 s · HP 3.
 
 ## Armadilhas
 - Mudou coordenada/raio de obstáculo? Testes usam posições fixas (barril/churrasqueira em (520,600) r34; mesa (960,600) r70) — ajuste `test/simulation.test.ts`.

@@ -17,7 +17,6 @@ export type PlayerInput =
   /** Última Palavra: trava a mão. `at` = instante (tempo da simulação) em que o jogador apertou. */
   | { type: 'commit'; at?: number }
   | { type: 'cancel' }
-  | { type: 'feint' }
   | { type: 'dash'; x?: number; y?: number }
   /** Beber a cerveja da mesa mais próxima (recupera vida). */
   | { type: 'drink' };

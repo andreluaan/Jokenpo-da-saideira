@@ -158,8 +158,6 @@ export class GameSimulation {
         return p.attack ? this.swap(p, input.symbol) : this.startAttack(p, input.symbol, input.targetId);
       case 'commit':
         return this.commit(p, input.at);
-      case 'feint':
-        return this.feint(p);
       case 'cancel':
         return this.cancel(p);
       case 'dash':
@@ -212,18 +210,6 @@ export class GameSimulation {
     p.focus -= this.config.costs.swap;
     atk.swaps++;
     atk.symbol = symbol;
-    this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'swap' });
-  }
-
-  /** Finta: sinal idêntico ao da troca, mesmo custo, símbolo não muda. */
-  private feint(p: Player): void {
-    const atk = p.attack;
-    if (!atk) return this.deny(p, 'busy');
-    if (atk.lockedAt !== null) return this.deny(p, 'locked');
-    if (atk.swaps >= this.config.costs.maxSwaps) return this.deny(p, 'limit');
-    if (p.focus < this.config.costs.feint) return this.deny(p, 'focus');
-    p.focus -= this.config.costs.feint;
-    atk.swaps++;
     this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'swap' });
   }
 

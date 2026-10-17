@@ -122,7 +122,6 @@ export class Game3D {
     this.hud = new Hud(conn.localPlayerId, {
       symbol: (s) => this.pressSymbol(s),
       commit: () => this.pressCommit(),
-      feint: () => conn.send({ type: 'feint' }),
       cancel: () => conn.send({ type: 'cancel' }),
       dash: () => this.pressDash(),
       drink: () => conn.send({ type: 'drink' }),
@@ -192,8 +191,6 @@ export class Game3D {
       switch (e.code) {
         case 'Space':
           return this.pressCommit();
-        case 'KeyF':
-          return this.conn.send({ type: 'feint' });
         case 'KeyX':
           return this.conn.send({ type: 'cancel' });
         case 'ShiftLeft':

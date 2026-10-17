@@ -41,6 +41,19 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - `finisherModels()` + `renderer.compile` no construtor pré-compilam os shaders. **Armadilha vivida:** sem isso o 1º golpe dava um tranco que pulava a fase de "embrulhar" e o perdedor nunca sumia — por isso o esconder também roda fora do `if` de cada fase.
 - O pisca da invulnerabilidade esconde os contornos (`userData.outline`) em vez de mexer na opacidade: o material do contorno é compartilhado por todos.
 
+## Boteco vivo (`boteco3d.ts`, `ui/barEventFx.ts`)
+`Boteco3D` (criado no Game3D; recebe todos os eventos em `onEvent` e o snapshot em `update`):
+- **Itens** (`snap.items`): cachaça (garrafinha "PINGA"), amendoim (cone de papel), cerveja (long neck) — caem do alto, flutuam girando com brilho no chão. Pegar = `pickup` → animação `interact-right`, poeira colorida, pop-up (texto longo só para você). Cachaça também chama `c.drunk()`.
+- **Poças** (`snap.puddles`): forma irregular âmbar e brilhante; espalha ao nascer e seca no fim.
+- **Engradado**: `crate` rachou → chacoalha/tomba; quebrou → some (`arena.props[i]`) e solta cacos com gravidade. `snap.broken` sincroniza quem entra depois.
+- **Freezer**: tampa de vidro (`props[i].userData.lid`) abre enquanto alguém está abrindo (`openingUntil` + distância). **Escudo de gelo**: icosaedro translúcido azul em volta de quem tem `shielded`; ao quebrar, estilhaços.
+- **Auras no chão**: laranja = golpe final turbinado (cachaça), amarela = amendoim. Crachá mostra 🥃 🥜 🧊.
+- **Churrasqueira**: `burn` → fogo + fumaça + "AI, QUENTE!" + tranco no rig.
+- **Garçom**: `Extra3D` (Kenney male-e repintado: gravata preta) com bandeja erguida; anda pelo `snap.waiter`; esbarrão balança a bandeja.
+- **Queda de luz**: `arena.setDim(k)` (hemisfério/sol caem, luz do bar sobe, fundo/névoa escurecem; brasas, anéis e lâmpadas continuam). Durante o escuro o Game3D esconde crachás e setas dos outros (`boteco.blackout`).
+- **E** contextual: perto da mesa machucado = beber; perto do freezer = "[E] Abrir o freezer".
+`BarEventFx` (DOM): `.barfx.kind-*.stage-announce|active|end` → vinheta nas bordas (brasa pulsando / escuro / dourado de festa) + faixa grande (lousa; no Zé vira balão de fala) com contagem no aviso e barra de tempo. Cada estágio é uma classe CSS (gancho para sons depois).
+
 ## Menos poluição (várias pessoas perto)
 - `relevant(id)`: você, seu alvo ou quem te ataca. Só isso vira pop-up (sinais ↻🔒✖ 22 px, DUELO! 20 px, manchete do confronto 20 px, sua nota 18 px, Errou!, Protegido). O resto fica no log.
 - Setas de mira de terceiros: opacidade 0,28 e sem pontinhos.

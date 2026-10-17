@@ -145,6 +145,8 @@ kbd {
 .tag3d.me .nm { color: var(--accent); }
 .tag3d .hp { font-size: 12px; color: var(--bad); letter-spacing: 1px; text-shadow: 0 1px 0 #2b1d22; }
 .tag3d .hp span { opacity: .25; }
+.tag3d .st { font-size: 14px; line-height: 1; filter: drop-shadow(0 1px 0 #2b1d22); }
+.tag3d .st:empty { display: none; }
 .tag3d .fb { width: 46px; height: 5px; border-radius: 3px; background: #2b1d22cc; overflow: hidden; }
 .tag3d .fb i { display: block; height: 100%; background: #8ecae6; }
 .tag3d.dead { opacity: .4; }
@@ -235,3 +237,52 @@ kbd {
 .net-banner { position: absolute; left: 50%; top: 110px; translate: -50% 0; z-index: 8; padding: 8px 16px; border-radius: 999px;
   background: var(--bad); color: #fff; font-weight: 700; border: 3px solid #2b1d22; }
 .ping3d { position: absolute; left: 12px; top: 74px; z-index: 6; font-size: 12px; color: #fff4e6; background: #2b1d22aa; padding: 2px 8px; border-radius: 999px; }
+
+/* ---------- Eventos do bar: clima na tela (bordas + faixa) ---------- */
+.barfx { position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity .6s; }
+.barfx.on { opacity: 1; }
+.barfx::before { content: ''; position: absolute; inset: 0; transition: box-shadow .6s, background .6s; }
+.barfx-banner { position: absolute; left: 50%; top: 92px; translate: -50% 0; min-width: 320px; max-width: 80%; text-align: center;
+  padding: 10px 26px 12px; border-radius: 16px; background: var(--chalkboard); border: 6px solid var(--wood); box-shadow: 0 6px 0 #0005;
+  color: #fff4e6; transform-origin: 50% 0; }
+.barfx-banner .t { font-family: var(--chalk); font-size: 34px; line-height: 1.05; }
+.barfx-banner .s { font-size: 15px; font-weight: 600; opacity: .9; margin-top: 2px; letter-spacing: 1px; }
+.barfx-banner .s:empty { display: none; }
+.barfx-time { height: 6px; margin-top: 8px; border-radius: 3px; background: #0006; overflow: hidden; }
+.barfx-time i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s linear; }
+.barfx.stage-announce .barfx-time { display: none; }
+.barfx.stage-announce .barfx-banner { animation: barfx-tease 1s ease-in-out infinite; }
+.barfx.stage-active .barfx-banner { animation: barfx-slam .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.barfx.stage-end .barfx-banner { animation: barfx-out .9s ease-in forwards; }
+@keyframes barfx-tease { 0%, 100% { transform: scale(.92) rotate(-1deg); } 50% { transform: scale(.97) rotate(1deg); } }
+@keyframes barfx-slam { 0% { transform: scale(2.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes barfx-out { to { transform: translateY(-30px) scale(.8); opacity: 0; } }
+
+/* Saideira dupla: bordas em brasa pulsando, como um copo transbordando. */
+.barfx.kind-saideira.stage-announce::before { box-shadow: inset 0 0 70px 10px #ff8a2a55; }
+.barfx.kind-saideira.stage-active::before { animation: barfx-ember 1.1s ease-in-out infinite; }
+.barfx.kind-saideira .barfx-banner { border-color: #d8443c; }
+.barfx.kind-saideira .barfx-time i { background: linear-gradient(90deg, #ff5a5f, #ffc145); }
+@keyframes barfx-ember {
+  0%, 100% { box-shadow: inset 0 0 90px 24px #ff5a2acc, inset 0 0 220px 40px #ffc14544; }
+  50% { box-shadow: inset 0 0 130px 46px #ff3d1fee, inset 0 0 300px 70px #ffc14566; }
+}
+
+/* Queda de luz: vinheta escura que fecha a tela; pisca na entrada. */
+.barfx.kind-blackout.stage-announce::before { animation: barfx-flicker 1s steps(2) infinite; }
+.barfx.kind-blackout.stage-active::before { background: radial-gradient(ellipse at 50% 55%, #0000 25%, #0b0612cc 75%, #050208f2 100%); animation: barfx-off .5s steps(3) 1; }
+.barfx.kind-blackout .barfx-banner { background: #14101a; border-color: #3a3346; }
+.barfx.kind-blackout .barfx-time i { background: #8ecae6; }
+@keyframes barfx-flicker { 0% { background: #0000; } 50% { background: #0b061255; } }
+@keyframes barfx-off { 0% { opacity: 0; } 40% { opacity: 1; } 60% { opacity: .3; } 100% { opacity: 1; } }
+
+/* Zé grita: borda dourada de festa e a faixa vira balão de fala. */
+.barfx.kind-ze.stage-announce::before { box-shadow: inset 0 0 60px 8px #ffd25a55; }
+.barfx.kind-ze.stage-active::before { animation: barfx-party 0.8s ease-in-out infinite; }
+.barfx.kind-ze .barfx-banner { background: #fff4e6; color: #2b1d22; border: 5px solid #2b1d22; border-radius: 26px; }
+.barfx.kind-ze .barfx-banner::after { content: ''; position: absolute; left: 30px; bottom: -22px; border: 12px solid transparent; border-top: 14px solid #2b1d22; }
+.barfx.kind-ze .barfx-time { background: #2b1d2222; }
+@keyframes barfx-party {
+  0%, 100% { box-shadow: inset 0 0 80px 18px #ffd25a99; }
+  50% { box-shadow: inset 0 0 120px 34px #ffb31fcc; }
+}

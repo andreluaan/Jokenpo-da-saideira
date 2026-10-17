@@ -13,6 +13,9 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - **Entorno**: boteco (`buildShack`, telhado com nervuras, placa "BAR DO ZÉ", TV, rádio, banquetas, caixa de som), **mesa de fora com 4 banquinhos** (`buildOutdoorTable(-9.25,-1.3)` → `seats`), árvores de outono, milharal, horta, mesas vermelhas com guarda-sol (`buildPatio`), lousa "SAIDEIRA", grama/flores/pedras espalhadas (PRNG fixo), lenha, toco, lixeira.
 - **Luz** e névoa (ver 04).
 
+## Interativo (v0.6)
+`ArenaHandles.props[i]` = grupo 3D do obstáculo i (null na mesa). Freezer tem `userData.lid` (tampa de vidro com pivô na borda de trás). `setDim(k)` = queda de luz.
+
 ## Armadilhas
 - **Formas 2D deitadas** (`ShapeGeometry` + `rotation.x = -π/2`): y da forma vira **−z** do mundo (o campo já saiu na frente por isso).
 - Móveis da Kenney têm origem no canto → sempre usar `fit()/place()` (centraliza e põe a base em y=0).

@@ -8,6 +8,8 @@ import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
 import { signTexture, softCircle } from './textures';
 import { finisherModels, startFinisher, type Fx } from './finishers';
+import { Boteco3D } from './boteco3d';
+import { BarEventFx } from '../ui/barEventFx';
 
 const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#fff4e6', fail: '#ff5a5f' };
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
@@ -53,6 +55,8 @@ export class Game3D {
   private reveals: Reveal[] = [];
   private dust: { s: THREE.Sprite; t: number; v: THREE.Vector3 }[] = [];
   private fxs: Fx[] = [];
+  private readonly boteco: Boteco3D;
+  private readonly barFx: BarEventFx;
   private targetId: string | null = null;
   private lastMove = { x: 0, y: 0 };
   private ended = false;
@@ -94,6 +98,18 @@ export class Game3D {
     warm.forEach((o) => this.scene.add(o));
     this.renderer.compile(this.scene, this.camera);
     warm.forEach((o) => o.removeFromParent());
+
+    this.boteco = new Boteco3D({
+      scene: this.scene,
+      cfg: conn.config,
+      arena: this.arena,
+      character: (id) => this.actors.get(id)?.c,
+      puff: (at, color, n) => this.puff(at, color, n),
+      popup: (at, text, color, size, ms) => this.popup(at, text, color, size, ms),
+      localId: conn.localPlayerId,
+      simNow: () => this.conn.now(),
+    });
+    this.barFx = new BarEventFx(this.overlay);
 
     // Anel de seleção de alvo.
     this.selRing = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.7, 40), new THREE.MeshBasicMaterial({ color: 0xfff4e6, transparent: true, opacity: 0.9 }));
@@ -141,6 +157,8 @@ export class Game3D {
     this.ro.disconnect();
     this.cleanups.forEach((f) => f());
     this.fxs.forEach((f) => f.dispose());
+    this.boteco.destroy();
+    this.barFx.destroy();
     this.hud.destroy();
     this.renderer.dispose();
     this.renderer.domElement.remove();
@@ -310,6 +328,7 @@ export class Game3D {
   private handleEvents(events: GameEvent[]): void {
     const meId = this.conn.localPlayerId;
     for (const e of events) {
+      this.boteco.onEvent(e);
       switch (e.type) {
         case 'signal': {
           const p = this.pos(e.playerId, 1.7);
@@ -436,7 +455,7 @@ export class Game3D {
     }
     const tag = document.createElement('div');
     tag.className = `tag3d${p.id === this.conn.localPlayerId ? ' me' : ''}`;
-    tag.innerHTML = `<div class="hand"></div><div class="nm"></div><div class="hp"></div><div class="fb"><i></i></div>`;
+    tag.innerHTML = `<div class="hand"></div><div class="nm"></div><div class="hp"></div><div class="st"></div><div class="fb"><i></i></div>`;
     (tag.querySelector('.nm') as HTMLElement).textContent = p.id === this.conn.localPlayerId ? `${p.name} (você)` : p.name;
     (tag.querySelector('.nm') as HTMLElement).style.borderColor = hex(p.color);
     this.overlay.appendChild(tag);
@@ -538,6 +557,8 @@ export class Game3D {
     this.updateQte(snap, now, me);
     this.updateDust(dt);
     this.updateFx();
+    this.boteco.update(snap, now, dt);
+    this.barFx.update(snap.barEvent, now);
     this.arena.update(dt, now);
 
     // Tremidinha de câmera nos golpes.
@@ -550,13 +571,18 @@ export class Game3D {
   private updateTag(a: Actor, p: PlayerView, w: THREE.Vector3, now: number): void {
     const s = this.screen(w.clone().setY(1.55));
     a.tag.style.transform = `translate(${s.x}px, ${s.y}px)`;
+    // Queda de luz: crachás dos outros somem (só o anel no chão brilha).
+    a.tag.style.visibility = this.boteco.blackout && p.id !== this.conn.localPlayerId ? 'hidden' : '';
     a.tag.classList.toggle('dead', !p.alive);
     let hand = '';
     if (p.alive && p.holding) hand = (p.symbol ? RPS_ICON[p.symbol] : '❔') + (p.locked ? '🔒' : '');
     else if (p.alive && p.drinkingUntil > now) hand = '🍺';
-    const key = `${p.hp}:${p.alive}:${Math.round(p.focus / 5)}:${hand}`;
+    // Status públicos: 🥃 golpe final turbinado (cachaça), 🥜 amendoim, 🧊 escudo de gelo.
+    const st = p.alive ? `${p.boosted ? '🥃' : ''}${p.nuts ? '🥜' : ''}${p.shielded ? '🧊' : ''}` : '';
+    const key = `${p.hp}:${p.alive}:${Math.round(p.focus / 5)}:${hand}:${st}`;
     if (key !== a.tagKey) {
       a.tagKey = key;
+      (a.tag.querySelector('.st') as HTMLElement).textContent = st;
       (a.tag.querySelector('.hp') as HTMLElement).innerHTML = '❤'.repeat(p.hp) + `<span>${'❤'.repeat(Math.max(0, p.maxHp - p.hp))}</span>`;
       (a.tag.querySelector('.fb i') as HTMLElement).style.width = `${Math.round((p.focus / this.conn.config.player.maxFocus) * 100)}%`;
       (a.tag.querySelector('.hand') as HTMLElement).textContent = hand;
@@ -623,7 +649,8 @@ export class Game3D {
         d.scale.setScalar(1 + 0.25 * Math.sin(now / 120 - i));
       });
     }
-    for (const [id, g] of this.aims) g.visible = active.has(id);
+    // Queda de luz: só dá para ver a sua própria seta (blefe no escuro).
+    for (const [id, g] of this.aims) g.visible = active.has(id) && (!this.boteco.blackout || id === me?.id);
 
     const sel = snap.players.find((p) => p.id === this.targetId && p.alive);
     this.selRing.visible = !!sel && !!me?.alive;
@@ -809,15 +836,33 @@ export class Game3D {
     const ready = b.readyAt <= now;
     this.beer.visible = ready;
     this.beer.rotation.y = now / 900;
-    if (ready && me?.alive && !me.holding && me.hp < me.maxHp && me.drinkingUntil <= now) {
+    const free = me?.alive && !me.holding && me.drinkingUntil <= now && me.openingUntil <= now;
+    if (ready && free && me.hp < me.maxHp) {
       const table = cfg.obstacles.find((o) => o.prop === 'beerTable');
       const r = table?.kind === 'circle' ? table.r : 60;
       if (Math.hypot(me.x - b.x, me.y - b.y) <= r + cfg.player.radius + cfg.beer.reach) {
         this.canDrink = true;
         const s = this.screen(this.arena.beerSpot.clone().setY(this.arena.beerSpot.y + 0.9));
+        this.beerHint.textContent = '[E] Beber uma gelada';
         this.beerHint.style.display = 'block';
         this.beerHint.style.transform = `translate(${s.x}px, ${s.y}px)`;
+        return;
       }
+    }
+    // Perto do freezer (e sem escudo): E abre e dá o escudo de gelo.
+    if (!free || me.shielded) return;
+    for (const f of snap.freezers) {
+      const o = cfg.obstacles[f.index];
+      if (o.kind !== 'rect' || f.readyAt === null || f.readyAt > now) continue;
+      const nx = Math.max(o.x, Math.min(me.x, o.x + o.w));
+      const ny = Math.max(o.y, Math.min(me.y, o.y + o.h));
+      if (Math.hypot(me.x - nx, me.y - ny) > cfg.player.radius + cfg.hazards.freezer.reach) continue;
+      this.canDrink = true;
+      const s = this.screen(this.world(o.x + o.w / 2, o.y + o.h / 2, 1.1));
+      this.beerHint.textContent = '[E] Abrir o freezer (escudo de gelo)';
+      this.beerHint.style.display = 'block';
+      this.beerHint.style.transform = `translate(${s.x}px, ${s.y}px)`;
+      return;
     }
   }
 

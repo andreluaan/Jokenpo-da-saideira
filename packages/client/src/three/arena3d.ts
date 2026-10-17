@@ -48,6 +48,10 @@ export interface ArenaHandles {
   gate: { outside: THREE.Vector3; inside: THREE.Vector3 };
   /** Banquinhos da mesa do lado de fora do bar. */
   seats: Seat[];
+  /** Grupo 3D de cada obstáculo (mesmo índice de config.obstacles; null quando não há grupo único). */
+  props: (THREE.Group | null)[];
+  /** Queda de luz: 0 = normal, 1 = quintal apagado (só brasa, luz do bar e as lâmpadas do varal). */
+  setDim(k: number): void;
   update(dt: number, now: number): void;
 }
 
@@ -177,9 +181,11 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
 
   // --- obstáculos (mesmas posições da simulação) ---
   let beerSpot = new THREE.Vector3();
+  const props: (THREE.Group | null)[] = [];
   for (const o of cfg.obstacles) {
-    const spot = buildObstacle(scene, cfg, o, smokes);
+    const { spot, group } = buildObstacle(scene, cfg, o, smokes);
     if (o.prop === 'beerTable' && spot) beerSpot = spot;
+    props.push(group);
   }
 
   // --- entorno: Bar do Zé, árvores, mesas, horta ---
@@ -268,10 +274,25 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.fog = new THREE.Fog(SKY, 22, 40);
   scene.background = new THREE.Color(SKY);
 
+  const base = { hemi: hemi.intensity, sun: sun.intensity, bar: barLight.intensity };
+  const night = new THREE.Color(0x241820);
+  const day = new THREE.Color(SKY);
+  let dim = 0;
   return {
     beerSpot,
     gate,
     seats,
+    props,
+    setDim(k) {
+      if (Math.abs(k - dim) < 1e-3) return;
+      dim = k;
+      hemi.intensity = base.hemi * (1 - 0.82 * k);
+      sun.intensity = base.sun * (1 - 0.92 * k);
+      barLight.intensity = base.bar * (1 + 0.6 * k);
+      const c = day.clone().lerp(night, k);
+      (scene.background as THREE.Color).copy(c);
+      if (scene.fog) (scene.fog as THREE.Fog).color.copy(c);
+    },
     update(dt, now) {
       for (const sm of smokes) {
         sm.t += dt / 2.6;
@@ -294,7 +315,7 @@ function buildObstacle(
   cfg: GameConfig,
   o: Obstacle,
   smokes: { s: THREE.Sprite; t: number; x: number; z: number }[],
-): THREE.Vector3 | null {
+): { spot: THREE.Vector3 | null; group: THREE.Group | null } {
   if (o.kind === 'circle') {
     const c = toWorld(cfg, o.x, o.y);
     const r = o.r * S;
@@ -323,7 +344,7 @@ function buildObstacle(
       // Petiscos na mesa.
       scene.add(place('food/fries', c.x - r * 0.35, c.z + r * 0.25, { height: 0.12, y: top }));
       scene.add(place('food/glass', c.x + r * 0.35, c.z + r * 0.3, { height: 0.12, y: top }));
-      return new THREE.Vector3(c.x + r * 0.15, top, c.z - r * 0.2);
+      return { spot: new THREE.Vector3(c.x + r * 0.15, top, c.z - r * 0.2), group: null };
     }
     // Churrasqueira de tambor.
     const g = new THREE.Group();
@@ -348,7 +369,7 @@ function buildObstacle(
       scene.add(s);
       smokes.push({ s, t: i / 3, x: c.x, z: c.z });
     }
-    return null;
+    return { spot: null, group: g };
   }
 
   const c = toWorld(cfg, o.x + o.w / 2, o.y + o.h / 2);
@@ -395,7 +416,12 @@ function buildObstacle(
     const h = 0.62;
     g.add(mesh(new THREE.BoxGeometry(w, h, d), std(0xf4f3f3, { roughness: 0.4 }), 0, h / 2, 0));
     g.add(mesh(new THREE.BoxGeometry(w + 0.005, 0.09, d + 0.005), std(0xd8443c), 0, h * 0.45, 0));
-    g.add(mesh(new THREE.BoxGeometry(w * 0.9, 0.012, d * 0.8), new THREE.MeshStandardMaterial({ color: 0x9fd3e8, transparent: true, opacity: 0.75, roughness: 0.1, metalness: 0.2 }), 0, h + 0.007, 0));
+    // Tampa de vidro presa na borda de trás (o "lid" gira para abrir — ver boteco3d).
+    const lid = new THREE.Group();
+    lid.position.set(0, h + 0.007, -d * 0.4);
+    lid.add(mesh(new THREE.BoxGeometry(w * 0.9, 0.012, d * 0.8), new THREE.MeshStandardMaterial({ color: 0x9fd3e8, transparent: true, opacity: 0.75, roughness: 0.1, metalness: 0.2 }), 0, 0, d * 0.4));
+    g.add(lid);
+    g.userData.lid = lid;
     for (let i = 0; i < 5; i++) {
       const can = fit(instance(i % 2 ? 'food/soda-can' : 'food/can'), { height: 0.14 });
       can.position.set(-w * 0.35 + i * w * 0.175, h - 0.15, 0);
@@ -407,7 +433,7 @@ function buildObstacle(
   }
   shadows(g);
   scene.add(g);
-  return null;
+  return { spot: null, group: g };
 }
 
 // ------------------------------------------------------------------ entorno

@@ -12,7 +12,7 @@
 1. `packages/server`: Node + TS (`tsx`), Socket.IO; `Room` (código de 4–5 letras, até 4 jogadores, prontos, dono da sala, NPCs opcionais para completar).
 2. Loop autoritativo 30 Hz: `GameSimulation` + bots; enviar `snapshotFor(cada jogador)` a 20 Hz e eventos imediatos (filtrar `denied` por jogador).
 3. Protocolo (shared/protocol.ts): `room:create/join/ready/start/leave`, `input`, `snapshot`, `events`, `ping/pong`.
-4. `client/net/socketConnection.ts` implementando `GameConnection`: estimativa de offset do relógio (ping), `now()` = tempo do servidor estimado, `commit.at` = tempo estimado (servidor limita recuo a `maxRewindMs` + RTT/2), interpolação de posições (buffer ~100 ms).
+4. `client/net/socketConnection.ts` implementando `GameConnection`: estimativa de offset do relógio (ping), `now()` = tempo do servidor estimado, `symbol.at` = tempo estimado (servidor limita recuo a `maxRewindMs` + RTT/2), interpolação de posições (buffer ~100 ms).
 5. Menu: criar sala / entrar com código / lobby com prontos (personagens únicos por sala).
 6. Desconexão: pausa curta/NPC assume; reconexão por token da sala.
 7. Testes: simulação de sala no servidor (sem rede) + teste manual em 2 navegadores e em 2 computadores na rede.

@@ -17,6 +17,14 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.11 — malandragem no Jo-Ken-Pô
+- Pedido: faltava a "gaiatice" brasileira (no par ou ímpar, o malandro bota com atraso para ver o do outro).
+- Agora: **Espaço desafia** (1 contra 1) e o QTE é **apertar o símbolo**. Botou cedo, todo mundo vê. **Verde** no PÔ! = golpe final. **Vermelho** logo depois = **pego roubando** e apanha. Não botou nada = apanha. Os dois roubaram = o Zé anula.
+- Decisões do usuário: o símbolo aparece **na hora em que é botado**; roubar = **perde e toma 1 de dano**; duelo **1 contra 1**.
+- Saíram: troca de símbolo, cancelar (X), "Última Palavra"/confirmar e vários atacando o mesmo alvo.
+- Balanceamento: desafio só a ≤190 px e o PÔ! pega até 215 px (antes dava para desafiar de longe e o outro escapava sem fazer nada). NPCs malandros na medida.
+- "Como jogar" com 8 cards (novos: desafiar, botar no verde, malandragem tem limite).
+
 ## v0.10 — menu enxuto e personagens mais parecidos com as referências
 - Pedido: menu "muito poluído e estático". Agora: lousa só com o essencial; **personagem num card no canto** (setas ou clique na mesa); placa balançando, botão "respirando", entradas animadas.
 - **Como jogar em cards com fotos do jogo** (7 passos: objetivo, movimentação, alvo/ataque, Jo-Ken-Pô, golpe, gelada, boteco), com Voltar/Próximo.

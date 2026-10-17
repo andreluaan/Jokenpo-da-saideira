@@ -80,58 +80,46 @@ PPT Da saideira/
 
 Na Etapa 1, `LocalConnection` faz o papel do servidor dentro do navegador, com a **mesma** API. **Aviso:** a Etapa 1 não é multiplayer; os adversários são NPCs locais.
 
-## 5. Regras de combate (objetivas)
+## 5. Regras de combate (objetivas) — v0.11 "malandragem"
 
-Valores entre colchetes são os padrões de `config.ts`.
+Valores entre colchetes são os padrões de `config.ts`. Inspiração: no par ou ímpar, o malandro bota o número com um pouquinho de atraso para ver o do outro. Aqui isso é regra: **quem bota por último vê a mão do outro — mas se demorar demais é pego roubando.**
 
 ### 5.1 Conceitos
-- **Mão**: cada jogador segura no máximo **um** símbolo por vez. Ter mão = ter uma ação de ataque ativa contra um alvo.
-- **Foco**: recurso [0–100, começa em 60, regenera 12/s quando sem mão].
-- **Impacto (T)**: instante em que um ataque se resolve. Conhecido por todos (o anel de tempo é público); o símbolo não.
+- **Duelo**: sempre **1 contra 1**. Quem está num duelo não pode ser desafiado por mais ninguém até acabar.
+- **PÔ! (T)**: instante central do duelo, igual para os dois. Conhecido por todos.
+- **Foco**: [0–100, começa em 60, regenera quando fora de duelo]. Hoje só paga a investida.
 
-### 5.2 Iniciar ataque (Etapa A)
-- Requisitos: estar livre (sem mão, sem atordoamento, sem recuperação, sem investida), alvo vivo a ≤ [250 px].
-- T = agora + [1500 ms]. Todos veem uma linha de preparação até o alvo, sem o símbolo.
-- **Resposta / Duelo**: se o alvo escolhido já está atacando você e ainda faltam ≥ [300 ms] para o impacto dele, forma-se um **duelo**: T compartilhado = máx(T dele, agora + [500 ms]). Um duelo resolve os dois ataques numa única troca.
-- Segurar mão reduz a velocidade a [75%].
+### 5.2 Desafiar (Espaço)
+- Requisitos: estar livre (sem atordoamento, recuperação, investida, bebida ou freezer), alvo vivo, fora de outro duelo, fora da graça e a ≤ [190 px].
+- O alvo **entra no duelo na hora** (se estava bebendo, derrama; se abria o freezer, larga). T = agora + [1500 ms].
+- No duelo os dois andam a [75%] da velocidade e se encaram. Quem quiser fugir usa a **investida** antes de botar o símbolo: se no PÔ! estiverem a mais de [215 px] (ou com obstáculo no meio), **os dois erram**.
 
-### 5.3 Janela de blefe e Última Palavra (Etapas B e C)
-Enquanto a mão **não estiver travada**:
-- **Trocar** símbolo: [20 foco], ↻ público.
-- Trocas ≤ [2] por ação. (Finta removida na v0.5.)
-- **Cancelar**: [15 foco], ✖ público, [500 ms] de hesitação (não pode atacar), em duelo o adversário continua atacando você — você fica indefeso.
+### 5.3 Botar o símbolo (1/2/3) — a barra
+Cada um bota **uma vez** (não troca). O símbolo **aparece na hora para todos** (crachá e risquinho na barra do adversário).
 
-**Confirmar (Espaço) = a sua Última Palavra.** Trava a mão (🔒 público). A nota de QTE para cada impacto T em que você participa é:
-| Momento da trava | Nota |
-|---|---|
-| \|trava − T\| ≤ [100 ms] | **Perfeito** |
-| qualquer outro momento até T + [220 ms] | **Bom** |
-| não travou até T + [220 ms] | **Falha** |
+| Quando apertou | Nota | O que significa |
+|---|---|---|
+| antes de T − [130 ms] | **CEDO** | vale, mas o outro já viu e pode virar |
+| T ± [130 ms] (verde) | **PERFEITO** | vale e, se ganhar, sai o golpe final |
+| até T + [130 + 300 ms] (vermelho) | **ROUBOU!** | pego roubando: perde e apanha |
+| não apertou | **NADA** | apanha de quem botou |
 
-- **Confirmar cedo** (antes de T − [650 ms]): Bom garantido e, se for ataque simples (não duelo), o impacto é acelerado (restante × [0,7], mín. [400 ms]). Custa: você não reage mais a sinais.
-- **Esperar**: mantém trocas disponíveis e chance de Perfeito; risco de Falha.
-- Janela visual de QTE: de T − 650 a T + 220 = **870 ms** (ajustável; ritmo desacelerado na v0.3).
-- A resolução acontece em T + [220 ms].
-- Movimento com inércia "de bêbado" (aceleração 800 px/s², desaceleração 650 px/s², velocidade 200 px/s).
+- O verde tem [260 ms]: dá para ler quem botou **cedo**; ler quem botou no começo do verde exige reflexo de malandro (e quem passa do ponto cai no vermelho).
+- O carimbo de tempo enviado pelo cliente só pode voltar [120 ms] (compensa a rede sem virar brecha para roubar).
+- Se os dois já botaram, resolve no PÔ!; senão, no fim do vermelho.
 
-### 5.4 Resolução de uma troca (Etapa D)
-Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, ou sem mão).
+### 5.4 Resolução
+0. Longe demais [215 px] ou bloqueado → **os dois erram** (recuperação [900 ms]).
+1. Os dois roubaram → o Zé **anula**: os dois cambaleiam, sem dano.
+2. Um roubou → ele **perde e leva 1 de dano** (golpe simples, atordoado mais tempo), não importa o símbolo.
+3. Um não botou nada → leva 1 de dano de quem botou (golpe final se o outro botou no verde). Ninguém botou → nada.
+4. Os dois botaram: **o símbolo decide**. Vencedor no verde = **golpe final** (5.8) + [15 foco]; vencedor que botou cedo = golpe simples. Perdedor que botou no verde amortece o empurrão.
+5. Mesmo símbolo: mesma nota = **choque** (empurra, sem dano); senão quem botou cedo **cambaleia**.
 
-0. Alvo morto, fora de alcance [175 px] ou linha de visão bloqueada por obstáculo → **Errou** (recuperação longa [650 ms]).
-1. B sem mão: A Falha → **Errou**; senão A vence (**Indefeso**) com **golpe final**.
-2. Ambos Falha → nada acontece (ambos erraram).
-3. Há vencedor por símbolo (v0.5: **o símbolo decide, o QTE só decide o tamanho do golpe**):
-   - Perdedor sempre leva **1 de dano**.
-   - Vencedor acertou o QTE (Bom/Perfeito) → **golpe final** do símbolo dele (ver 5.8). Perfeito ainda dá [15 foco].
-   - Vencedor com Falha → golpe simples (rasteira): empurrão normal; perdedor Perfeito amortece, perdedor Falha fica mais atordoado.
-4. Símbolos iguais:
-   - Um lado Falha, ou um Perfeito contra um não-Perfeito → o lado pior fica **cambaleando** [450 ms] (sem dano, perde a mão).
-   - Senão → **choque**: ambos são empurrados, sem dano.
-
-**QTE nunca transforma uma derrota de símbolo em vitória — nem uma vitória em empate.**
+**A execução nunca transforma um símbolo perdedor em vitória.** A malandragem só serve para escolher o símbolo certo — e tem o preço do vermelho.
 
 ### 5.8 Golpes finais (v0.5)
-- **Golpes finais** (vencer + acertar o QTE). Invulnerabilidade igual para os três: [2000 ms].
+- **Golpes finais** (vencer botando no verde). Invulnerabilidade igual para os três: [2000 ms].
   | Símbolo | Efeito | Animação |
   |---|---|---|
   | Pedra | atordoa [1700 ms], empurra pouco [40] | mão gigante de pedra cai em cima |
@@ -139,19 +127,16 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
   | Papel | empurra mais longe [300], atordoa [900], sem lentidão | embrulha e arremessa como bola de neve |
 
 ### 5.5 Efeitos
-- Dano: −1 vida, atordoamento [450 ms], **graça** [900 ms] (sem dano), empurrão [120 px | 190 forte | 70 amortecido], perde a mão.
-- Atacante após resolver: recuperação [350 ms] (pode se mover, não pode atacar).
-- Alvo que **vence defendendo** (não duelo) mantém a própria ação.
-- Investida (Shift): curta, [65 px] em [170 ms], [50 foco] (no máximo 2 por barra cheia), recarga [1,4 s], só sem mão.
+- Dano: −1 vida, atordoamento, **graça** (ninguém te desafia nem te machuca), empurrão.
+- Depois do duelo os dois ficam [550 ms] recuperando (podem andar, não desafiam).
+- Investida (Shift): curta, [65 px] em [170 ms], [50 foco], recarga [1,4 s]; no duelo só antes de botar o símbolo.
 
 ### 5.6 Vários jogadores
-- Impactos são processados em ordem de T (desempate por id). Determinístico.
-- A mão do defensor vale contra todos os atacantes (uma mão só).
-- Graça após dano ⇒ no máximo **1 de dano** por janela, mesmo com 3 atacantes simultâneos. Golpes vencedores durante a graça mostram **Protegido** e empurram pouco.
-- Quem leva dano perde a própria ação (interrupção).
+- Duelos são independentes (1 contra 1). Processados em ordem de T (desempate por id). Determinístico.
+- Removidos na v0.11: troca de símbolo, cancelar, "Última Palavra"/confirmar e ataques simultâneos no mesmo alvo.
 
 ### 5.7 Fim da partida
-- Último vivo vence. Tempo limite [180 s]: vence quem tiver mais vida; empate se houver igualdade.
+- Último vivo vence. Tempo limite [240 s]: vence quem tiver mais vida; empate se houver igualdade.
 
 ## 6. Plano de etapas
 
@@ -166,13 +151,14 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 
 - A **mesa amarela** do centro (`prop: 'beerTable'`) tem uma cerveja. Perto dela (borda + raio + [36 px]), sem símbolo em mãos, sem atordoamento e com vida abaixo do máximo, o jogador aperta **E**.
 - Fica **parado bebendo [2,2 s]**, sem poder atacar nem investir. Ao terminar: **+[1] ❤** (até o máximo).
-- **Levar dano enquanto bebe derrama a cerveja** (sem cura). Durante a graça não derrama.
+- **Ser chamado para um duelo enquanto bebe derrama a cerveja** (sem cura).
 - Só uma cerveja por vez: quem pega reserva. Depois de bebida ou derramada, o garçom traz outra em **[25 s]**.
 - Visível para todos: quem está bebendo (`drinkingUntil`) e quando a cerveja volta (`beers[].readyAt`).
 
 ## 8. Jo-Ken-Pô (apresentação do QTE)
 
-- Os punhos de quem segura símbolo batem a cada [400 ms] e descem exatamente em T − 800 (**JO**), T − 400 (**KEN**) e T (**PÔ!**). Apertar Espaço no **PÔ!** = Perfeito.
+- Os punhos dos dois duelistas batem a cada [400 ms] e descem exatamente em T − 800 (**JO**), T − 400 (**KEN**) e T (**PÔ!**). Apertar o símbolo no **PÔ!** (verde) = Perfeito.
+- Barra curva ao lado do seu personagem: trilho = cedo, fatia **verde** = perfeito, fatia **vermelha** = roubou. Um risquinho na cor do adversário marca quando ele botou, com o símbolo dele.
 - A pose é idêntica para os três símbolos. Só na resolução os dois viram de frente e mostram o sinal com a mão. O perdedor toma uma **rasteira** (visual; o dano/empurrão continuam vindo da simulação).
 
 ## 9. Boteco vivo (v0.6)

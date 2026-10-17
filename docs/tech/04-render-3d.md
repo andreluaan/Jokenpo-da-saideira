@@ -29,7 +29,7 @@ Menu usa `setViewOffset(W,H,-side/2,…)` para centralizar a cena à direita da 
 ## Efeitos de combate
 - **Jo-Ken-Pô:** `pumpFor()` faz os punhos descerem a cada `BEAT_MS=400` até T; a palavra do ritmo (JO ~T−800, KEN ~T−400, **PÔ!** em T) aparece **pequena no rótulo da barra do QTE**, só para o jogador local (antes era pop-up grande sobre o duelo — poluía).
 - **Revelação** (`REVEAL_MS=1300`, relógio de parede): estágio 0 → `attack-melee-right` + sprites de sinal (`signTexture`) na mão; 120 ms → vencedor `attack-kick-right`; 330 ms → perdedor `hit(..., sweep=true)` (tombo), poeira (sem texto: animação + manchete bastam). Empate → os dois `hit`.
-- **QTE (barra estilo "shot meter" do NBA 2K):** SVG curvo à direita do jogador (arco de +62° a −62°, raio ≈ 1,25 × 0,75 un. projetado, mín. 46 px). Tempo → posição: `u(t) = (t − (T − windupMs)) / (windupMs + lateMs)`. Faixa âmbar = janela (`T − leadMs` até o topo), fatia verde = `T ± perfectMs` com risquinho em T. Enchimento branco sobe até agora; ao apertar (`pressCommit` guarda `localLock = conn.now()`), **congela** e mostra a nota calculada com a mesma regra do `gradeLock` (PERFEITO/BOM/BOM (cedo)/TARDE); passou do topo sem apertar = FALHA.
+- **QTE (barra estilo "shot meter" do NBA 2K):** SVG curvo à direita do jogador (arco de +62° a −62°, raio ≈ 1,25 × 0,75 un. projetado, mín. 46 px). Tempo → posição: `u(t) = (t − (T − windupMs)) / (qteEnd(T) − (T − windupMs))`. Trilho creme = CEDO, fatia verde = `T − greenBeforeMs … T + greenAfterMs` com risquinho em T, fatia **vermelha** até o fim (ROUBOU). Risquinho `.opp` + `.oppsym` na cor do adversário = quando ele botou e o quê. Enchimento sobe até agora; ao apertar (`pressSymbol` guarda `localLock = conn.now()`), **congela** e mostra a nota com a mesma regra do `gradePick` (PERFEITO / CEDO! / ROUBOU!); no vermelho sem apertar pisca "VAI DAR ROUBO!"; passou do topo = NADA!. Uma seta no chão por duelo (de quem desafiou). Crachá: símbolo público com aro âmbar (`.hand.shown`).
 - **Fim:** vencedor vivo toma a cerveja em loop (`drink`).
 
 ## Golpes finais (`finishers.ts`)
@@ -70,7 +70,7 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - Crachás dos outros: compactos e sem barra de foco (CSS `.tag3d:not(.me)`).
 
 ## Entrada
-`KeyboardEvent.code`: WASD/setas, Digit1-3/J/K/L (símbolo), Space (commit), F, X, Shift, Tab, E (beber). Clique: raycast no plano y=0,5 → oponente mais próximo (<0,9 un). Botão direito = cancelar. Ignora teclas em `<input>`.
+`KeyboardEvent.code`: WASD/setas, Space (desafiar o alvo), Digit1-3/J/K/L (símbolo, só no duelo), Shift, Tab, E (beber). Clique: raycast no plano y=0,5 → oponente mais próximo (<0,9 un). Ignora teclas em `<input>`.
 
 ## Armadilhas
 - O painel do navegador do app **estrangula requestAnimationFrame (~1 fps)** quando sem foco → use passo manual (09-testes).

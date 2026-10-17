@@ -2,7 +2,7 @@
 
 ## Conceito
 Servidor **autoritativo**: a mesma `GameSimulation` da Etapa 1 roda no servidor (Node + Socket.IO). Cada cliente envia só
-`PlayerInput`; o servidor manda **snapshots filtrados por jogador** (ninguém recebe o símbolo alheio) e **eventos**.
+`PlayerInput`; o servidor manda **snapshots** (v0.11: o símbolo é público assim que botado) e **eventos**.
 O cliente usa `SocketConnection`, que implementa a mesma `GameConnection` da partida local → `Game3D` não muda.
 
 ## Arquivos
@@ -34,7 +34,7 @@ Servidor → cliente: `room:state LobbyState` · `match:start {config, playerId,
 ## Relógio e QTE (justiça com latência)
 - `ping` a cada 1 s; amostra `offset = simNow + RTT/2 − performance.now()`; usa a amostra de **menor RTT** das últimas 8 e suaviza (30%).
 - `now()` do cliente = tempo estimado do servidor → anel do QTE e "PÔ!" batem com o servidor.
-- `commit` vai com `at = now()`; o servidor aceita recuo de até `qte.maxRewindMs` (200 ms) — cobre RTT/2 de até ~200 ms.
+- `symbol` vai com `at = now()`; o servidor aceita recuo de até `qte.maxRewindMs` (120 ms), nunca antes do início do duelo. Pequeno de propósito: com o símbolo público, um recuo grande deixaria um cliente trapaceiro ver a mão do outro e voltar no tempo para fugir do vermelho.
 - Posições: desenhadas `INTERP_MS = 100 ms` no passado, interpolando entre dois snapshots; o resto (vida, mão, timers) vem do snapshot mais recente.
 
 ## Rodar e testar
@@ -44,7 +44,7 @@ npm run dev        # servidor (3001) + Vite (5173) juntos
 - Mesmo computador: duas abas/janelas em http://localhost:5173 (cada aba é um jogador; a sessão fica na aba).
 - Rede de casa: os outros abrem `http://<IP-do-seu-PC>:5173` (o servidor imprime o IP). O Windows pode pedir para liberar o Node no firewall.
 - Produção local: `npm start` (compila o cliente e o servidor entrega tudo em http://<IP>:3001).
-- Testes: `packages/server/test/server.test.ts` sobe o servidor numa porta livre e usa `socket.io-client` real (lobby, regras de início, filtro de informação oculta, movimento, ping, reconexão, fim de partida).
+- Testes: `packages/server/test/server.test.ts` sobe o servidor numa porta livre e usa `socket.io-client` real (lobby, regras de início, símbolo aparece só depois de botado, movimento, ping, reconexão, fim de partida).
 
 ## Armadilhas
 - Entradas antes do primeiro passo da partida (contagem) são recusadas (`phase`) — nos testes, espere `sim.phase === 'playing'`.

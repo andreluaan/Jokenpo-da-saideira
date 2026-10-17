@@ -22,7 +22,7 @@ cliente: conn.latest() (snapshot) + conn.onEvents(cb) → Game3D renderiza / HUD
 ```
 - `net/connection.ts` — interface `GameConnection` (`localPlayerId`, `config`, `now()`, `latest()`, `send()`, `onEvents()`, `start()`, `destroy()`).
 - `net/localConnection.ts` — Etapa 1: roda `GameSimulation` + `BotBrain`s no navegador, passo fixo 60 Hz via `setInterval`,
-  `now()` interpola o tempo da simulação; `send(commit)` carimba `at = now()` (precisão do QTE).
+  `now()` interpola o tempo da simulação; `send(symbol)` carimba `at = now()` (precisão do QTE).
 - `net/socketConnection.ts` — online: mesma interface, servidor autoritativo (ver 11-multiplayer).
 
 ## Coordenadas
@@ -30,9 +30,10 @@ cliente: conn.latest() (snapshot) + conn.onEvents(cb) → Game3D renderiza / HUD
 - **3D:** 1 unidade = 100 px (`S = 0.01` em `three/assets.ts`); `toWorld(cfg, x, y)` → `(x-cx)*S, 0, (y-cy)*S`. Chão no plano XZ, câmera em +Z olhando para −Z (fundo da tela = −Z).
 - Personagem da simulação = círculo r 26 px; visual 3D é maior (escala `CHAR_SCALE`).
 
-## Informação oculta (invariante)
-`snapshotFor(viewer)` só inclui `symbol`/`swapsLeft` do próprio jogador. Visual **nunca** pode depender do símbolo
-alheio antes do evento `exchange` (pose de punho fechado é igual para os três).
+## Informação (v0.11: nada é oculto)
+Com a malandragem, o símbolo é **público assim que botado** (`symbol`, `pickedAt` na view de todos). O que ninguém sabe
+é o símbolo de quem **ainda não botou** — esse só existe quando o jogador aperta. `snapshotFor(viewer)` mantém o
+parâmetro para a rede, mas hoje devolve o mesmo para todos.
 
 ## Onde mexer
 - Regra de jogo → `shared` (+ teste). Visual → `client/src/three`. Texto/HUD → `client/src/ui` + `style.css`.

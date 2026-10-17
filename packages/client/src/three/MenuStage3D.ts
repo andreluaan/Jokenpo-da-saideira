@@ -192,6 +192,10 @@ export class MenuStage3D {
       if (fits) break;
       dist *= 1.015;
     }
+    // Um pouco mais longe que o justo: mais quintal em volta do bar (pedido do usuário).
+    dist *= 1.12;
+    this.camera.position.copy(target).addScaledVector(dir, dist);
+    this.camera.lookAt(target);
     this.camera.userData.base = this.camera.position.clone();
     this.camera.userData.target = target;
     this.camera.updateProjectionMatrix();

@@ -97,7 +97,8 @@ function ensureOnline(): OnlineClient {
   setStatus('Conectando ao servidor…');
   online = new OnlineClient({
     lobby: (s) => renderLobby(s),
-    matchStart: (m) => startOnlineMatch(m),
+    // Reconectou na mesma partida: segue sem transição; partida nova: copo enche e esvazia.
+    matchStart: (m) => (onlineMatch && conn?.localPlayerId === m.playerId && game ? startOnlineMatch(m) : transition(() => startOnlineMatch(m))),
     matchEnd: () => undefined,
     connection: (st) => {
       if (st === 'online') setStatus(online?.lobbyState ? '' : 'Conectado. Abra uma mesa ou entre com o código de um amigo.');
@@ -197,20 +198,52 @@ function setStatus(text: string, err = false): void {
 
 $('#start-training').addEventListener('click', () => {
   save('ppt.nick', myName());
-  startMatch({ name: myName(), bots: Number(botCount.value), difficulty: difficulty.value as BotDifficulty, character: charSelect.value });
+  const settings = { name: myName(), bots: Number(botCount.value), difficulty: difficulty.value as BotDifficulty, character: charSelect.value };
+  transition(() => startMatch(settings));
 });
 $('#play-again').addEventListener('click', () => {
-  if (onlineMatch) backToMenu();
-  else if (lastSettings) startMatch(lastSettings);
+  if (onlineMatch) transition(backToMenu);
+  else if (lastSettings) transition(() => startMatch(lastSettings!));
 });
 $('#to-menu').addEventListener('click', () => {
   if (onlineMatch) online?.leave();
-  backToMenu();
+  transition(backToMenu);
 });
 $('#leave').addEventListener('click', () => {
   if (onlineMatch) online?.leave();
-  backToMenu();
+  transition(backToMenu);
 });
+
+/**
+ * Troca de tela suave: um copo de cerveja enche a tela (com espuma e bolhas), a troca acontece
+ * escondida atrás dele (montar o 3D da partida leva um instante) e depois a cerveja baixa revelando a arena.
+ */
+const wipe = document.createElement('div');
+wipe.className = 'wipe';
+wipe.innerHTML = '<div class="wipe-foam"></div><div class="wipe-bubbles"></div><span class="wipe-text">Bora pro quintal!</span>';
+document.body.appendChild(wipe);
+let wiping = false;
+const FILL_MS = 480;
+function transition(run: () => void): void {
+  if (wiping) return run();
+  wiping = true;
+  wipe.classList.add('in');
+  setTimeout(() => {
+    try {
+      run();
+    } finally {
+      // Dois quadros para o primeiro desenho da cena nova sair antes de revelar (com folga se a aba estiver em segundo plano).
+      const reveal = () => {
+        wipe.classList.remove('in');
+        setTimeout(() => (wiping = false), FILL_MS + 120);
+      };
+      let done = false;
+      const once = () => !done && ((done = true), reveal());
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(once, 120)));
+      setTimeout(once, 700);
+    }
+  }, FILL_MS);
+}
 
 boot();
 

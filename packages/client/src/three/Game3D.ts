@@ -51,7 +51,6 @@ export class Game3D {
   private readonly cleanups: (() => void)[] = [];
   private reveals: Reveal[] = [];
   private dust: { s: THREE.Sprite; t: number; v: THREE.Vector3 }[] = [];
-  private chantFired = new Set<string>();
   private targetId: string | null = null;
   private lastMove = { x: 0, y: 0 };
   private ended = false;
@@ -312,13 +311,13 @@ export class Game3D {
           if (!p || !this.relevant(e.playerId)) break;
           const t = e.kind === 'swap' ? '↻' : e.kind === 'lock' ? '🔒' : '✖';
           const c = e.kind === 'swap' ? '#ffd166' : e.kind === 'lock' ? '#8ecae6' : '#ff5a5f';
-          this.popup(p.add(new THREE.Vector3(0.35, 0, 0)), t, c, 30);
+          this.popup(p.add(new THREE.Vector3(0.35, 0, 0)), t, c, 22);
           break;
         }
         case 'duel': {
           const a = this.pos(e.a, 1.4);
           const b = this.pos(e.b, 1.4);
-          if (a && b && (e.a === meId || e.b === meId)) this.popup(a.add(b).multiplyScalar(0.5), 'DUELO!', '#ffc145', 30);
+          if (a && b && (e.a === meId || e.b === meId)) this.popup(a.add(b).multiplyScalar(0.5), 'DUELO!', '#ffc145', 20, 800);
           break;
         }
         case 'exchange': {
@@ -328,7 +327,7 @@ export class Game3D {
           this.hud.addLog(line, !involved ? '' : e.damagedId === meId ? 'me-loss' : e.winnerId === meId ? 'me-win' : '');
           if (involved) {
             // Só os confrontos com você viram texto na tela; os outros ficam no log (menos poluição).
-            this.popup(this.world(e.x, e.y, 2.3), headline, e.damagedId ? '#ffc145' : '#fff4e6', 26, 1600);
+            this.popup(this.world(e.x, e.y, 2.3), headline, e.damagedId ? '#ffc145' : '#fff4e6', 20, 1400);
             const myGrade = e.attackerId === meId ? e.attackerGrade : e.defenderGrade;
             const mp = this.pos(meId, -0.1);
             if (mp && myGrade) this.popup(mp, GRADE_LABEL[myGrade], GRADE_COLOR[myGrade], 18, 1100);
@@ -521,7 +520,6 @@ export class Game3D {
 
     this.updateAims(snap, now, me);
     this.updateReveals(snap, now);
-    this.updateChant(snap, now, me);
     this.updateBeer(snap, now, me);
     this.updateQte(snap, now, me);
     this.updateDust(dt);
@@ -631,26 +629,6 @@ export class Game3D {
     return Math.sin(k * Math.PI);
   }
 
-  private updateChant(snap: Snapshot, now: number, me: PlayerView | undefined): void {
-    if (!me?.alive) return;
-    const impacts: { key: string; T: number }[] = [];
-    if (me.holding && me.impactAt !== null) impacts.push({ key: `${me.id}:${me.impactAt}`, T: me.impactAt });
-    for (const p of snap.players) if (p.alive && p.targetId === me.id && p.impactAt !== null) impacts.push({ key: `${p.id}:${p.impactAt}`, T: p.impactAt });
-    for (const { key, T } of impacts) {
-      CHANT.forEach((word, i) => {
-        const beat = T - (CHANT.length - 1 - i) * BEAT_MS;
-        const id = `${key}:${i}`;
-        if (now >= beat && now - beat < 160 && !this.chantFired.has(id)) {
-          this.chantFired.add(id);
-          const last = i === CHANT.length - 1;
-          const at = this.world(me.x, me.y, 2.6).add(new THREE.Vector3((i - 1) * 0.55, 0, 0));
-          this.popup(at, word, last ? '#ffc145' : '#fff4e6', last ? 54 : 38, 700);
-        }
-      });
-    }
-    if (this.chantFired.size > 200) this.chantFired = new Set([...this.chantFired].slice(-60));
-  }
-
   /** Revelação frente a frente: viram um para o outro, mostram a mão; quem perde toma rasteira. */
   private revealPoses(snap: Snapshot): Map<string, { x: number; y: number }> {
     const out = new Map<string, { x: number; y: number }>();
@@ -723,7 +701,6 @@ export class Game3D {
           const w = otherOf(e.damagedId);
           this.actors.get(e.damagedId)?.c.hit(w.x, w.z, v.x, v.z, 1.1, simNow, true);
           this.puff(v, 0xe9d2b8, 10);
-          if (e.attackerId === this.conn.localPlayerId || e.defenderId === this.conn.localPlayerId) this.popup(v.clone().setY(2.0), 'RASTEIRA!', '#ffc145', 34, 1000);
         } else if (e.protectedId) {
           const v = posOf(e.protectedId);
           const w = otherOf(e.protectedId);
@@ -858,9 +835,11 @@ export class Game3D {
       state = 'fail';
       text = 'FALHA';
     } else {
+      // Jo-Ken-Pô pequeno, no rótulo da barra (antes era um texto grande flutuando em cima do duelo).
       const dt = T - now;
       state = Math.abs(dt) <= qte.perfectMs ? 'perfect live' : dt <= qte.leadMs ? 'window live' : 'early live';
-      text = Math.abs(dt) <= qte.perfectMs ? 'AGORA!' : dt <= qte.leadMs ? 'ESPAÇO' : '';
+      const beat = Math.round(dt / BEAT_MS); // 2 = JO, 1 = KEN, 0 = PÔ!
+      text = Math.abs(dt) <= qte.perfectMs ? CHANT[2] : beat >= 0 && beat <= 2 ? CHANT[2 - beat] : '';
     }
     fill.setAttribute('class', `fill ${state}`);
     lbl.setAttribute('class', `lbl ${state}`);

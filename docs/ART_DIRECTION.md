@@ -127,9 +127,9 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 **Proibido animar:** formato da mão ao preparar, cor do símbolo antes da revelação, som diferente por símbolo antes do impacto, qualquer diferença visual entre troca e finta.
 
 ### 8.1 Jo-Ken-Pô e rasteira
-- Na preparação, os punhos fechados batem no ritmo e aparece **JO… KEN… PÔ!** sobre você. O PÔ! é o instante perfeito do QTE.
+- Na preparação, os punhos fechados batem no ritmo e **JO… KEN… PÔ!** aparece pequeno ao lado da barra do QTE (nada grande sobre o duelo). O PÔ! é o instante perfeito do QTE.
 - Na revelação, os dois viram de frente e estendem o braço com o sinal desenhado (punho, palma ou "V"), na cor da mão de cada personagem (faixa do Fera, luva do Príncipe).
-- O vencedor varre a perna; o perdedor tomba (molas do ragdoll), levanta cambaleando, solta poeira e aparece "RASTEIRA!". No empate, os dois se esbarram.
+- O vencedor varre a perna; o perdedor tomba (molas do ragdoll), levanta cambaleando, solta poeira (sem texto extra). No empate, os dois se esbarram.
 
 ### 8.2 Bebendo
 - O braço leva a long neck (ou a caneca do Seu Pança) à boca, a cabeça vai para trás e sobem bolhas. No fim aparecem **+1 ❤** e **"hic!"**, e o personagem fica 2,2× mais cambaleante por 6 s.

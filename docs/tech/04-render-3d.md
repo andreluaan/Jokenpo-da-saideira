@@ -62,7 +62,7 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - **Garçom no balcão** do Bar do Zé (`arena.barWaiter`); some enquanto o garçom do evento atravessa (`setWaiterAway`).
 - **Picape com paredão** (`buildParedao`, procedural, sem marca) nos fundos à direita (`arena.truck`), caçamba virada para o ringue; falantes pulsam a ~120 bpm e a "energia" sobe com golpes e eventos.
 - Faíscas nas churrasqueiras; vapor do freezer aberto está no `boteco3d`.
-- **Desempenho:** a cena tem ~1.870 draw calls (~1.390 sem o entorno). Próximo passo natural: juntar a decoração estática (cerca, tampinhas, grama) em poucas malhas.
+- **Desempenho:** ~840 draw calls na partida depois de juntar a decoração parada (ver 06-arena, `merge.ts`); a maior parte que sobra é a torcida.
 
 ## Menos poluição (várias pessoas perto)
 - `relevant(id)`: você, seu alvo ou quem te ataca. Só isso vira pop-up (sinais ↻🔒✖ 22 px, DUELO! 20 px, manchete do confronto 20 px, sua nota 18 px, Errou!, Protegido). O resto fica no log.

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { makeRng, type GameConfig, type Obstacle } from '@ppt/shared';
 import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
 import { softCircle, speckleTexture, textTexture } from './textures';
+import { mergeStatic } from './merge';
 
 const SOFT = softCircle();
 const std = (color: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) =>
@@ -67,6 +68,7 @@ export const SKY = GROUND;
 /** Monta todo o quintal do Bar do Zé. */
 export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles {
   const rng = makeRng(20261016);
+  const before = new Set(scene.children);
   const { rx, ry } = cfg.arena;
   const ax = rx * S;
   const az = ry * S;
@@ -276,6 +278,13 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.add(barLight);
   scene.fog = new THREE.Fog(SKY, 22, 40);
   scene.background = new THREE.Color(SKY);
+
+  // Desempenho: junta tudo que é parado em poucas malhas (centenas de desenhos a menos por quadro).
+  // Os obstáculos ficam com grupo próprio (engradado quebra, freezer abre a tampa), juntados por dentro.
+  const propSet = new Set<THREE.Object3D>(props.filter((g): g is THREE.Group => !!g));
+  for (const g of propSet) mergeStatic(g, [...g.children], new Set([g.userData.lid].filter(Boolean)));
+  const decor = scene.children.filter((o) => !before.has(o) && !propSet.has(o) && !(o as THREE.Light).isLight);
+  mergeStatic(scene, decor, new Set<THREE.Object3D>(glows));
 
   const base = { hemi: hemi.intensity, sun: sun.intensity, bar: barLight.intensity };
   const night = new THREE.Color(0x241820);

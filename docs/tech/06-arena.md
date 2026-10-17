@@ -17,6 +17,11 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 Horta removida. 7 mesas vermelhas (`buildPatio` devolve as cadeiras → `fanSeats`), lousa da saideira nos fundos (-1,-7.6), picape com paredão em `truck` (5.4,-7.6), garçom do balcão em `barWaiter`. A mesa de fora com 4 banquinhos (`seats`) fica **livre** para os jogadores no menu.
 Layout dos obstáculos da arena: ver `shared/config.ts` (comentado) e 02-simulação.
 
+## Desempenho: decoração juntada (`merge.ts`)
+No fim de `buildArena3D`, `mergeStatic()` junta toda malha parada com o mesmo material (cor/textura/acabamento/sombra) numa malha só: geometria copiada já na posição final (`toNonIndexed` + `applyMatrix4` + `mergeGeometries`). Ficam de fora: lâmpadas do varal (`glows`, animadas), fumaça (sprites), luzes, materiais transparentes (logo GELADA, vidros), malhas espelhadas e o que estiver em `skip`. Cada obstáculo é juntado **por dentro do próprio grupo** (o engradado continua podendo sumir; a tampa do freezer fica em `skip`).
+Resultado: partida 1.881 → ~840 desenhos por quadro; menu 1.672 → ~780. O que resta é gente animada (torcida/jogadores).
+**Armadilha:** decoração nova que precise se mexer depois de montada tem de ir para `skip` (ou ser criada depois do merge), senão vira parte de uma malha juntada.
+
 ## Interativo (v0.6)
 `ArenaHandles.props[i]` = grupo 3D do obstáculo i (null na mesa). Freezer tem `userData.lid` (tampa de vidro com pivô na borda de trás). `setDim(k)` = queda de luz.
 

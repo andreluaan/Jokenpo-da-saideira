@@ -7,15 +7,19 @@ Cada personagem original = modelo base + **repintura da paleta** + **acessórios
 ## Personagens (`LOOKS`)
 | id | Base | Repintura corpo (célula→cor) | Extras |
 |---|---|---|---|
-| `fera` Fera Verde | male-a | r2c3/r2c11 verde, r2c5 laranja, r3c13 faixa, r3c11 pele | franja reta, sobrancelhonas, óculos `aid-sunglasses`, garrafa |
-| `principe` Príncipe Marrento | male-d | r3c1 azul, r2c9 dourado, r3c15 luvas brancas; cabeça r3c11→preto | 6 espetos (cones), entradas em V, ombreiras |
-| `panca` Seu Pança | male-b | r2c9 branco, r2c11 azul-claro, r3c15 pele **amarela**, r3c11 cinto/sapatos marrons; cabeça r3c15 amarela, r3c11 barba castanha | fiapos na careca, barriga, caneca |
-| `sonolento` Sonolento | male-f | r2c3 oliva, r3c3/r3c15 escuro | rabo de cavalo (cones), faixa vermelha, pálpebras, palito |
+| `fera` Fera Verde | male-a | r2c3/r2c11 verde, r2c5 laranja, r3c13 faixa, r3c11 pele; cabeça r3c1/r3c7/r3c9 (cabelo e óculos do modelo) → pele | tigelinha brilhante (calota + nuca + franja reta), sobrancelhonas, olhos redondos, faixa vermelha na cintura, garrafa |
+| `principe` Príncipe Marrento | male-d | r3c1 azul, r2c9/r3c9 (camisa/gravata) e r3c15 (luvas) brancos; cabeça r3c11→preto | chama de 9 espetos + calota, bico em V na testa, sobrancelhas em V (marrento), peitoral/costas brancos, faixa e ombreiras douradas, botas brancas |
+| `panca` Seu Pança | male-b | r2c9 branco, r2c11 azul-claro, r3c15 pele **amarela**, r3c11 cinto/sapatos marrons; cabeça r3c15/r3c13 amarelas, r3c11 focinho bege | olhões redondos, 2 fiapos em arco, "M" de cabelo sobre as orelhas, barriga, caneca |
+| `sonolento` Sonolento | male-f | r2c3 oliva, r3c3/r3c15 escuro, r3c11 pele clara | rabo "abacaxi" (8 cones), elástico vermelho, pálpebras pesadas + risquinho, brincos, gola alta e bolsos no colete, palito |
+
+**v0.10 (passe "mais parecido com as referências"):** rostos de desenho valem mais que roupa — olhos `cartoonEye()` (discos chatos, sem contorno: com borda pareciam óculos), sobrancelhas em caixas finas. `dome()` = calota low-poly para cabelos "capacete". O cabelo original do modelo pode cobrir a testa: repinte a célula para pele e desenhe o cabelo novo por cima.
 
 **Paleta Kenney** (`colormap.png` 512²): células 32×128 → `r{linha}c{coluna}` (linha 0–3 de cima, coluna 0–15). Linha 2: bege, verde, amarelo, laranja, vermelho, azul, azul-claro, roxo (2 colunas cada). Linha 3: escuro, cinza, ardósia, cinza-azulado, branco, pele salmão, marrom, pele clara.
 Corpo e cabeça recebem **texturas separadas** (assim o terno vira azul sem apagar os olhos). Para descobrir células de outro modelo: `node tools/glbuv.mjs <arquivo.glb>`.
 
 ## Acessórios — como posicionar
+- `userData.noOutline = true` num mesh = sem contorno (olhos, pálpebras, brilho do cabelo).
+- `c.boneAnchor('leg-left')` (só dentro de `build`) devolve `{ g, box }` no espaço do modelo, preso depois ao osso (ex.: botas).
 1. `modelBox()` mede a caixa da cabeça **no espaço do modelo** usando `getVertexPosition` (posição já com esqueleto).
 2. `headAnchor` mapeia a caixa canônica `CANON_HEAD` (x ±0,227, y 0–0,328, z ±0,171; rosto em +Z) para a caixa real.
 3. Os builders desenham em coordenadas canônicas; depois `head.attach(headAnchor)` (preserva o mundo). Tronco: `torsoAnchor` + `torsoBox`. Mão: `handPoint()` → `armR.attach(handR)`.

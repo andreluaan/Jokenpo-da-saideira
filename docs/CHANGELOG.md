@@ -17,6 +17,11 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.10 — menu enxuto e personagens mais parecidos com as referências
+- Pedido: menu "muito poluído e estático". Agora: lousa só com o essencial; **personagem num card no canto** (setas ou clique na mesa); placa balançando, botão "respirando", entradas animadas.
+- **Como jogar em cards com fotos do jogo** (7 passos: objetivo, movimentação, alvo/ataque, Jo-Ken-Pô, golpe, gelada, boteco), com Voltar/Próximo.
+- Personagens mais fiéis ao que o usuário mandou: Fera com tigelinha + sobrancelhonas + olhos redondos (**tirou os óculos escuros**), Príncipe com chama alta, cara de bravo e armadura branca/dourada, Seu Pança com olhões e fiapos em arco, Sonolento com rabo "abacaxi", olhos de sono, gola e bolsos no colete.
+
 ## v0.9 — Bar do Zé de verdade e área dos jogadores
 - Bar do Zé **maior**, recuado ~4 m da cerca, com **varanda coberta** (telhado sobe para a frente para a câmera ver dentro): balcão baixo com o Zé atrás, banquetas e mesinha com fregueses tomando cerveja, geladeira, lampiões, cordão de lâmpadas.
 - **Cercadinho "SÓ QUEM JOGA"** em volta da mesa onde os personagens jogáveis esperam (menu): figurante nenhum chega perto, só os cachorros.

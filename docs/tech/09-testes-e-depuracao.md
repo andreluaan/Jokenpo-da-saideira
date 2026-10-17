@@ -27,6 +27,9 @@ OUT="$TEMP/ppt_stats.txt" npx vitest run packages/shared/test/_stats.test.ts > /
 - Câmera de close: mover `camera.position`/`lookAt`, renderizar, `toDataURL` → `tools/shotserver.mjs`, restaurar. No menu, `camera.clearViewOffset()` antes e restaurar o `view` depois.
 - Elementos HTML (faixas de evento, HUD) só aparecem em `computer screenshot`, não no canvas.
 - `renderer.info.render.calls` = desenhos por quadro (meta: < ~1.200).
+- **Painel oculto** (screenshot "congelado"): pare o `setInterval` da conexão e avance à mão (`bots.think` → `sim.step(1000/60)` → `snapshot` → `listeners` → espera ocupada 16 ms → `__ppt3d.frame()`).
+- **Fotos com o HUD 3D junto** (crachás, arco do QTE, faixas de evento): depois de `frame()` **duas vezes** (a 1ª atualiza a câmera), clonar `.overlay3d` com os estilos computados em linha, pôr num `<svg><foreignObject>` com as fontes embutidas (`@font-face` em data URL) e desenhar por cima do canvas num `<canvas>` 2D. Animações/transições não andam com o painel oculto: force `opacity:1` nas `.barfx` antes. Foi assim que saíram as fotos de `public/howto/`.
+- Retratos grandes dos personagens para comparar: criar `Character3D` num renderer à parte (como `portraits.ts`) com câmera de frente e de 3/4.
 
 ## Checklist antes de commitar
 `npm run typecheck` · `npm test` · `npm run build` · olhar no navegador (ou captura) a área mexida.

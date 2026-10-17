@@ -8,9 +8,10 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 **Leia primeiro o arquivo da área que vai mexer em [`docs/tech/`](docs/tech/README.md)** — não releia o código todo.
 
 ## Estado atual (atualize a cada etapa)
-- **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Estamos num longo **passe de arte/gameplay** (v0.5 → v0.9):
+- **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Estamos num longo **passe de arte/gameplay** (v0.5 → v0.10):
   golpes finais por símbolo, boteco vivo (churrasqueira, engradado, poças, freezer/escudo, 1 evento por rodada + garçom),
-  quintal verde com estradinha, Bar do Zé com varanda e gente dentro, torcida, cachorros, picape com paredão, menu igual.
+  quintal verde com estradinha, Bar do Zé com varanda e gente dentro, torcida, cachorros, picape com paredão;
+  v0.10: menu enxuto (personagem num card no canto, Como jogar em cards com fotos) e personagens mais fiéis às referências.
   **Histórico e o que o usuário aprovou/recusou: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)** — leia antes de propor ideias.
 - **Próximo:** o usuário vai jogar e avaliar. Depois: sons (ganchos prontos), Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.

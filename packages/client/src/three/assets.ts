@@ -45,6 +45,22 @@ export const MODELS = {
     'sign',
     'plant_bush',
     'plant_bushLarge',
+    // v0.7: quintal mais verde
+    'tree_default',
+    'tree_oak',
+    'tree_fat',
+    'tree_detailed',
+    'tree_palmShort',
+    'plant_bushDetailed',
+    'plant_bushSmall',
+    'plant_flatTall',
+    'grass_leafs',
+    'grass_leafsLarge',
+    'flower_redB',
+    'flower_yellowB',
+    'flower_purpleB',
+    'pot_small',
+    'path_stone',
   ],
 } as const;
 

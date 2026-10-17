@@ -56,7 +56,7 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 
 ## Vida no entorno (`ambient3d.ts`, `paredao3d.ts`) — "evento da cidade"
 `Ambient3D` (só visual; usado na **partida e no menu**):
-- **Torcida em pé** colada na cerca (elipse +0,78), ~25 pessoas, sem as faixas `NO_CROWD` (porteira/mesa de fora/bar e o meio da frente, para não tapar a câmera); **sentada** nas cadeiras das mesas vermelhas (`arena.fanSeats`, y=0,14). Modelos Kenney variados (`CROWD`) com a camisa repintada (`SHIRTS`); `Extra3D.offset()` desencontra as animações. Mesmo tamanho dos jogadores (`CHAR_SCALE`).
+- **Torcida** (v0.8, menos aperto): só ~10 espaçados na cerca (elipse +0,78, fora das faixas `NO_CROWD`); a maioria **sentada** nas mesas vermelhas (`arena.fanSeats`, y=0,14) e em **rodinhas** em pé (`arena.hangouts`), todos com long neck na mão (`Extra3D.holdBottle`, garrafa presa no osso do braço via `handPoint`) dando **gole** de vez em quando (braço à boca + cabeça para trás, como os jogadores). Modelos Kenney variados (`CROWD`) com a camisa repintada (`SHIRTS`); `Extra3D.offset()` desencontra as animações. Mesmo tamanho dos jogadores (`CHAR_SCALE`).
 - Reações: golpe → `emote-yes`/`jump` (golpe final = quase todos), eliminação → todos pulam e os cães latem, início de evento → comemoram. Sem briga (menu), alguém comemora sozinho de vez em quando.
 - **3 cachorros** (caramelo, preto, branco) fazendo **ronda** em trechos diferentes da elipse (+1,65 a +2,5), vão e voltam, param, sentam e abanam o rabo.
 - **Garçom no balcão** do Bar do Zé (`arena.barWaiter`); some enquanto o garçom do evento atravessa (`setWaiterAway`).

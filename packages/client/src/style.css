@@ -38,7 +38,7 @@ kbd {
 #loading-msg { font-family: var(--chalk); font-size: 30px; margin: 0; }
 
 /* ---------- menu: cardápio de boteco ---------- */
-#menu { overflow: hidden; background: #bf7a60; }
+#menu { overflow: hidden; background: #a9b97a; }
 #menu-bg { position: absolute; inset: 0; }
 #menu-bg canvas { display: block; }
 .menu-card {
@@ -96,7 +96,7 @@ kbd {
 .howto li { margin: 6px 0; line-height: 1.4; }
 
 /* ---------- partida: HUD sobre o 3D ---------- */
-#match { background: #bf7a60; }
+#match { background: #a9b97a; }
 #game-wrap { position: absolute; inset: 0; }
 #game-wrap canvas { display: block; }
 #player-cards { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; pointer-events: none; z-index: 5; }

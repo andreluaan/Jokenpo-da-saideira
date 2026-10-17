@@ -113,6 +113,146 @@ export function speckleTexture(base: number, specks: number[], n = 900, size = 5
   return t;
 }
 
+/** Desenha `fn(x, y)` e as cópias do outro lado das bordas (para a textura repetir sem emenda). */
+function wrapped(size: number, x: number, y: number, r: number, fn: (x: number, y: number) => void): void {
+  for (const dx of [-size, 0, size]) {
+    for (const dy of [-size, 0, size]) {
+      const px = x + dx;
+      const py = y + dy;
+      if (px + r < 0 || px - r > size || py + r < 0 || py - r > size) continue;
+      fn(px, py);
+    }
+  }
+}
+
+/**
+ * Grama de quintal (repetível): verde quentinho com manchas mais escuras/secas, tufos riscados e
+ * florzinhas brancas e amarelas espalhadas.
+ */
+export function grassTexture(base: number, size = 512, seed = 5): THREE.Texture {
+  let s = seed;
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = hex(base);
+  ctx.fillRect(0, 0, size, size);
+  // Manchas grandes e suaves (variação de tom).
+  const patches = [0x7c9443, 0x9db35c, 0xa9a85e, 0x86a04a, 0xb3a467];
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * size;
+    const y = rnd() * size;
+    const r = 18 + rnd() * 60;
+    ctx.fillStyle = hex(patches[Math.floor(rnd() * patches.length)]);
+    ctx.globalAlpha = 0.18 + rnd() * 0.2;
+    wrapped(size, x, y, r * 1.4, (px, py) => {
+      ctx.beginPath();
+      ctx.ellipse(px, py, r * 1.4, r, rnd() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  // Tufos: risquinhos curtos claros e escuros.
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 2600; i++) {
+    const x = rnd() * size;
+    const y = rnd() * size;
+    const dark = rnd() < 0.55;
+    ctx.strokeStyle = dark ? '#5f7a34' : '#b7c873';
+    ctx.globalAlpha = 0.35 + rnd() * 0.35;
+    ctx.lineWidth = 1 + rnd() * 1.2;
+    const len = 3 + rnd() * 6;
+    const a = -Math.PI / 2 + (rnd() - 0.5) * 0.9;
+    wrapped(size, x, y, len, (px, py) => {
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(a) * len, py + Math.sin(a) * len);
+      ctx.stroke();
+    });
+  }
+  // Florzinhas.
+  for (let i = 0; i < 90; i++) {
+    const x = rnd() * size;
+    const y = rnd() * size;
+    ctx.fillStyle = rnd() < 0.6 ? '#fff4e6' : '#ffd25a';
+    ctx.globalAlpha = 0.85;
+    wrapped(size, x, y, 3, (px, py) => {
+      ctx.beginPath();
+      ctx.arc(px, py, 1.6 + rnd() * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  ctx.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
+/**
+ * Estrada de terra (u = atravessando a pista, v = ao longo, repetível em v): terra batida, duas trilhas
+ * de pneu mais escuras, pedrinhas e mato invadindo as beiradas.
+ */
+export function roadTexture(size = 256, seed = 9): THREE.Texture {
+  let s = seed;
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#b8916a';
+  ctx.fillRect(0, 0, size, size);
+  // Trilhas de pneu.
+  for (const u of [0.3, 0.7]) {
+    const g = ctx.createLinearGradient((u - 0.09) * size, 0, (u + 0.09) * size, 0);
+    g.addColorStop(0, 'rgba(120,88,60,0)');
+    g.addColorStop(0.5, 'rgba(120,88,60,0.55)');
+    g.addColorStop(1, 'rgba(120,88,60,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect((u - 0.09) * size, 0, 0.18 * size, size);
+  }
+  // Pedrinhas e manchas.
+  for (let i = 0; i < 260; i++) {
+    const x = (0.1 + rnd() * 0.8) * size;
+    const y = rnd() * size;
+    ctx.fillStyle = rnd() < 0.5 ? '#9c7752' : '#d4b48c';
+    ctx.globalAlpha = 0.5 + rnd() * 0.4;
+    wrapped(size, x, y, 4, (px, py) => {
+      ctx.beginPath();
+      ctx.ellipse(px, py, 1.5 + rnd() * 2.5, 1 + rnd() * 1.5, rnd() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  // Mato nas beiradas (some no meio da pista).
+  for (const side of [0, 1]) {
+    const g = ctx.createLinearGradient(side ? size : 0, 0, side ? size * 0.82 : size * 0.18, 0);
+    g.addColorStop(0, 'rgba(143,164,82,1)');
+    g.addColorStop(1, 'rgba(143,164,82,0)');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g;
+    ctx.fillRect(side ? size * 0.82 : 0, 0, size * 0.18, size);
+    ctx.strokeStyle = '#6f8a3c';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 70; i++) {
+      const x = side ? size - rnd() * size * 0.16 : rnd() * size * 0.16;
+      const y = rnd() * size;
+      ctx.globalAlpha = 0.6;
+      wrapped(size, x, y, 6, (px, py) => {
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + (rnd() - 0.5) * 3, py - 4 - rnd() * 4);
+        ctx.stroke();
+      });
+    }
+  }
+  ctx.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
 /** Círculo suave (fumaça, poeira). */
 export function softCircle(): THREE.Texture {
   const c = document.createElement('canvas');

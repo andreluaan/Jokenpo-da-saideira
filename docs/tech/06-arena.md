@@ -13,6 +13,13 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - **Entorno**: boteco (`buildShack`, telhado com nervuras, placa "BAR DO ZÉ", TV, rádio, banquetas, caixa de som), **mesa de fora com 4 banquinhos** (`buildOutdoorTable(-9.25,-1.3)` → `seats`), árvores de outono, milharal, horta, mesas vermelhas com guarda-sol (`buildPatio`), lousa "SAIDEIRA", grama/flores/pedras espalhadas (PRNG fixo), lenha, toco, lixeira.
 - **Luz** e névoa (ver 04).
 
+## Quintal verde e estradinha (v0.8)
+- **Chão**: `grassTexture()` (textures.ts) — grama verde quentinha (`GROUND = 0x8fa452`) com manchas, tufos riscados e florzinhas, repetível sem emenda (`wrapped`). Névoa/fundo `SKY = 0xa9b97a`; hemisfério com rebote verde. CSS `#menu/#match` na mesma cor.
+- **Estradinha** (`ROAD`, `buildRoad`): faixa seguindo uma Catmull-Rom com `roadTexture()` (trilhas de pneu, pedrinhas, mato nas beiradas), da borda esquerda até o **terreiro** de terra em frente ao bar; moitas acompanham as margens. Lousa da saideira na entrada da estrada.
+- **Bar do Zé**: varandinha de tábua, toldo listrado, lampião aceso, vasos, arbustos e engradados empilhados (`buildShack`).
+- Árvores verdes + de outono + um coqueiro; vegetação espalhada respeitando `free()` (arena+torcida, estrada, bar, mesas, rodinhas, picape).
+- `PATIOS` (9 mesas vermelhas) e `HANGOUTS` (rodinhas em pé) definidos no topo do arquivo.
+
 ## Entorno (v0.7)
 Horta removida. 7 mesas vermelhas (`buildPatio` devolve as cadeiras → `fanSeats`), lousa da saideira nos fundos (-1,-7.6), picape com paredão em `truck` (5.4,-7.6), garçom do balcão em `barWaiter`. A mesa de fora com 4 banquinhos (`seats`) fica **livre** para os jogadores no menu.
 Layout dos obstáculos da arena: ver `shared/config.ts` (comentado) e 02-simulação.

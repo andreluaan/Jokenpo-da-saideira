@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { makeRng, type GameConfig, type Obstacle } from '@ppt/shared';
 import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
-import { softCircle, speckleTexture, textTexture } from './textures';
+import { grassTexture, roadTexture, softCircle, speckleTexture, textTexture } from './textures';
 import { mergeStatic } from './merge';
 
 const SOFT = softCircle();
@@ -54,6 +54,8 @@ export interface ArenaHandles {
   /** Onde fica a picape com paredão (traseira virada para a arena) e o garçom do balcão. */
   truck: { pos: THREE.Vector3; yaw: number };
   barWaiter: { pos: THREE.Vector3; yaw: number };
+  /** Pontos onde a turma em pé faz rodinha (conversando com a cerveja na mão). */
+  hangouts: THREE.Vector3[];
   /** Grupo 3D de cada obstáculo (mesmo índice de config.obstacles; null quando não há grupo único). */
   props: (THREE.Group | null)[];
   /** Queda de luz: 0 = normal, 1 = quintal apagado (só brasa, luz do bar e as lâmpadas do varal). */
@@ -61,9 +63,38 @@ export interface ArenaHandles {
   update(dt: number, now: number): void;
 }
 
-/** Cor do chão de fora; a névoa e o fundo usam a mesma cor para o horizonte sumir sem emenda. */
-const GROUND = 0xbf7a60;
-export const SKY = GROUND;
+/** Grama do quintal (v0.7: mais verde e aconchegante). A névoa/fundo é um verde-claro de mormaço. */
+const GROUND = 0x8fa452;
+export const SKY = 0xa9b97a;
+
+/** Estradinha de terra que chega no terreiro do Bar do Zé (pontos em x/z do mundo). */
+const ROAD: [number, number][] = [
+  [-19, 6.6],
+  [-14.6, 4.7],
+  [-12.4, 2.3],
+  [-11.7, -0.6],
+  [-11.0, -2.6],
+  [-9.7, -3.4],
+  [-8.4, -3.5],
+];
+/** Mesas vermelhas em volta (x, z, guarda-sol). */
+const PATIOS: [number, number, boolean][] = [
+  [9.2, 4.9, true],
+  [10.9, 1.5, false],
+  [10.6, -2.4, true],
+  [2.2, -7.6, true],
+  [-2.4, -7.7, false],
+  [-4.6, -7.1, true],
+  [-9.6, 3.6, true],
+  [-7.8, 5.7, false],
+  [6.4, 6.3, true],
+];
+const HANGOUTS: [number, number][] = [
+  [-3.6, 6.6],
+  [3.3, -6.4],
+  [11.5, -0.4],
+  [-11.0, -4.3],
+];
 
 /** Monta todo o quintal do Bar do Zé. */
 export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles {
@@ -77,8 +108,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
 
   // --- chão ---
   // Chão de fora um tom mais escuro e menos saturado que a arena: o olho vai direto para o ringue.
-  const groundTex = speckleTexture(GROUND, [0xb5735b, 0xc98a6f, 0xa86a52], 2200, 512, 3, 0.2, 2.4);
-  groundTex.repeat.set(10, 10);
+  const groundTex = grassTexture(GROUND);
+  groundTex.repeat.set(12, 9);
   const ground = mesh(new THREE.PlaneGeometry(70, 50), std(0xffffff, { map: groundTex, flatShading: false }));
   ground.rotation.x = -Math.PI / 2;
   ground.castShadow = false;
@@ -195,18 +226,28 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     props.push(group);
   }
 
-  // --- entorno: Bar do Zé, árvores, mesas, horta ---
+  // --- entorno: estradinha, Bar do Zé, árvores, mesas, plantas ---
+  const roadPts = buildRoad(scene, ROAD);
+  // Terreiro de terra batida na frente do bar, onde a estrada chega.
+  scene.add(flat(ellipseShape(2.1, 1.15), std(0xb8916a, { flatShading: false }), 0.007).translateX(-8.3).translateY(3.45));
   buildShack(scene, -8.1, -5.1);
   const seats = buildOutdoorTable(scene, -9.25, -1.3);
+  const roadDist = (x: number, z: number) => Math.min(...roadPts.map((p) => Math.hypot(p.x - x, p.z - z)));
+  // Árvores: verdes misturadas com as de outono (aconchego sem perder a paleta quente).
   for (const [x, z, h, kind] of [
-    [8.6, -5.4, 2.6, 'tree_oak_fall'],
-    [10.2, -2.6, 2.2, 'tree_fat_fall'],
+    [8.6, -5.4, 2.6, 'tree_oak'],
+    [11.6, -4.2, 2.2, 'tree_fat_fall'],
     [7.3, -7.9, 2.0, 'tree_default_fall'],
-    [-10.9, 1.4, 2.4, 'tree_detailed_fall'],
-    [-10.9, -3.3, 2.0, 'tree_oak_fall'],
-    [-2.6, -6.9, 2.1, 'tree_fat_fall'],
-    [10.6, 2.6, 2.3, 'tree_default_fall'],
-    [-10.6, 3.4, 2.1, 'tree_fat_fall'],
+    [-13.4, 0.4, 2.4, 'tree_detailed'],
+    [-12.6, -4.8, 2.2, 'tree_oak_fall'],
+    [-1.4, -8.8, 2.1, 'tree_fat'],
+    [12.1, 3.3, 2.3, 'tree_default'],
+    [-11.2, 5.5, 2.1, 'tree_default_fall'],
+    [13.6, -1.1, 2.2, 'tree_oak'],
+    [-14.4, -2.4, 2.3, 'tree_fat'],
+    [3.9, -9.2, 2.2, 'tree_detailed'],
+    [-6.6, -8.5, 2.0, 'tree_default'],
+    [-5.5, -5.4, 2.3, 'tree_palmShort'],
   ] as const) {
     scene.add(place(`nature/${kind}`, x, z, { height: h, rot: rng() * 6 }));
   }
@@ -217,47 +258,69 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     if (z > -4.8 && x < 9) continue;
     scene.add(place('nature/crops_cornStageD', x + 2.2, z, { height: 0.9 + rng() * 0.2, rot: rng() * 6 }));
   }
-  // Mesas de plástico vermelhas espalhadas em volta (quem não cabe na cerca assiste sentado).
+  // Mesas de plástico vermelhas espalhadas em volta (a turma assiste sentada, tomando uma).
   const fanSeats: Seat[] = [];
-  for (const [x, z, umb] of [
-    [9.2, 4.9, true],
-    [10.9, 1.5, false],
-    [10.6, -2.4, true],
-    [2.2, -7.6, true],
-    [-3.9, -7.0, false],
-    [-11.1, 2.6, true],
-    [-9.4, 4.8, true],
-  ] as const) {
-    fanSeats.push(...buildPatio(scene, x, z, umb));
-  }
-  // Lousa da saideira.
+  for (const [x, z, umb] of PATIOS) fanSeats.push(...buildPatio(scene, x, z, umb));
+  // Lousa da saideira na entrada da estradinha, como placa de beira de estrada.
   const board = new THREE.Group();
   board.add(mesh(new THREE.BoxGeometry(1.1, 0.75, 0.06), std(0x8a4f45), 0, 0.85, 0));
   const chalk = mesh(new THREE.PlaneGeometry(0.98, 0.63), new THREE.MeshStandardMaterial({ map: textTexture('SAIDEIRA\nquem perde paga', { w: 512, h: 330, bg: 0x2f3b33, size: 74, color: '#fff4e6' }), roughness: 1 }), 0, 0.85, 0.035);
   board.add(chalk);
   board.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), std(0x6a3f37), -0.42, 0.45, -0.05));
   board.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), std(0x6a3f37), 0.42, 0.45, -0.05));
-  board.position.set(-1.0, 0, -7.6);
-  board.rotation.y = 0;
+  board.position.set(-12.9, 0, 3.6);
+  board.rotation.y = 0.9;
   scene.add(board);
 
-  // Grama, flores e pedrinhas espalhadas fora da arena.
-  const scatter = ['nature/grass', 'nature/grass_large', 'nature/flower_redA', 'nature/flower_yellowA', 'nature/flower_purpleA', 'nature/rock_smallA', 'nature/plant_bush'];
-  for (let i = 0; i < 90; i++) {
-    const x = (rng() - 0.5) * 24;
-    const z = (rng() - 0.5) * 15;
-    const k = (x / (ax + 1.1)) ** 2 + (z / (az + 1.1)) ** 2;
-    // Fora da arena, do bar e do canto da picape (frente à esquerda).
-    if (k < 1 || (x < -6.4 && z < -3.6) || (x < -7.2 && z > 3)) continue;
-    const kind = scatter[Math.floor(rng() * scatter.length)];
-    scene.add(place(kind, x, z, { height: kind.includes('rock') ? 0.18 : kind.includes('bush') ? 0.45 : 0.25, rot: rng() * 6 }));
+  // Vegetação: moitas acompanhando a estrada e muito capim, flor e arbusto pelo quintal.
+  const free = (x: number, z: number, pad = 0) => {
+    const k = (x / (ax + 1.45 + pad)) ** 2 + (z / (az + 1.45 + pad)) ** 2;
+    if (k < 1) return false; // arena + torcida na cerca
+    if (roadDist(x, z) < 1.15 + pad) return false;
+    if (x < -6.2 && x > -10.4 && z < -2.3 && z > -6.2) return false; // bar e terreiro
+    if (Math.hypot(x + 9.25, z + 1.3) < 1.3 + pad) return false; // mesa de fora
+    if (PATIOS.some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.25 + pad)) return false;
+    if (HANGOUTS.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 1.1 + pad)) return false;
+    if (Math.hypot(x - 5.4, z + 7.6) < 2 + pad) return false; // picape
+    return true;
+  };
+  roadPts.forEach((p, i) => {
+    if (i % 3 !== 0) return;
+    for (const side of [-1, 1]) {
+      const n = roadPts[Math.min(roadPts.length - 1, i + 1)].clone().sub(p).normalize();
+      const x = p.x - n.z * side * (1.25 + rng() * 0.4);
+      const z = p.z + n.x * side * (1.25 + rng() * 0.4);
+      if (!free(x, z, -0.2) || rng() < 0.6) continue;
+      const kind = rng() < 0.55 ? 'nature/plant_bushSmall' : rng() < 0.5 ? 'nature/plant_bushDetailed' : 'nature/flower_yellowB';
+      scene.add(place(kind, x, z, { height: kind.includes('grass') ? 0.35 : 0.42 + rng() * 0.2, rot: rng() * 6 }));
+    }
+  });
+  const scatter: [string, number][] = [
+    ['nature/grass_leafs', 0.28],
+    ['nature/grass_leafsLarge', 0.36],
+    ['nature/grass', 0.25],
+    ['nature/grass_large', 0.3],
+    ['nature/flower_redA', 0.25],
+    ['nature/flower_yellowB', 0.25],
+    ['nature/flower_purpleB', 0.25],
+    ['nature/flower_redB', 0.25],
+    ['nature/flower_yellowA', 0.25],
+    ['nature/flower_purpleA', 0.25],
+    ['nature/plant_bushSmall', 0.38],
+    ['nature/rock_smallA', 0.16],
+  ];
+  for (let i = 0; i < 260; i++) {
+    const x = (rng() - 0.5) * 30;
+    const z = (rng() - 0.5) * 19;
+    if (!free(x, z)) continue;
+    const [kind, h] = scatter[Math.floor(rng() * scatter.length)];
+    scene.add(place(kind, x, z, { height: h * (0.8 + rng() * 0.5), rot: rng() * 6 }));
   }
   scene.add(place('nature/log_stack', -6.0, -3.9, { size: 1.0, rot: 0.4 }));
-  scene.add(place('nature/stump_round', -5.3, -4.6, { height: 0.3 }));
   scene.add(place('furniture/trashcan', 7.2, 3.4, { height: 0.55 }));
 
   // --- luz ---
-  const hemi = new THREE.HemisphereLight(0xfff0dd, 0x7a5a52, 1.15);
+  const hemi = new THREE.HemisphereLight(0xfff0dd, 0x6b7a44, 1.15);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffe2bc, 2.6);
   sun.position.set(-7, 13, 6);
@@ -287,7 +350,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   mergeStatic(scene, decor, new Set<THREE.Object3D>(glows));
 
   const base = { hemi: hemi.intensity, sun: sun.intensity, bar: barLight.intensity };
-  const night = new THREE.Color(0x241820);
+  const night = new THREE.Color(0x1c1e24);
   const day = new THREE.Color(SKY);
   let dim = 0;
   return {
@@ -298,7 +361,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     // Nos fundos à direita (aparece no menu e na partida). Frente apontando para longe da arena →
     // caçamba e paredão virados para o ringue.
     truck: { pos: new THREE.Vector3(5.4, 0, -7.6), yaw: Math.atan2(7.6, 5.4) },
-    barWaiter: { pos: new THREE.Vector3(-7.0, 0, -3.95), yaw: 0.35 },
+    barWaiter: { pos: new THREE.Vector3(-7.0, 0.08, -3.95), yaw: 0.35 },
+    hangouts: HANGOUTS.map(([x, z]) => new THREE.Vector3(x, 0, z)),
     props,
     setDim(k) {
       if (Math.abs(k - dim) < 1e-3) return;
@@ -455,6 +519,43 @@ function buildObstacle(
 
 // ------------------------------------------------------------------ entorno
 
+/** Faixa de terra seguindo a curva (textura com trilhas de pneu e mato nas beiradas). Devolve pontos ao longo dela. */
+function buildRoad(scene: THREE.Scene, pts: [number, number][]): THREE.Vector3[] {
+  const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)));
+  const N = 90;
+  const width = 1.7;
+  const along = curve.getSpacedPoints(N);
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  let dist = 0;
+  along.forEach((p, i) => {
+    const t = curve.getTangentAt(i / N);
+    const nx = -t.z;
+    const nz = t.x;
+    if (i > 0) dist += p.distanceTo(along[i - 1]);
+    // A estrada abre um pouco ao chegar no terreiro.
+    const w = (width / 2) * (i > N - 8 ? 1 + (i - (N - 8)) * 0.06 : 1);
+    pos.push(p.x - nx * w, 0.008, p.z - nz * w, p.x + nx * w, 0.008, p.z + nz * w);
+    uv.push(0, dist / 1.7, 1, dist / 1.7);
+    if (i > 0) {
+      const a = (i - 1) * 2;
+      idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+    }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  if (g.attributes.normal.getY(0) < 0) g.setIndex(idx.map((_, k) => idx[k - (k % 3) + [0, 2, 1][k % 3]]));
+  g.computeVertexNormals();
+  const road = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: roadTexture(), roughness: 0.95 }));
+  road.receiveShadow = true;
+  scene.add(road);
+  return along;
+}
+
 function buildShack(scene: THREE.Scene, x: number, z: number): void {
   const g = new THREE.Group();
   const W = 3.4;
@@ -494,13 +595,56 @@ function buildShack(scene: THREE.Scene, x: number, z: number): void {
   // Banquetas, caixa de som e engradados na porta.
   for (const k of [-0.1, 0.45, 1.0]) {
     const st = fit(instance('furniture/stoolBar'), { height: 0.5 });
-    st.position.set(k, 0, D / 2 + 0.55);
+    st.position.set(k, 0.08, D / 2 + 0.55);
     g.add(st);
   }
   const speaker = fit(instance('furniture/speaker'), { height: 0.7 });
-  speaker.position.set(-1.55, 0, D / 2 + 0.35);
+  speaker.position.set(-1.55, 0.08, D / 2 + 0.35);
   speaker.rotation.y = 0.4;
   g.add(speaker);
+  // Varandinha de tábua na frente (as banquetas ficam em cima).
+  g.add(mesh(new THREE.BoxGeometry(W + 0.5, 0.08, 1.35), std(0x9a6a4a), 0, 0.04, D / 2 + 0.66));
+  for (let k = -W / 2; k <= W / 2 + 0.01; k += 0.34) g.add(mesh(new THREE.BoxGeometry(0.015, 0.012, 1.35), std(0x7a4f36), k, 0.085, D / 2 + 0.66));
+  // Toldo listrado sobre o balcão.
+  const stripes = document.createElement('canvas');
+  stripes.width = 128;
+  stripes.height = 8;
+  const sx = stripes.getContext('2d')!;
+  for (let k = 0; k < 8; k++) {
+    sx.fillStyle = k % 2 ? '#fff4e6' : '#d8443c';
+    sx.fillRect(k * 16, 0, 16, 8);
+  }
+  const awningTex = new THREE.CanvasTexture(stripes);
+  awningTex.colorSpace = THREE.SRGBColorSpace;
+  const awning = mesh(new THREE.BoxGeometry(2.2, 0.03, 0.8), new THREE.MeshStandardMaterial({ map: awningTex, roughness: 0.8 }), 0.45, 1.5, D / 2 + 0.36);
+  awning.rotation.x = 0.38;
+  g.add(awning);
+  // Lampião aceso pendurado no beiral.
+  g.add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.25, 4), std(0x2b1d22), -0.55, 1.47, D / 2 + 0.55));
+  g.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffe2a0, emissive: 0xffc860, emissiveIntensity: 1.4 }), -0.55, 1.32, D / 2 + 0.55));
+  // Vasos, plantas e engradados empilhados do lado.
+  for (const [px, pz] of [
+    [-W / 2 - 0.15, D / 2 + 1.2],
+    [W / 2 + 0.15, D / 2 + 1.2],
+  ]) {
+    const pot = fit(instance('nature/pot_small'), { height: 0.55 });
+    pot.position.set(px, 0, pz);
+    g.add(pot);
+  }
+  for (const [px, pz, h] of [
+    [-W / 2 - 0.35, -0.2, 0.6],
+    [-W / 2 - 0.3, 0.55, 0.45],
+    [W / 2 + 0.45, -0.55, 0.55],
+  ]) {
+    const b = fit(instance('nature/plant_bushDetailed'), { height: h });
+    b.position.set(px, 0, pz);
+    g.add(b);
+  }
+  for (let k = 0; k < 3; k++) {
+    const crate = mesh(new THREE.BoxGeometry(0.42, 0.24, 0.32), std(k % 2 ? 0x4f9a5c : 0xf2b134), W / 2 + 0.32, 0.12 + k * 0.24, 0.35 + (k % 2) * 0.03);
+    crate.rotation.y = (k - 1) * 0.12;
+    g.add(crate);
+  }
   g.position.set(x, 0, z);
   shadows(g);
   scene.add(g);

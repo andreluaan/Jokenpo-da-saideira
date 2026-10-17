@@ -24,6 +24,7 @@ node tools/glbuv.mjs     <arquivo.glb>   # células da paleta usadas por osso (p
 
 ## Extras (v0.6, já estavam em `assets-src`, CC0)
 `chars/character-male-c|male-e|female-a|female-c` (garçom = male-e repintado; torcida), `food/plate-broken`.
+v0.8 (Nature Kit, CC0, também de `assets-src`): árvores verdes `tree_default|oak|fat|detailed`, `tree_palmShort`, `plant_bushDetailed|bushSmall|flatTall`, `grass_leafs(Large)`, flores `*B`, `pot_small`, `path_stone` (+~180 KB).
 
 ## Fatos úteis
 - Personagem Kenney: ~0,67 de altura, cabeça 0,45 de largura; animações incluem idle, walk, sprint, jump, fall, sit, die, attack-melee/kick-right/left, holding-right/left/both, interact, emote-yes/no.

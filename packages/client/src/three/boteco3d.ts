@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { GameConfig, GameEvent, Snapshot } from '@ppt/shared';
 import { S, gltf, instance, toWorld } from './assets';
 import type { ArenaHandles } from './arena3d';
-import { CHAR_SCALE, addOutline, makeBottle, type Character3D } from './character3d';
+import { CHAR_SCALE, addOutline, handPoint, makeBottle, type Character3D } from './character3d';
 import { recolorColormap, softCircle } from './textures';
 
 /**
@@ -54,9 +54,18 @@ export class Extra3D {
   private readonly mixer: THREE.AnimationMixer;
   private readonly actions = new Map<string, THREE.AnimationAction>();
   private current = '';
+  private readonly model: THREE.Object3D;
+  private readonly armR: THREE.Bone | undefined;
+  private readonly head: THREE.Bone | undefined;
+  private readonly rest = new Map<THREE.Bone, THREE.Euler>();
+  /** Gole de cerveja (só quem segura garrafa): progresso 0–1 e quando é o próximo. */
+  private sip = -1;
+  private nextSip = 2 + Math.random() * 6;
+  private holding = false;
 
   constructor(base: string, body: Record<string, number> = {}, scale = CHAR_SCALE) {
     const model = instance(`chars/${base}`);
+    this.model = model;
     model.scale.setScalar(scale);
     // Repintura da paleta Kenney no corpo (mesmo esquema dos personagens jogáveis).
     const bm = model.getObjectByName('body-mesh') as THREE.Mesh | undefined;
@@ -69,6 +78,23 @@ export class Extra3D {
     addOutline(model);
     this.mixer = new THREE.AnimationMixer(model);
     for (const clip of gltf(`chars/${base}`).animations) this.actions.set(clip.name, this.mixer.clipAction(clip));
+    this.armR = model.getObjectByName('arm-right') as THREE.Bone | undefined;
+    this.head = model.getObjectByName('head') as THREE.Bone | undefined;
+    for (const b of [this.armR, this.head]) if (b) this.rest.set(b, b.rotation.clone());
+  }
+
+  /** Long neck na mão direita; de vez em quando leva à boca e dá um gole. */
+  holdBottle(): void {
+    if (!this.armR || this.holding) return;
+    this.holding = true;
+    const hand = new THREE.Group();
+    hand.position.copy(handPoint(this.model, this.armR));
+    this.model.add(hand);
+    this.model.updateMatrixWorld(true);
+    this.armR.attach(hand);
+    const b = makeBottle();
+    b.scale.setScalar(1 / this.model.scale.x); // sem contorno: garrafa pequenininha, economiza desenho
+    hand.add(b);
   }
 
   play(name: string, fade = 0.2): void {
@@ -98,7 +124,23 @@ export class Extra3D {
   }
 
   update(dt: number): void {
+    for (const [b, r] of this.rest) b.rotation.copy(r);
     this.mixer.update(dt);
+    if (!this.holding || !this.armR) return;
+    // Gole: o braço sobe até a boca e a cabeça vai para trás (igual aos jogadores bebendo).
+    this.nextSip -= dt;
+    if (this.sip < 0 && this.nextSip <= 0) {
+      this.sip = 0;
+      this.nextSip = 4 + Math.random() * 7;
+    }
+    if (this.sip >= 0) {
+      this.sip += dt / 1.6;
+      const k = Math.sin(Math.min(1, this.sip) * Math.PI);
+      this.armR.rotation.x -= 2.2 * k;
+      this.armR.rotation.z -= 0.3 * k;
+      if (this.head) this.head.rotation.x -= 0.35 * k;
+      if (this.sip >= 1) this.sip = -1;
+    }
   }
 
   /** Adianta a animação (para a torcida não balançar toda igual). */

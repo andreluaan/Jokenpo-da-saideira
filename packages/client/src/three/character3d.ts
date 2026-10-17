@@ -160,7 +160,7 @@ function modelBox(model: THREE.Object3D, meshName: string, bone: THREE.Bone | nu
 const CANON_HEAD = new THREE.Box3(new THREE.Vector3(-0.227, 0, -0.171), new THREE.Vector3(0.227, 0.328, 0.171));
 
 /** Ponto (no espaço do modelo) da mão: base dos vértices do braço. */
-function handPoint(model: THREE.Object3D, bone: THREE.Bone): THREE.Vector3 {
+export function handPoint(model: THREE.Object3D, bone: THREE.Bone): THREE.Vector3 {
   const b = modelBox(model, 'body-mesh', bone);
   const c = b.getCenter(new THREE.Vector3());
   return new THREE.Vector3(c.x, b.min.y + 0.03, c.z);

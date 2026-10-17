@@ -138,10 +138,10 @@ export class Ambient3D {
     const ax = cfg.arena.rx * S;
     const az = cfg.arena.ry * S;
 
-    // Torcida em pé, colada na cerca, olhando para o ringue.
+    // Alguns na cerca, espaçados (nada de paredão de gente: dá sensação de aperto).
     const ring = 0.78;
-    for (let i = 0, a = -Math.PI; a < Math.PI && i < 40; i++) {
-      a += 0.16 + rng() * 0.14;
+    for (let i = 0, a = -Math.PI; a < Math.PI && i < 20; i++) {
+      a += 0.38 + rng() * 0.42;
       if (inRanges(a, NO_CROWD)) continue;
       const x = Math.cos(a) * (ax + ring);
       const z = Math.sin(a) * (az + ring);
@@ -150,19 +150,38 @@ export class Ambient3D {
       e.root.rotation.y = Math.atan2(-x, -z) + (rng() - 0.5) * 0.4;
       e.play('idle');
       e.offset(rng() * 2);
+      if (rng() < 0.4) e.holdBottle();
       scene.add(e.root);
       this.fans.push({ e, base: 'idle', cheerUntil: 0 });
     }
-    // Torcida sentada nas mesas vermelhas (nem toda cadeira ocupada).
+    // A maioria assiste sentada nas mesas, tomando uma.
     for (const seat of arena.fanSeats) {
-      if (rng() < 0.25) continue;
+      if (rng() < 0.15) continue;
       const e = pickLook();
       e.root.position.copy(seat.pos).setY(0.14);
       e.root.rotation.y = Math.atan2(seat.face.x, seat.face.z);
       e.play('sit');
       e.offset(rng() * 2);
+      e.holdBottle();
       scene.add(e.root);
       this.fans.push({ e, base: 'sit', cheerUntil: 0 });
+    }
+    // Rodinhas em pé, de cerveja na mão, conversando (uma delas perto do paredão).
+    for (const h of arena.hangouts) {
+      const n = 3 + Math.floor(rng() * 2);
+      const a0 = rng() * Math.PI * 2;
+      for (let k = 0; k < n; k++) {
+        const a = a0 + (k / n) * Math.PI * 2 + (rng() - 0.5) * 0.4;
+        const r = 0.55 + rng() * 0.15;
+        const e = pickLook();
+        e.root.position.set(h.x + Math.cos(a) * r, 0, h.z + Math.sin(a) * r);
+        e.root.rotation.y = Math.atan2(h.x - e.root.position.x, h.z - e.root.position.z);
+        e.play('idle');
+        e.offset(rng() * 2);
+        e.holdBottle();
+        scene.add(e.root);
+        this.fans.push({ e, base: 'idle', cheerUntil: 0 });
+      }
     }
 
     // Garçom no balcão do Bar do Zé (sai de lá para atravessar a arena nos eventos).
@@ -185,9 +204,9 @@ export class Ambient3D {
 
     // Cachorros fazendo ronda por fora da torcida (cada um no seu trecho).
     for (const [fur, belly, ear, min, max, r, speed] of [
-      [0xc98a4b, 0xf0d2a6, 0x8a5a33, -2.1, 1.1, 1.65, 1.1],
-      [0x2b2630, 0x4a4450, 0x1a161d, -0.4, 2.15, 1.75, 0.9],
-      [0xf4efe6, 0xffffff, 0x8a5a33, -2.05, -0.2, 2.5, 1.3],
+      [0xc98a4b, 0xf0d2a6, 0x8a5a33, -0.9, 1.0, 1.7, 1.1],
+      [0x2b2630, 0x4a4450, 0x1a161d, 0.7, 2.1, 1.7, 0.9],
+      [0xf4efe6, 0xffffff, 0x8a5a33, -2.1, -1.3, 1.7, 1.3],
     ] as const) {
       const m = dogModel(fur, belly, ear);
       scene.add(m.root);

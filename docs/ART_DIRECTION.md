@@ -87,7 +87,8 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 
 | Uso | Cor |
 |---|---|
-| Chão externo · manchas | `#bf7a60` · `#b5735b` / `#c98a6f` (mais escuro que a arena) |
+| Chão externo (grama, v0.8) · névoa | `#8fa452` · `#a9b97a` (verde quentinho; a arena clara continua sendo o destaque) |
+| Estrada de terra | `#b8916a` com trilhas `#78583c` |
 | Campo seco | `#e9b949` / `#d9a43a` |
 | Terra da arena (clara) · manchas | `#c89f83` · `#bb9073` / `#d4b097` |
 | Contorno dos personagens | `#2b1d22` (fino, ~1,5 px de tela) |

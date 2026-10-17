@@ -36,6 +36,7 @@ npm run build
 - **Propriedade intelectual:** personagens são originais *inspirados* em arquétipos (sem copiar Naruto/DBZ/Simpsons);
   marcas reais (Skol, Heineken…) **não** — usar a marca fictícia **"GELADA"**.
 - **Commits menores**, um por pedaço funcionando (pedido do usuário).
+- **Commits sem coautoria do Claude:** nunca adicionar `Co-Authored-By: Claude…` nem "Generated with Claude Code" em commits ou PRs (o usuário não quer isso no GitHub).
 - Downloads de assets: só CC0/licença clara, pedindo permissão com nome, origem e tamanho.
 - **Documentação viva:** ao mexer num setor do código, atualize o arquivo correspondente em `docs/tech/`
   (conceito, arquivos, decisões, armadilhas) de forma enxuta. Mudou algo do estado do projeto → atualize este arquivo.

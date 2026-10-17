@@ -174,16 +174,29 @@ kbd {
 .menulabel3d.me { background: var(--accent); color: #2b1d22; border-color: #2b1d22; }
 
 .qte3d { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
-.qte3d circle { fill: none; }
-.qte3d .base { stroke: #fff4e6; stroke-width: 5; opacity: .9; }
-.qte3d .ring { stroke: #d9cfd0; stroke-width: 5; filter: drop-shadow(0 0 2px #2b1d22); }
-.qte3d .ring.window { stroke: var(--accent); }
-.qte3d .ring.perfect { stroke: var(--good); stroke-width: 9; }
-.qte3d .ring.late { stroke: var(--bad); }
-.qte3d .lbl { text-anchor: middle; font-weight: 700; font-size: 18px; fill: #fff4e6; stroke: #2b1d22; stroke-width: 5px; paint-order: stroke; }
+.qte3d path, .qte3d line { fill: none; stroke-linecap: round; }
+.qte3d .edge { stroke: #2b1d22; stroke-width: 17; opacity: .85; }
+.qte3d .track { stroke: #fff4e6; stroke-width: 11; opacity: .9; }
+.qte3d .win { stroke: var(--accent); stroke-width: 11; }
+.qte3d .perf { stroke: var(--good); stroke-width: 13; }
+.qte3d .tick { stroke: #2b1d22; stroke-width: 3; }
+.qte3d .fill { stroke: #ffffff; stroke-width: 6; filter: drop-shadow(0 0 3px #fff8); }
+.qte3d .fill.window { stroke: #fffbe9; }
+.qte3d .fill.perfect { stroke: #e9fff3; filter: drop-shadow(0 0 6px var(--good)); }
+.qte3d .fill.good:not(.live) { stroke: #ffe39a; filter: drop-shadow(0 0 5px var(--accent)); }
+.qte3d .fill.perfect:not(.live) { stroke: #b8ffd9; filter: drop-shadow(0 0 8px var(--good)); }
+.qte3d .fill.fail { stroke: var(--bad); filter: none; }
+.qte3d .lbl { font-weight: 700; font-size: 18px; fill: #fff4e6; stroke: #2b1d22; stroke-width: 5px; paint-order: stroke; }
 .qte3d .lbl.window { fill: var(--accent); }
-.qte3d .lbl.perfect { fill: var(--good); }
-.qte3d .lbl.locked { fill: #8ecae6; }
+.qte3d .lbl.perfect { fill: var(--good); font-size: 22px; }
+.qte3d .lbl.good { fill: var(--accent); }
+.qte3d .lbl.fail { fill: var(--bad); }
+
+/* Crachás dos outros mais discretos (menos poluição quando a briga está cheia). */
+.tag3d:not(.me) .fb { display: none; }
+.tag3d:not(.me) .nm { font-size: 11px; padding: 0 7px; border-width: 1.5px; opacity: .9; }
+.tag3d:not(.me) .hp { font-size: 10px; }
+.tag3d:not(.me) .hand { min-width: 34px; height: 34px; font-size: 20px; }
 
 @media (max-width: 760px) {
   .menu-card { top: auto; height: 60%; left: 8px; right: 8px; width: auto; bottom: 8px; }

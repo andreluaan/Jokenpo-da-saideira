@@ -61,6 +61,8 @@ export class Game3D {
   private readonly selRing: THREE.Mesh;
   private readonly beer: THREE.Group;
   private readonly qte: SVGSVGElement;
+  /** Instante (tempo do servidor) em que VOCÊ apertou a Última Palavra — para congelar a barra ali. */
+  private localLock: number | null = null;
   private readonly center = document.createElement('div');
   private readonly timer = document.createElement('div');
   private readonly beerHint = document.createElement('div');
@@ -101,7 +103,9 @@ export class Game3D {
 
     this.qte = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.qte.setAttribute('class', 'qte3d');
-    this.qte.innerHTML = '<circle class="base" r="40"/><circle class="ring" r="60"/><text class="lbl" y="-74"></text>';
+    // Barra curva estilo "shot meter": contorno, trilho, janela (BOM), fatia verde (PERFEITO), enchimento e rótulo.
+    this.qte.innerHTML =
+      '<path class="edge"/><path class="track"/><path class="win"/><path class="perf"/><path class="fill"/><line class="tick"/><text class="lbl"></text>';
     this.overlay.appendChild(this.qte);
     this.center.className = 'center3d';
     this.timer.className = 'timer3d';
@@ -111,7 +115,7 @@ export class Game3D {
 
     this.hud = new Hud(conn.localPlayerId, {
       symbol: (s) => this.pressSymbol(s),
-      commit: () => conn.send({ type: 'commit' }),
+      commit: () => this.pressCommit(),
       feint: () => conn.send({ type: 'feint' }),
       cancel: () => conn.send({ type: 'cancel' }),
       dash: () => this.pressDash(),
@@ -178,7 +182,7 @@ export class Game3D {
       if (sym) return this.pressSymbol(sym);
       switch (e.code) {
         case 'Space':
-          return this.conn.send({ type: 'commit' });
+          return this.pressCommit();
         case 'KeyF':
           return this.conn.send({ type: 'feint' });
         case 'KeyX':
@@ -249,6 +253,12 @@ export class Game3D {
     this.conn.send({ type: 'symbol', symbol: s, targetId: target.id });
   }
 
+  private pressCommit(): void {
+    const me = this.conn.latest() && this.me(this.conn.latest()!);
+    if (me?.holding && !me.locked && this.localLock === null) this.localLock = this.conn.now();
+    this.conn.send({ type: 'commit' });
+  }
+
   private pressDash(): void {
     const m = this.moveVec();
     this.conn.send({ type: 'dash', x: m.x, y: m.y });
@@ -281,13 +291,23 @@ export class Game3D {
     return p ? this.world(p.x, p.y, h) : null;
   }
 
+  /** Tem a ver com você? (você, seu alvo, ou quem está te atacando) — o resto não vira pop-up, só log. */
+  private relevant(id: string): boolean {
+    const snap = this.conn.latest();
+    const meId = this.conn.localPlayerId;
+    if (id === meId) return true;
+    const me = snap?.players.find((p) => p.id === meId);
+    if (me?.targetId === id) return true;
+    return !!snap?.players.find((p) => p.id === id && p.targetId === meId);
+  }
+
   private handleEvents(events: GameEvent[]): void {
     const meId = this.conn.localPlayerId;
     for (const e of events) {
       switch (e.type) {
         case 'signal': {
           const p = this.pos(e.playerId, 1.7);
-          if (!p) break;
+          if (!p || !this.relevant(e.playerId)) break;
           const t = e.kind === 'swap' ? '↻' : e.kind === 'lock' ? '🔒' : '✖';
           const c = e.kind === 'swap' ? '#ffd166' : e.kind === 'lock' ? '#8ecae6' : '#ff5a5f';
           this.popup(p.add(new THREE.Vector3(0.35, 0, 0)), t, c, 30);
@@ -296,7 +316,7 @@ export class Game3D {
         case 'duel': {
           const a = this.pos(e.a, 1.4);
           const b = this.pos(e.b, 1.4);
-          if (a && b) this.popup(a.add(b).multiplyScalar(0.5), 'DUELO!', '#ffc145', 30);
+          if (a && b && (e.a === meId || e.b === meId)) this.popup(a.add(b).multiplyScalar(0.5), 'DUELO!', '#ffc145', 30);
           break;
         }
         case 'exchange': {
@@ -304,12 +324,13 @@ export class Game3D {
           const { headline, line } = describeExchange(e, this.nameOf);
           const involved = e.attackerId === meId || e.defenderId === meId;
           this.hud.addLog(line, !involved ? '' : e.damagedId === meId ? 'me-loss' : e.winnerId === meId ? 'me-win' : '');
-          const mid = this.world(e.x, e.y, 2.3);
-          this.popup(mid, headline, e.damagedId ? '#ffc145' : '#fff4e6', 26, 1600);
-          const a = this.pos(e.attackerId, -0.1);
-          const d = this.pos(e.defenderId, -0.1);
-          if (a) this.popup(a, GRADE_LABEL[e.attackerGrade], GRADE_COLOR[e.attackerGrade], 18, 1100);
-          if (d && e.defenderGrade) this.popup(d, GRADE_LABEL[e.defenderGrade], GRADE_COLOR[e.defenderGrade], 18, 1100);
+          if (involved) {
+            // Só os confrontos com você viram texto na tela; os outros ficam no log (menos poluição).
+            this.popup(this.world(e.x, e.y, 2.3), headline, e.damagedId ? '#ffc145' : '#fff4e6', 26, 1600);
+            const myGrade = e.attackerId === meId ? e.attackerGrade : e.defenderGrade;
+            const mp = this.pos(meId, -0.1);
+            if (mp && myGrade) this.popup(mp, GRADE_LABEL[myGrade], GRADE_COLOR[myGrade], 18, 1100);
+          }
           if (e.damagedId === meId) this.shake = 0.18;
           else if (e.winnerId === meId) this.shake = 0.08;
           break;
@@ -322,7 +343,7 @@ export class Game3D {
             if (a && q && t) a.c.hit(q.x - (t.x - q.x), q.z - (t.z - q.z), q.x, q.z, 0.7, this.conn.now());
           }
           const p = this.pos(e.playerIds[0], 1.6);
-          if (p) this.popup(p, WHIFF_TEXT[e.reason], '#c9b5a8', 18);
+          if (p && e.playerIds.includes(meId)) this.popup(p, WHIFF_TEXT[e.reason], '#c9b5a8', 18);
           if (e.playerIds.includes(meId)) this.hud.addLog(`Você: ${WHIFF_TEXT[e.reason]}`);
           break;
         }
@@ -577,11 +598,12 @@ export class Game3D {
       arrow.rotation.y = Math.atan2(-dir.x, -dir.z);
       const am = (arrow.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
       am.color.set(duel ? 0xffc145 : 0xffffff);
-      am.opacity = t.id === me?.id ? 0.95 : 0.7;
+      const mine = t.id === me?.id || p.id === me?.id;
+      am.opacity = t.id === me?.id ? 0.95 : mine ? 0.8 : 0.28;
       const dots = g.children.filter((c) => c.name === 'dot');
       dots.forEach((d, i) => {
         const k = 1.2 + i * 0.35;
-        d.visible = k < len - 0.55;
+        d.visible = mine && k < len - 0.55;
         d.position.copy(a).addScaledVector(dir, k);
         d.scale.setScalar(1 + 0.25 * Math.sin(now / 120 - i));
       });
@@ -699,12 +721,12 @@ export class Game3D {
           const w = otherOf(e.damagedId);
           this.actors.get(e.damagedId)?.c.hit(w.x, w.z, v.x, v.z, 1.1, simNow, true);
           this.puff(v, 0xe9d2b8, 10);
-          this.popup(v.clone().setY(2.0), 'RASTEIRA!', '#ffc145', 34, 1000);
+          if (e.attackerId === this.conn.localPlayerId || e.defenderId === this.conn.localPlayerId) this.popup(v.clone().setY(2.0), 'RASTEIRA!', '#ffc145', 34, 1000);
         } else if (e.protectedId) {
           const v = posOf(e.protectedId);
           const w = otherOf(e.protectedId);
           this.actors.get(e.protectedId)?.c.hit(w.x, w.z, v.x, v.z, 0.5, simNow);
-          this.popup(v.clone().setY(1.9), 'Protegido', '#8ecae6', 22);
+          if (e.protectedId === this.conn.localPlayerId) this.popup(v.clone().setY(1.9), 'Protegido', '#8ecae6', 22);
         } else if (e.kind === 'clank' || e.kind === 'wasted' || e.kind === 'tie-stagger') {
           A.c.hit(wd.x, wd.z, wa.x, wa.z, 0.6, simNow);
           D.c.hit(wa.x, wa.z, wd.x, wd.z, 0.6, simNow);
@@ -767,40 +789,80 @@ export class Game3D {
     }
   }
 
-  /** Anel do QTE em volta de você: fecha no instante do impacto (no "PÔ!"). */
+  /**
+   * Barra do QTE ao lado do seu personagem (estilo "shot meter"): enche de baixo para cima no ritmo do
+   * Jo-Ken-Pô e chega na fatia verde exatamente no "PÔ!" (instante do impacto). Ao apertar, congela e mostra a nota.
+   */
   private updateQte(snap: Snapshot, now: number, me: PlayerView | undefined): void {
     const svg = this.qte;
     svg.style.display = 'none';
-    if (!me?.alive || !me.holding || me.impactAt === null) return;
-    const { qte } = this.conn.config;
+    if (!me?.alive || !me.holding || me.impactAt === null) {
+      this.localLock = null;
+      return;
+    }
+    const { qte, attack } = this.conn.config;
     const impacts = [me.impactAt, ...snap.players.filter((p) => p.alive && p.targetId === me.id && p.impactAt !== null).map((p) => p.impactAt!)];
     const T = Math.min(...impacts.filter((t) => t + qte.lateMs >= now));
     if (!Number.isFinite(T)) return;
-    const c = this.screen(this.world(me.x, me.y, 0.7));
-    const edge = this.screen(this.world(me.x, me.y, 0.7).add(new THREE.Vector3(0.75, 0, 0)));
-    const base = Math.abs(edge.x - c.x);
-    const dt = T - now;
-    const ring = svg.querySelector('.ring') as SVGCircleElement;
-    const baseC = svg.querySelector('.base') as SVGCircleElement;
-    const lbl = svg.querySelector('.lbl') as SVGTextElement;
+
+    // Tamanho e posição: à direita do corpo, proporcional ao zoom da câmera.
+    const c = this.screen(this.world(me.x, me.y, 0.75));
+    const edge = this.screen(this.world(me.x, me.y, 0.75).add(new THREE.Vector3(0.75, 0, 0)));
+    const r = Math.max(46, Math.abs(edge.x - c.x) * 1.25);
     svg.style.display = 'block';
     svg.style.transform = `translate(${c.x}px, ${c.y}px)`;
-    baseC.setAttribute('r', String(base));
-    lbl.setAttribute('y', String(-base - 46));
-    if (me.locked) {
-      ring.style.display = 'none';
-      lbl.textContent = 'TRAVADO';
-      lbl.setAttribute('class', 'lbl locked');
-      return;
+
+    // Tempo → posição na barra (0 = base, 1 = topo). Do início da preparação até o fim da janela.
+    const t0 = T - attack.windupMs;
+    const t1 = T + qte.lateMs;
+    const u = (t: number) => Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
+    const A0 = (62 * Math.PI) / 180; // base (embaixo, à direita)
+    const A1 = (-62 * Math.PI) / 180; // topo
+    const pt = (k: number) => {
+      const a = A0 + (A1 - A0) * k;
+      return `${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`;
+    };
+    const arc = (k0: number, k1: number) => (k1 <= k0 ? '' : `M ${pt(k0)} A ${r} ${r} 0 0 0 ${pt(k1)}`);
+    const set = (cls: string, d: string) => (svg.querySelector(`.${cls}`) as SVGPathElement).setAttribute('d', d);
+    set('edge', arc(0, 1));
+    set('track', arc(0, 1));
+    set('win', arc(u(T - qte.leadMs), 1));
+    set('perf', arc(u(T - qte.perfectMs), u(T + qte.perfectMs)));
+
+    // Enchimento: até agora, ou congelado onde você apertou.
+    const lockAt = this.localLock ?? (me.locked ? now : null);
+    const fillTo = u(lockAt ?? now);
+    const fill = svg.querySelector('.fill') as SVGPathElement;
+    fill.setAttribute('d', arc(0, Math.max(0.001, fillTo)));
+    const lbl = svg.querySelector('.lbl') as SVGTextElement;
+    const tick = svg.querySelector('.tick') as SVGLineElement;
+    const [tx, ty] = pt(u(T)).split(' ').map(Number);
+    tick.setAttribute('x1', String(tx * 0.86));
+    tick.setAttribute('y1', String(ty * 0.86));
+    tick.setAttribute('x2', String(tx * 1.14));
+    tick.setAttribute('y2', String(ty * 1.14));
+    const [lx, ly] = pt(1).split(' ').map(Number);
+    lbl.setAttribute('x', String(lx + 10));
+    lbl.setAttribute('y', String(ly - 12));
+
+    let state: string;
+    let text: string;
+    if (lockAt !== null) {
+      // Mesma regra do servidor (gradeLock): perto do PÔ! = perfeito; antes/depois dentro do limite = bom.
+      const d = lockAt - T;
+      state = Math.abs(d) <= qte.perfectMs ? 'perfect' : d > qte.lateMs ? 'fail' : 'good';
+      text = state === 'perfect' ? 'PERFEITO!' : state === 'good' ? (d < -qte.leadMs ? 'BOM (cedo)' : 'BOM') : 'TARDE!';
+    } else if (now > T + qte.lateMs) {
+      state = 'fail';
+      text = 'FALHA';
+    } else {
+      const dt = T - now;
+      state = Math.abs(dt) <= qte.perfectMs ? 'perfect live' : dt <= qte.leadMs ? 'window live' : 'early live';
+      text = Math.abs(dt) <= qte.perfectMs ? 'AGORA!' : dt <= qte.leadMs ? 'ESPAÇO' : '';
     }
-    ring.style.display = '';
-    const perfect = Math.abs(dt) <= qte.perfectMs;
-    const inWindow = dt <= qte.leadMs;
-    ring.setAttribute('r', String(base + Math.max(0, dt) * (base / 650)));
-    const state = perfect ? 'perfect' : inWindow ? 'window' : 'early';
-    ring.setAttribute('class', `ring ${state}${dt < 0 ? ' late' : ''}`);
-    lbl.textContent = perfect ? 'AGORA!' : inWindow ? 'ESPAÇO' : 'confirmar cedo = BOM';
+    fill.setAttribute('class', `fill ${state}`);
     lbl.setAttribute('class', `lbl ${state}`);
+    lbl.textContent = text;
   }
 }
 

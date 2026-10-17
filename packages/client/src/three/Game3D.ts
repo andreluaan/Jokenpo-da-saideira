@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
-import { WHIFF_TEXT, describeExchange } from '../ui/describe';
 import { symbolPaths, symbolSvg } from '../ui/symbolIcons';
 import { toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
@@ -306,8 +305,6 @@ export class Game3D {
 
   // ------------------------------------------------------------------ eventos
 
-  private nameOf = (id: string): string => (id === this.conn.localPlayerId ? 'Você' : (this.conn.latest()?.players.find((p) => p.id === id)?.name ?? id));
-
   private pos(id: string, h = 0): THREE.Vector3 | null {
     const p = this.conn.latest()?.players.find((q) => q.id === id);
     return p ? this.world(p.x, p.y, h) : null;
@@ -321,9 +318,6 @@ export class Game3D {
       switch (e.type) {
         case 'exchange': {
           this.reveals.push({ e, start: performance.now(), stage: 0, signs: [] });
-          const { line } = describeExchange(e, this.nameOf);
-          const involved = e.attackerId === meId || e.defenderId === meId;
-          this.hud.addLog(line, !involved ? '' : e.damagedId === meId ? 'me-loss' : e.winnerId === meId ? 'me-win' : '');
           if (e.damagedId === meId) this.shake = 0.18;
           else if (e.winnerId === meId) this.shake = 0.08;
           break;
@@ -335,11 +329,6 @@ export class Game3D {
             const q = this.pos(id);
             if (a && q && t) a.c.hit(q.x - (t.x - q.x), q.z - (t.z - q.z), q.x, q.z, 0.7, this.conn.now());
           }
-          if (e.playerIds.includes(meId)) this.hud.addLog(`Você: ${WHIFF_TEXT[e.reason]}`);
-          break;
-        }
-        case 'eliminated': {
-          this.hud.addLog(`${this.nameOf(e.playerId)} foi eliminado${e.byId ? ` por ${this.nameOf(e.byId)}` : ''}.`);
           break;
         }
         case 'drink': {
@@ -347,9 +336,6 @@ export class Game3D {
           if (e.stage === 'start') this.drinkStart.set(e.playerId, e.at);
           if (e.stage === 'done') {
             this.actors.get(e.playerId)?.c.drunk(this.conn.now(), 6000);
-            this.hud.addLog(`${this.nameOf(e.playerId)} tomou uma gelada e recuperou 1 ❤.`, e.playerId === meId ? 'me-win' : '');
-          } else if (e.stage === 'spilled') {
-            this.hud.addLog(`${this.nameOf(e.playerId)} levou um golpe e derramou a cerveja.`, e.playerId === meId ? 'me-loss' : '');
           }
           break;
         }

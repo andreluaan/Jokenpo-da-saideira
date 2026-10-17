@@ -101,14 +101,10 @@ kbd {
 .pcard .fb { width: 50px; height: 6px; background: #000a; border-radius: 3px; overflow: hidden; }
 .pcard .fb i { display: block; height: 100%; background: #8ecae6; }
 
-#side { position: absolute; top: 64px; right: 12px; width: 270px; max-height: calc(100% - 200px); display: flex; flex-direction: column; z-index: 5;
-  background: #2b1d22cc; border: 2px solid #5e464f; border-radius: 14px; padding: 10px; backdrop-filter: blur(4px); }
-#log-title { font-family: var(--chalk); font-size: 22px; margin-bottom: 4px; }
-#log { list-style: none; padding: 0; margin: 0; flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
-#log li { font-size: 12.5px; line-height: 1.35; background: #4a343ccc; border-radius: 10px; padding: 6px 9px; border-left: 4px solid var(--line); }
-#log li.me-win { border-left-color: var(--good); }
-#log li.me-loss { border-left-color: var(--bad); }
-#leave { margin-top: 8px; }
+/* Sair da partida: botãozinho discreto no canto (a aba de confrontos saiu na v0.13). */
+.leave-btn { position: absolute; top: 12px; right: 12px; z-index: 6; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: #fff4e6; background: #2b1d22b3; border: 2px solid #5e464f; backdrop-filter: blur(4px); }
+.leave-btn:hover { border-color: var(--bad); background: #2b1d22e6; }
 
 #action-bar { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 5; width: min(980px, calc(100% - 20px));
   background: #2b1d22d9; border: 2px solid #5e464f; border-radius: 18px; padding: 6px 12px 10px; backdrop-filter: blur(4px); }
@@ -199,7 +195,6 @@ kbd {
 
 @media (max-width: 760px) {
   .menu-col { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 62%; flex-direction: column-reverse; gap: 8px; }
-  #side { display: none; }
 }
 
 .menulabel3d.bench { opacity: .75; font-size: 13px; background: #2b1d2299; }

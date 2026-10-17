@@ -7,7 +7,7 @@ Nada aqui altera regras: tudo lê `conn.latest()` e eventos.
 ## Arquivos
 | Arquivo | Papel |
 |---|---|
-| `Game3D.ts` | Partida: renderer, câmera, atores, setas de mira, anel de seleção, revelação/rasteira, Jo-Ken-Pô, cerveja na mesa, anel do QTE (SVG), entrada, `Hud` (sem pop-ups de texto na arena desde a v0.11.1: o resultado fica no log e na cor da barra) |
+| `Game3D.ts` | Partida: renderer, câmera, atores, setas de mira, anel de seleção, revelação/rasteira, Jo-Ken-Pô, cerveja na mesa, anel do QTE (SVG), entrada, `Hud` (sem pop-ups de texto na arena desde a v0.11.1 e sem log de confrontos desde a v0.13: o resultado se vê na revelação 3D, no golpe/rasteira e na cor da barra) |
 | `MenuStage3D.ts` | Fundo do menu: mesma arena, turma sentada → porteira → largadas (ver 06/07) |
 | `arena3d.ts` | Cenário inteiro + luzes (ver 06) |
 | `character3d.ts` | Personagem 3D (ver 05) |
@@ -65,7 +65,6 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - **Desempenho:** ~840 draw calls na partida depois de juntar a decoração parada (ver 06-arena, `merge.ts`); a maior parte que sobra é a torcida.
 
 ## Menos poluição (várias pessoas perto)
-- `relevant(id)`: você, seu alvo ou quem te ataca. Só isso vira pop-up (sinais ↻🔒✖ 22 px, DUELO! 20 px, manchete do confronto 20 px, sua nota 18 px, Errou!, Protegido). O resto fica no log.
 - Setas de mira de terceiros: opacidade 0,28 e sem pontinhos.
 - Crachás dos outros: compactos e sem barra de foco (CSS `.tag3d:not(.me)`).
 

@@ -23,6 +23,7 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Mais árvores** espalhadas pelas áreas vazias do mapa todo (grama e campo seco, este com árvores de outono).
 - **Estradinha desviada**: passa por fora da área dos jogadores (a mesa ficava em cima dela) e chega no terreiro do bar por cima.
 - **Nomes na partida mais discretos**: sem caixinha, só o texto com contorno e um risquinho na cor do jogador.
+- **Aba "Confrontos" removida** da partida (a pedido); sair virou um botãozinho "✕ Sair" no canto.
 - Banco de ideias: QTE com as mãos de Jo-Ken-Pô no lugar da barra.
 
 ## v0.12.1 — transição de câmera
@@ -36,7 +37,7 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - Ao começar/sair da partida, um **copo de cerveja enche a tela** ("Bora pro quintal!") e esvazia revelando a cena.
 
 ## v0.11.1 — menos texto na tela
-- **Sem pop-ups de texto** na partida (golpes, CEDO/PERFEITO, ROUBOU!, Protegido, +1 ❤, Au! Au!…): o resultado fica no log da direita e na cor do enchimento da barra (verde/amarelo/vermelho). A barra só fala JO… KEN… PÔ! e "VAI DAR ROUBO!".
+- **Sem pop-ups de texto** na partida (golpes, CEDO/PERFEITO, ROUBOU!, Protegido, +1 ❤, Au! Au!…): o resultado fica na cor do enchimento da barra (verde/amarelo/vermelho). A barra só fala JO… KEN… PÔ! e "VAI DAR ROUBO!".
 - Card do personagem do menu foi para **baixo, à esquerda**, colado na lousa.
 
 ## v0.11 — malandragem no Jo-Ken-Pô

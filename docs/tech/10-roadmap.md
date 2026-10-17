@@ -21,7 +21,7 @@
 1. Usuário joga e dá retorno (força dos golpes finais, frequência de eventos, cenário).
 2. **Sons** (direção em `ART_DIRECTION.md` §9): ganchos prontos — eventos `exchange/finisher`, `burn`, `crate`, `shield`, `waiterBump`, `barEvent` (classes CSS `.barfx.kind-*.stage-*`), paredão (`Paredao.update(t, energy)`).
 3. Etapa 3: testes entre computadores diferentes (hospedar no Render — ver CHANGELOG), latência real, balanceamento bot×bot (script em 09-testes) e humanos.
-4. Fila de arte antiga ainda aberta: detalhes dos personagens de perto (franja do Fera, pálpebras do Sonolento, "terno" do Príncipe), freezer/isopor mais caprichados, log do HUD recolhível.
+4. Fila de arte antiga ainda aberta: detalhes dos personagens de perto (franja do Fera, pálpebras do Sonolento, "terno" do Príncipe), freezer/isopor mais caprichados.
 
 ## Problemas conhecidos / dívidas
 - Sem sons ainda (ganchos listados acima).
@@ -33,7 +33,7 @@
 - Online: personagem de quem caiu fica parado na arena até voltar (pode ser eliminado).
 - Menu: personagens andam em linha reta dentro do ringue (podem atravessar obstáculos); mesa de fora pode ficar perto da borda da barra lateral em telas estreitas.
 - Pose de beber é procedural (braço girado) — conferir alinhamento do gargalo com a boca em close.
-- HUD ocupa bastante espaço em telas pequenas; log poderia ser recolhível.
+- HUD ocupa bastante espaço em telas pequenas.
 - Pop-ups podem se acumular em brigas simultâneas.
 - Sem áudio ainda (direção em `docs/ART_DIRECTION.md` §9).
 - Celular: layout básico; controles de toque não implementados.

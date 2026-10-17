@@ -11,10 +11,9 @@ export interface HudActions {
   drink(): void;
 }
 
-/** Interface DOM ao redor da arena: cartões de jogadores, log, barra de ações e dicas. */
+/** Interface DOM ao redor da arena: cartões de jogadores, barra de ações e dicas. */
 export class Hud {
   private readonly cards = $('#player-cards');
-  private readonly log = $('#log');
   private readonly hint = $('#hint');
   private readonly symButtons = [...document.querySelectorAll<HTMLButtonElement>('.sym')];
   private readonly actButtons = [...document.querySelectorAll<HTMLButtonElement>('.act')];
@@ -22,7 +21,6 @@ export class Hud {
   private readonly cleanups: (() => void)[] = [];
 
   constructor(private readonly meId: string, actions: HudActions) {
-    this.log.innerHTML = '';
     const bind = (el: HTMLButtonElement, fn: () => void) => {
       // mousedown + preventDefault: o botão não ganha foco (senão Espaço "clicaria" de novo).
       const down = (ev: MouseEvent) => {
@@ -102,13 +100,6 @@ export class Hud {
     this.hint.classList.toggle('warn', warn);
   }
 
-  addLog(line: string, tone: 'me-win' | 'me-loss' | '' = ''): void {
-    const li = document.createElement('li');
-    li.textContent = line;
-    if (tone) li.className = tone;
-    this.log.prepend(li);
-    while (this.log.children.length > 30) this.log.lastElementChild?.remove();
-  }
 }
 
 function labelOf(s: Rps): string {

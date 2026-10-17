@@ -17,8 +17,8 @@ Ganchos só em DEV: `window.__menu`, `__ppt` (conexão), `__ppt3d` (Game3D).
 No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (você = largada 1, NPCs na ordem de `CHARACTER_IDS` sem você) **levantam em sequência** (`STAND_MS`, `STAGGER_MS`), passam pela **porteira** e vão às largadas; quem sai da partida volta ao banquinho. Clicar num personagem no 3D o seleciona.
 
 ## HUD da partida
-- `ui/hud.ts` — cartões de jogadores (topo), log de confrontos (`#side`), barra de ações (🤜 Desafiar/Espaço, símbolos 1/2/3 só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
-- `ui/describe.ts` — frases do log e títulos (`describeExchange`), textos de erro/recusa.
+- `ui/hud.ts` — cartões de jogadores (topo), barra de ações (🤜 Desafiar/Espaço, símbolos 1/2/3 só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
+- Sair: botãozinho `#leave` (`.leave-btn`, "✕ Sair") no canto de cima à direita. A aba "Confrontos" (log) e `ui/describe.ts` foram removidos na v0.13 a pedido do usuário.
 - No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo, nome — v0.13: só texto com contorno e risquinho na cor do jogador, sem caixinha —, ❤, foco, anel de preparação em `conic-gradient`), `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
 
 ## Boteco (v0.6)
@@ -28,7 +28,7 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
 
 ## Ícones dos símbolos (v0.12)
-`ui/symbolIcons.ts`: pedra, papel e tesoura **desenhados em SVG** (cartunescos, contorno escuro) no lugar dos emojis de mão. `symbolSvg(s)` para HTML (barra de ações, crachá), `symbolPaths(s)` para dentro de outro SVG (marca do adversário na barra), `withSymbolIcons(texto)` troca `[rock]`/`[paper]`/`[scissors]` (teclas do Como jogar). O log usa só o nome. A revelação 3D continua com as **mãos** dos personagens (`signTexture`).
+`ui/symbolIcons.ts`: pedra, papel e tesoura **desenhados em SVG** (cartunescos, contorno escuro) no lugar dos emojis de mão. `symbolSvg(s)` para HTML (barra de ações, crachá), `symbolPaths(s)` para dentro de outro SVG (marca do adversário na barra), `withSymbolIcons(texto)` troca `[rock]`/`[paper]`/`[scissors]` (teclas do Como jogar). A revelação 3D continua com as **mãos** dos personagens (`signTexture`).
 
 ## Transição menu ↔ partida (v0.12.1: voo de câmera)
 - **Ida** (`flyToMatch` em `main.ts`): a coluna do menu sai pela esquerda (`#menu.leaving`) e `MenuStage3D.flyToMatch()` leva a câmera do quintal até o **enquadramento do começo da partida** (posição, alvo, lente e deslocamento da coluna, com easing); só então a partida é montada, com a câmera no mesmo lugar.
@@ -38,7 +38,7 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - Jogar de novo (treino) vai direto, sem voo. O copo de cerveja da v0.12 foi descartado (não era o que o usuário queria).
 
 ## Estilo
-Variáveis em `:root` (`--chalkboard`, `--wood`, `--accent` âmbar, `--chalk` = Caveat Brush). Fontes locais via `@fontsource` (Fredoka, Caveat Brush). Abaixo de 760 px o menu vai para baixo e o log some.
+Variáveis em `:root` (`--chalkboard`, `--wood`, `--accent` âmbar, `--chalk` = Caveat Brush). Fontes locais via `@fontsource` (Fredoka, Caveat Brush). Abaixo de 760 px o menu vai para baixo.
 
 ## Armadilhas
 - Textos com "…" e emojis: editar com a ferramenta de edição (heredoc no Bash corrompeu caracteres uma vez).

@@ -1,4 +1,4 @@
-# PPT da Saideira — Direção de Arte
+# Jokenpô da Saideira — Direção de Arte
 
 > v0.5 (3D) · Referência: *Oddballers* (cartoon low-poly, paleta quente de outono, arena redonda cercada, anéis coloridos sob os personagens, seta de mira branca no chão).
 
@@ -158,7 +158,7 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 | Cenário do quintal (fundo) | PNG em camadas | 1920×1200 | Média |
 | Cerca modular (poste + ripa) | PNG | 64 px | Média |
 | Moldura do HUD (madeira, lousa, porta-copos) | SVG / 9-slice | — | Média |
-| Logo "PPT da Saideira" | SVG | — | Média |
+| Logo "Jokenpô da Saideira" | SVG | — | Média |
 | Trilha + 12 efeitos sonoros | OGG/MP3 | — | Média |
 
 **Prompts para ferramenta de geração de imagem (conceito):**

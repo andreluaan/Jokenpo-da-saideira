@@ -1,4 +1,6 @@
-# PPT da Saideira — guia rápido para o assistente
+# Jokenpô da Saideira — guia rápido para o assistente
+
+(Nome antigo: "PPT da Saideira"; pastas, pacotes `@ppt/*` e código continuam com `ppt`.)
 
 Jogo de arena 3D no navegador baseado em Pedra, Papel e Tesoura (2–4 jogadores). Tema: quintal do **Bar do Zé**;
 só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.

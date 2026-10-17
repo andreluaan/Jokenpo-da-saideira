@@ -48,7 +48,7 @@ export function createGameServer(opts: GameServerOptions = {}): GameServer {
   const http = createServer((req, res) => {
     if (!staticDir) {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('Servidor do PPT da Saideira no ar. Em desenvolvimento, abra o cliente pelo Vite (npm run dev).');
+      res.end('Servidor do Jokenpô da Saideira no ar. Em desenvolvimento, abra o cliente pelo Vite (npm run dev).');
       return;
     }
     // Arquivos estáticos do cliente compilado (protegido contra "../").

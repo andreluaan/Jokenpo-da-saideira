@@ -59,7 +59,7 @@ kbd {
 .plaque::before { left: 9px; }
 .plaque::after { right: 9px; }
 .plaque-top { display: block; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #6b2a24; font-weight: 600; }
-.logo { margin: 0; font-size: 54px; line-height: .9; font-weight: 700; color: #d8443c; text-shadow: 0 3px 0 #2b1d22; letter-spacing: -1px; }
+.logo { margin: 0; font-size: 44px; line-height: .9; font-weight: 700; color: #d8443c; text-shadow: 0 3px 0 #2b1d22; letter-spacing: -1px; }
 .logo span { display: block; font-family: var(--chalk); font-weight: 400; font-size: 40px; color: #2b1d22; text-shadow: none; letter-spacing: 0; }
 .tagline { font-family: var(--chalk); font-size: 20px; line-height: 1.15; margin: 4px 2px 14px; color: #f4ecdf; opacity: .9; }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; flex: 1; }

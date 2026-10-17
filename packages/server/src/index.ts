@@ -12,7 +12,7 @@ const ips = Object.values(networkInterfaces())
   .flat()
   .filter((n) => n && n.family === 'IPv4' && !n.internal)
   .map((n) => n!.address);
-console.log(`🍺 Servidor do PPT da Saideira na porta ${port}`);
+console.log(`🍺 Servidor do Jokenpô da Saideira na porta ${port}`);
 for (const ip of ips) console.log(`   Na rede: http://${ip}:${port} (jogo compilado) — ou o Vite em http://${ip}:5173`);
 
 const stop = async () => {

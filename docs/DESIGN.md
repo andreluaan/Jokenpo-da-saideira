@@ -1,4 +1,4 @@
-# PPT da Saideira — Documento de Design Técnico
+# Jokenpô da Saideira — Documento de Design Técnico
 
 > Versão 0.2 — Etapa 1 (protótipo de combate com NPCs) + passe de direção de arte ([ART_DIRECTION.md](ART_DIRECTION.md))
 >
@@ -192,9 +192,9 @@ Só no evento do Zé: o garçom larga cervejas pelo caminho. Pegar = passar por 
 Começa entre [22 s] e [40 s] de luta, com aviso [3 s] antes. O **garçom** atravessa a arena junto com o evento: quem esbarra nele tropeça (atordoa [0,4 s] e é empurrado).
 | Evento | Duração | Efeito |
 |---|---|---|
-| **Saideira dupla!** | [10 s] | Golpe final tira **2 ❤** |
-| **Queda de luz** | [7 s] | Arena escura: só anéis e luzinhas; sem crachás/setas dos outros (blefe puro) |
-| **Zé grita: "Rodada por conta da casa!"** | [9 s] | O garçom larga [3] cervejas no chão pelo caminho |
+| **Saideira dupla!** | [14 s] | Golpe final tira **2 ❤** |
+| **Queda de luz** | [10 s] | Arena escura: só anéis e luzinhas; sem crachás/setas dos outros (blefe puro) |
+| **Zé grita: "Rodada por conta da casa!"** | [12 s] | O garçom larga [3] cervejas no chão pelo caminho |
 
 ### 9.4 Ajustes v0.6
 - Investida: [65 px], [50 foco] (no máximo 2 por barra cheia), recarga [1,4 s].

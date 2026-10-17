@@ -1,4 +1,4 @@
-# PPT da Saideira
+# Jokenpô da Saideira
 
 Jogo de arena para navegador baseado em Pedra, Papel e Tesoura: leitura, blefe e execução (QTE).
 

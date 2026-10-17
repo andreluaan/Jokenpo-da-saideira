@@ -467,7 +467,7 @@ export class Boteco3D {
       // Garçom de boteco: jaleco branco com gravata-borboleta preta.
       const e = new Extra3D('character-male-e', { r2c5: 0x2b1d22 });
       const tray = trayModel();
-      tray.position.set(0.34, 1.02, 0.08); // bandeja erguida ao lado do ombro
+      tray.position.set(0.31, 0.92, 0.07); // bandeja erguida ao lado do ombro
       e.root.add(tray);
       e.play('walk');
       this.d.scene.add(e.root);

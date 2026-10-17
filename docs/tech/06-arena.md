@@ -10,23 +10,23 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - **Cerca**: painéis `fence_simple` a cada 1,25 un. ao longo da elipse rx+0,42 / ry+0,42; plaquinhas amarelas; varal de luzes com postes no fundo.
 - **Porteira**: painel mais próximo de `GATE_ANGLE = -2.75` (ângulo paramétrico, lado do bar) vira `fence_gate` com a folha `gate` aberta (rot.y −1,35) + 2 postes. `gate.outside/inside` = meio ± normal.
 - **Obstáculos** (`buildObstacle` por `prop`): `beerTable` (mesa redonda Kenney repintada amarela + logo "GELADA" + 4 cadeiras + petiscos; `beerSpot` = onde a long neck aparece), `crates` (engradados procedurais), `cooler` (isopor + latas), `freezer` (caixa + faixa + vidro + latas + "GELADA"), `grill` (barril escurecido + brasa emissiva + espetinhos + fumaça + point light).
-- **Entorno**: boteco (`buildShack`, telhado com nervuras, placa "BAR DO ZÉ", TV, rádio, banquetas, caixa de som), **mesa de fora com 4 banquinhos** (`buildOutdoorTable(-9.25,-1.3)` → `seats`), árvores de outono, milharal, horta, mesas vermelhas com guarda-sol (`buildPatio`), lousa "SAIDEIRA", grama/flores/pedras espalhadas (PRNG fixo), lenha, toco, lixeira.
+- **Entorno**: boteco (`buildShack`, telhado com nervuras, placa "BAR DO ZÉ", TV, rádio, banquetas, caixa de som), **mesa comprida dos jogadores com 8 banquinhos** (`buildPlayersTable(pa)` → `seats`, v0.13), árvores de outono, milharal, horta, mesas vermelhas com guarda-sol (`buildPatio`), lousa "SAIDEIRA", grama/flores/pedras espalhadas (PRNG fixo), lenha, toco, lixeira.
 - **Luz** e névoa (ver 04).
 
 ## Bar do Zé e área dos jogadores (v0.9)
 - **`buildBar(scene, BAR.x, BAR.z)`** (BAR = (-7,6, -8,0), ~4 m da cerca): casinha 5×2,2 com janela de garrafas + **varanda coberta** de 2,3 m. O telhado da varanda **sobe para a frente** (2,3 → 2,75) para a câmera (de cima e de frente, ~46°) enxergar dentro. Na varanda: balcão baixo (tampo a 0,61, na altura dos bonecos), banquetas, mesinha com 3 cadeiras, geladeira, caixa de som, lampiões, cordão de lâmpadas. Devolve `bartender` (o Zé/garçom) e `barSeats` (fregueses). Banqueta: y=0,30; cadeira da varanda: y=0,18.
-- **`buildPlayersArea`**: cercadinho de corda (raio 1,75) em volta da mesa onde os personagens jogáveis esperam (menu), com abertura virada para a porteira e a plaquinha "SÓ QUEM JOGA". `ArenaHandles.playersArea` → o Ambient não coloca figurante a menos de r+0,8 (cachorros podem).
+- **Área dos jogadores (v0.13)** — `PlayersArea` calculada a partir da porteira: retângulo alinhado com a cerca (`t` ao longo da cerca, `n` para fora), logo depois da porteira e descido `shift` para longe da varanda do bar. `buildPlayersArea`: corda em retângulo com uma **entradinha** (dois mourões + placa grande "SÓ QUEM JOGA" inclinada para a câmera) na posição `doorU`, alinhada com a porteira. `buildPlayersTable`: mesa comprida com **8 banquinhos** (4 de cada lado; os 4 primeiros `seats` são os virados para a arena). Cada `Seat.path` leva do banco até a entradinha sem atravessar a mesa (quem senta do lado de fora dá a volta pela ponta); o `MenuStage3D` usa esse caminho na ida e na volta. `inPlayersArea()` reserva o espaço (vegetação e árvores não entram); `ArenaHandles.playersArea` (centro + raio que cobre o retângulo) segura a torcida longe.
 - **Armadilha vivida:** o laço da torcida na cerca passava de π e caía do outro lado (dentro da área dos jogadores) — agora para em π e ainda checa `nearPlayers`.
 
 ## Quintal verde e estradinha (v0.8)
 - **Chão**: `grassTexture()` (textures.ts) — grama verde quentinha (`GROUND = 0x8fa452`) com manchas, tufos riscados e florzinhas, repetível sem emenda (`wrapped`). Névoa/fundo `SKY = 0xa9b97a`; hemisfério com rebote verde. CSS `#menu/#match` na mesma cor.
-- **Estradinha** (`ROAD`, `buildRoad`): faixa seguindo uma Catmull-Rom com `roadTexture()` (trilhas de pneu, pedrinhas, mato nas beiradas), da borda esquerda até o **terreiro** de terra em frente ao bar; moitas acompanham as margens. Lousa da saideira na entrada da estrada.
+- **Estradinha** (`ROAD`, `buildRoad`): faixa seguindo uma Catmull-Rom com `roadTexture()` (trilhas de pneu, pedrinhas, mato nas beiradas), da borda esquerda até o **terreiro** de terra em frente ao bar; moitas acompanham as margens. Lousa da saideira na entrada da estrada (v0.13: maior, virada para a câmera e inclinada para trás).
 - **Bar do Zé**: varandinha de tábua, toldo listrado, lampião aceso, vasos, arbustos e engradados empilhados (`buildShack`).
 - Árvores verdes + de outono + um coqueiro; vegetação espalhada respeitando `free()` (arena+torcida, estrada, bar, mesas, rodinhas, picape).
 - `PATIOS` (9 mesas vermelhas) e `HANGOUTS` (rodinhas em pé) definidos no topo do arquivo.
 
 ## Entorno (v0.7)
-Horta removida. Mesas vermelhas em `PATIOS` (hoje 9; `buildPatio` devolve as cadeiras → `fanSeats`), picape com paredão em `truck` (5.4,-7.6). A mesa de fora com 4 banquinhos (`seats`, dentro do cercadinho "SÓ QUEM JOGA") fica **livre** para os jogadores no menu. (Lousa e bar mudaram de lugar na v0.8/v0.9 — ver seções acima.)
+Horta removida. Mesas vermelhas em `PATIOS` (hoje 9; `buildPatio` devolve as cadeiras → `fanSeats`), picape com paredão em `truck` (5.4,-7.6). A mesa dos jogadores com 8 banquinhos (`seats`, dentro do cercadinho "SÓ QUEM JOGA") fica **livre** para os jogadores no menu. (Lousa e bar mudaram de lugar na v0.8/v0.9 — ver seções acima.)
 Layout dos obstáculos da arena: ver `shared/config.ts` (comentado) e 02-simulação.
 
 ## Desempenho: decoração juntada (`merge.ts`)
@@ -45,4 +45,4 @@ Resultado: partida 1.881 → ~840 desenhos por quadro; menu 1.672 → ~780. O qu
 
 ## Como mudar
 - Novo tipo de obstáculo: `PropKind` em `shared/config.ts` + entrada em `obstacles` + caso em `buildObstacle` (+ teste se mexer em posição).
-- Mover a porteira: `GATE_ANGLE`; mover a mesa de fora: `buildOutdoorTable(x,z)` (cuidado com árvores e com o enquadramento do menu).
+- Mover a porteira: `GATE_ANGLE`; a área dos jogadores acompanha a porteira sozinha (ajuste `halfL`/`halfD`/`shift` em `buildArena3D`). Árvores: lista fixa + **anel de árvores** em volta do mapa (v0.13, respeita `free()` e deixa o campo seco aberto).

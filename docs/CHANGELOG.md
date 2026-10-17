@@ -17,6 +17,13 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.13 — quintal arrumado
+- **Área dos jogadores** colada na porteira da arena e alinhada com a cerca: cercadinho retangular com **entradinha** (placa "SÓ QUEM JOGA" grande em cima) e **mesa comprida de 8 banquinhos** (já pensando em mais personagens). Os personagens saem da mesa contornando-a, passam pela entradinha e entram pela porteira.
+- **Placas mais visíveis**: lousa da SAIDEIRA maior e virada para a câmera; plaquinhas da cerca maiores.
+- **Mais árvores** fechando o quintal (anel em volta do mapa; o campo seco continua aberto).
+- **Nomes na partida mais discretos**: sem caixinha, só o texto com contorno e um risquinho na cor do jogador.
+- Banco de ideias: QTE com as mãos de Jo-Ken-Pô no lugar da barra.
+
 ## v0.12.1 — transição de câmera
 - Pedido: não o copo de cerveja, e sim **a câmera do menu indo suavemente até o enquadramento do começo da partida**. Feito (ida e volta). Copo de cerveja removido.
 - Card do personagem logo embaixo da lousa e crescendo com a tela.

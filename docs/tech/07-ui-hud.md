@@ -19,7 +19,7 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 ## HUD da partida
 - `ui/hud.ts` — cartões de jogadores (topo), log de confrontos (`#side`), barra de ações (🤜 Desafiar/Espaço, símbolos 1/2/3 só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
 - `ui/describe.ts` — frases do log e títulos (`describeExchange`), textos de erro/recusa.
-- No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo próprio, nome, ❤, foco, anel de preparação em `conic-gradient`), `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
+- No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo, nome — v0.13: só texto com contorno e risquinho na cor do jogador, sem caixinha —, ❤, foco, anel de preparação em `conic-gradient`), `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
 
 ## Boteco (v0.6)
 - **E contextual**: dica `.beerhint3d` muda o texto ("[E] Beber uma gelada" / "[E] Abrir o freezer (escudo de gelo)"); o botão 🍺 da barra habilita nos dois casos (`canDrink`).

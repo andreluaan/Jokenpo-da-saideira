@@ -54,8 +54,6 @@ export interface PlayerView {
   swapsLeft: number | null;
   /** > agora enquanto está bebendo (público). */
   drinkingUntil: number;
-  /** Últimos símbolos revelados (público, mais antigo primeiro, até 2). Base da "mão cansada". */
-  recent: Rps[];
   /** Lento por golpe final de Tesoura (público). */
   slowed: boolean;
 }
@@ -79,7 +77,7 @@ export interface Snapshot {
 // ---------- Eventos (feedback; todos públicos) ----------
 
 export type SignalKind = 'swap' | 'lock' | 'cancel';
-export type DenyReason = 'tired' | 'busy' | 'range' | 'target' | 'focus' | 'locked' | 'limit' | 'phase' | 'cooldown' | 'full' | 'empty';
+export type DenyReason = 'busy' | 'range' | 'target' | 'focus' | 'locked' | 'limit' | 'phase' | 'cooldown' | 'full' | 'empty';
 export type WhiffReason = 'range' | 'blocked' | 'gone';
 export type ExchangeKind =
   | 'defenseless'

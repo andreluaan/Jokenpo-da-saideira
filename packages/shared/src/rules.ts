@@ -75,13 +75,6 @@ export function resolveExchange(a: Side & { symbol: Rps; grade: Grade }, b: Side
   };
 }
 
-/** Mão cansada: símbolo revelado `n` vezes seguidas (no fim de `recent`) não pode ser usado de novo. */
-export function tiredSymbol(recent: readonly Rps[], n: number): Rps | null {
-  if (n <= 0 || recent.length < n) return null;
-  const last = recent[recent.length - 1];
-  return recent.slice(-n).every((s) => s === last) ? last : null;
-}
-
 export const RPS_LABEL: Record<Rps, string> = { rock: 'Pedra', paper: 'Papel', scissors: 'Tesoura' };
 export const RPS_ICON: Record<Rps, string> = { rock: '✊', paper: '✋', scissors: '✌️' };
 export const GRADE_LABEL: Record<Grade, string> = { perfect: 'PERFEITO', good: 'BOM', fail: 'FALHA' };

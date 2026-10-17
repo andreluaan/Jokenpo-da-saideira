@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, beats, gradeLock, resolveExchange, tiredSymbol } from '../src';
+import { DEFAULT_CONFIG, beats, gradeLock, resolveExchange } from '../src';
 
 const qte = DEFAULT_CONFIG.qte;
 
@@ -57,11 +57,6 @@ describe('resolução da troca', () => {
     expect(resolveExchange({ symbol: 'paper', grade: 'perfect' }, { symbol: 'rock', grade: 'fail' }).finisher).toBe(true);
   });
 
-  it('mão cansada: mesmo símbolo revelado 2x seguidas', () => {
-    expect(tiredSymbol(['rock', 'rock'], 2)).toBe('rock');
-    expect(tiredSymbol(['paper', 'rock'], 2)).toBeNull();
-    expect(tiredSymbol(['rock'], 2)).toBeNull();
-  });
 
   it('perdedor que falha continua perdendo, com punição maior', () => {
     const r = resolveExchange({ symbol: 'paper', grade: 'good' }, { symbol: 'rock', grade: 'fail' });

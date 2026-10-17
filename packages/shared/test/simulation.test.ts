@@ -155,27 +155,6 @@ describe('duelo (resposta)', () => {
     expect(wrap.sim.snapshotFor(null).players.find((p) => p.id === 'B')!.slowed).toBe(false);
   });
 
-  it('mão cansada: depois de revelar Pedra 2x seguidas, não pode escolher Pedra (histórico é público)', () => {
-    const sim = newSim();
-    for (let i = 0; i < 2; i++) {
-      sim.debugPlace('A', 780, 520);
-      sim.debugPlace('B', 880, 520);
-      sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
-      sim.applyInput('A', { type: 'commit' });
-      advanceTo(sim, impactOf(sim, 'A') + LATE + 1);
-      advanceTo(sim, sim.now + 1000);
-    }
-    expect(sim.snapshotFor('B').players.find((p) => p.id === 'A')!.recent).toEqual(['rock', 'rock']);
-    sim.debugPlace('A', 780, 520);
-    sim.debugPlace('B', 880, 520);
-    const denied = advanceTo(sim, sim.now); // sem passos: só coleta o evento da recusa abaixo
-    sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
-    denied.push(...sim.step(1));
-    expect(denied.some((e) => e.type === 'denied' && e.reason === 'tired')).toBe(true);
-    expect(sim.debugPlayer('A').attack).toBeNull();
-    sim.applyInput('A', { type: 'symbol', symbol: 'paper', targetId: 'B' });
-    expect(sim.debugPlayer('A').attack?.symbol).toBe('paper');
-  });
 
   it('a invulnerabilidade depois do golpe final é igual para os três símbolos', () => {
     const graces = (['rock', 'paper', 'scissors'] as const).map((s) => {

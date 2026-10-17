@@ -1,10 +1,7 @@
 import type { GameConfig } from './config';
 import { arenaDepth, dist, insideObstacle, lineBlocked, normalize } from './geometry';
-import { counterOf, tiredSymbol } from './rules';
+import { counterOf } from './rules';
 import { RPS_LIST, type GameEvent, type PlayerInput, type PlayerView, type Rps, type Snapshot } from './types';
-
-/** Símbolo que `s` vence. */
-const BEATEN_BY: Record<Rps, Rps> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
@@ -96,7 +93,6 @@ export class BotBrain {
   private lastStep = 0;
   private wantsBeer = false;
   private beerDecisionAt = 0;
-  private view: Snapshot | null = null;
 
   constructor(
     readonly id: string,
@@ -124,7 +120,6 @@ export class BotBrain {
   }
 
   think(view: Snapshot): PlayerInput[] {
-    this.view = view;
     const now = view.now;
     const dt = Math.max(1, now - this.lastStep);
     this.lastStep = now;
@@ -320,19 +315,7 @@ export class BotBrain {
   // ---------------------------------------------------------------- escolha
 
   private choose(opponentId: string, current: Rps | null): Rps {
-    const tired = (id: string) => {
-      const p = this.view?.players.find((q) => q.id === id);
-      return p ? tiredSymbol(p.recent, this.config.tiredAfter) : null;
-    };
-    const mine = tired(this.id);
-    const allowed = (s: Rps) => s !== current && s !== mine;
-    // Adversário com a mão cansada só tem 2 opções: jogar o que o símbolo cansado vence
-    // ganha de uma e empata com a outra.
-    const oppTired = tired(opponentId);
-    if (oppTired && this.rng() < this.profile.readChance + 0.25) {
-      const pick = BEATEN_BY[oppTired];
-      if (allowed(pick)) return pick;
-    }
+    const allowed = (s: Rps) => s !== current;
     const hist = this.history.get(opponentId) ?? [];
     if (hist.length > 0 && this.rng() < this.profile.readChance) {
       // Leitura simples: o adversário tende a repetir o que mais usou recentemente.

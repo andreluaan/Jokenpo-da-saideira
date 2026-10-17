@@ -56,7 +56,6 @@ export const WHIFF_TEXT: Record<WhiffReason, string> = {
 };
 
 export const DENY_TEXT: Record<DenyReason, string> = {
-  tired: 'Mão cansada! Use outro símbolo',
   busy: 'Ocupado',
   range: 'Fora de alcance',
   target: 'Sem alvo',

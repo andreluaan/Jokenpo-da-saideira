@@ -308,7 +308,6 @@ function viewOf(a: Actor, pos: THREE.Vector3, cfg: typeof DEFAULT_CONFIG): Playe
     dashReadyAt: 0,
     swapsLeft: null,
     drinkingUntil: 0,
-    recent: [],
     slowed: false,
   };
 }

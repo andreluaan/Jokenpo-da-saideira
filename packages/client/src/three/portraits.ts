@@ -56,7 +56,6 @@ function fakeView(id: CharacterId): PlayerView {
     dashReadyAt: 0,
     swapsLeft: null,
     drinkingUntil: 0,
-    recent: [],
     slowed: false,
   };
 }

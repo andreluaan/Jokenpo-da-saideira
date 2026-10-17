@@ -131,9 +131,7 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 
 **QTE nunca transforma uma derrota de símbolo em vitória — nem uma vitória em empate.**
 
-### 5.8 Escolha do símbolo com peso (v0.5)
-- **Histórico público:** os 2 últimos símbolos revelados de cada jogador aparecem no crachá dele.
-- **Mão cansada:** quem revelou o mesmo símbolo [2] vezes seguidas **não pode** escolhê-lo de novo (nem na troca) até revelar outro. Todos sabem → leitura: se o outro não pode Pedra, jogar Tesoura ganha do Papel e empata com Tesoura.
+### 5.8 Golpes finais (v0.5)
 - **Golpes finais** (vencer + acertar o QTE). Invulnerabilidade igual para os três: [1600 ms].
   | Símbolo | Efeito | Animação |
   |---|---|---|

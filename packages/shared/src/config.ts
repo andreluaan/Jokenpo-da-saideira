@@ -103,8 +103,6 @@ export interface GameConfig {
     scissors: { knockback: number; stunMs: number; slowMs: number; slowMul: number };
     paper: { knockback: number; stunMs: number };
   };
-  /** Mesmo símbolo revelado N vezes seguidas = mão cansada: não pode usar de novo na próxima. */
-  tiredAfter: number;
   perfectFocusBonus: number;
   beer: {
     /** Tempo parado bebendo (vulnerável: levar dano derrama a cerveja). */
@@ -201,7 +199,6 @@ export const DEFAULT_CONFIG: GameConfig = {
     // Embrulhado e arremessado como bola de neve: vai mais longe, sem lentidão.
     paper: { knockback: 300, stunMs: 900 },
   },
-  tiredAfter: 2,
   perfectFocusBonus: 15,
   beer: { drinkMs: 2200, heal: 1, respawnMs: 25_000, reach: 36 },
   match: { countdownMs: 3000, durationMs: 240_000 },

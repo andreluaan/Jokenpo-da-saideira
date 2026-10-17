@@ -1,6 +1,6 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
 import { clamp, clampInArena, dist, lineBlocked, normalize, pushOutOfObstacle } from './geometry';
-import { gradeLock, resolveExchange, tiredSymbol } from './rules';
+import { gradeLock, resolveExchange } from './rules';
 import { CHARACTER_IDS } from './types';
 import type {
   CharacterId,
@@ -65,8 +65,6 @@ interface Player {
   drinkStation: number;
   dashX: number;
   dashY: number;
-  /** Últimos símbolos revelados (público), para a regra da mão cansada. */
-  recent: Rps[];
   /** Lento até este instante (golpe final de Tesoura). */
   slowUntil: number;
 }
@@ -129,7 +127,6 @@ export class GameSimulation {
         drinkStation: -1,
         dashX: 0,
         dashY: 0,
-        recent: [],
         slowUntil: 0,
       };
       this.players.push(p);
@@ -176,7 +173,6 @@ export class GameSimulation {
     if (!isRps(symbol)) return;
     const now = this.now;
     if (now < p.busyUntil || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
-    if (this.isTired(p, symbol)) return this.deny(p, 'tired');
     const t = targetId ? this.byId.get(targetId) : undefined;
     if (!t || t === p || !t.alive) return this.deny(p, 'target');
 
@@ -211,23 +207,12 @@ export class GameSimulation {
     const atk = p.attack!;
     if (!isRps(symbol) || symbol === atk.symbol) return;
     if (atk.lockedAt !== null) return this.deny(p, 'locked');
-    if (this.isTired(p, symbol)) return this.deny(p, 'tired');
     if (atk.swaps >= this.config.costs.maxSwaps) return this.deny(p, 'limit');
     if (p.focus < this.config.costs.swap) return this.deny(p, 'focus');
     p.focus -= this.config.costs.swap;
     atk.swaps++;
     atk.symbol = symbol;
     this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'swap' });
-  }
-
-  /** Mão cansada: o mesmo símbolo revelado `tiredAfter` vezes seguidas não pode ser escolhido de novo. */
-  private isTired(p: Player, symbol: Rps): boolean {
-    return tiredSymbol(p.recent, this.config.tiredAfter) === symbol;
-  }
-
-  private remember(p: Player, symbol: Rps): void {
-    p.recent.push(symbol);
-    if (p.recent.length > 2) p.recent.shift();
   }
 
   /** Finta: sinal idêntico ao da troca, mesmo custo, símbolo não muda. */
@@ -475,9 +460,6 @@ export class GameSimulation {
       y: (x.y + y.y) / 2,
     };
     this.emit(ev);
-    // Símbolos revelados entram no histórico público (mão cansada).
-    this.remember(x, atk.symbol);
-    if (yAtk) this.remember(y, yAtk.symbol);
 
     // O ataque de X sempre termina aqui; o de Y só se for duelo (defensor que vence mantém a ação).
     const recovery = r.kind === 'fumble' || r.kind === 'both-fumble' ? timings.whiffMs : timings.afterResolveMs;
@@ -637,7 +619,6 @@ export class GameSimulation {
         dashReadyAt: p.dashReadyAt,
         drinkingUntil: now < p.drinkingUntil ? p.drinkingUntil : 0,
         swapsLeft: self && p.attack ? this.config.costs.maxSwaps - p.attack.swaps : null,
-        recent: [...p.recent],
         slowed: now < p.slowUntil,
       };
     });

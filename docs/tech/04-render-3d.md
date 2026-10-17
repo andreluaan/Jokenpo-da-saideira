@@ -54,6 +54,9 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - **E** contextual: perto da mesa machucado = beber; perto do freezer = "[E] Abrir o freezer".
 `BarEventFx` (DOM): `.barfx.kind-*.stage-announce|active|end` → vinheta nas bordas (brasa pulsando / escuro / dourado de festa) + faixa grande (lousa; no Zé vira balão de fala) com contagem no aviso e barra de tempo. Cada estágio é uma classe CSS (gancho para sons depois).
 
+## Vida no entorno (`ambient3d.ts`)
+`Ambient3D` (só visual): torcida (`Extra3D` — 2 sentados na mesa de fora em `arena.seats` com y=0,14 como no menu; 2 em pé perto das mesas vermelhas) que pula/comemora em golpes, golpes finais, eliminações e no início dos eventos; **cachorro caramelo** procedural andando na elipse da cerca (+1,15), para, senta e abana o rabo, late ("Au! Au!") em golpes finais/eliminações; **faíscas** aditivas subindo das churrasqueiras. Vapor gelado sai do freezer aberto (em `boteco3d`).
+
 ## Menos poluição (várias pessoas perto)
 - `relevant(id)`: você, seu alvo ou quem te ataca. Só isso vira pop-up (sinais ↻🔒✖ 22 px, DUELO! 20 px, manchete do confronto 20 px, sua nota 18 px, Errou!, Protegido). O resto fica no log.
 - Setas de mira de terceiros: opacidade 0,28 e sem pontinhos.

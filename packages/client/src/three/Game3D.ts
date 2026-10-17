@@ -10,6 +10,7 @@ import { signTexture, softCircle } from './textures';
 import { finisherModels, startFinisher, type Fx } from './finishers';
 import { Boteco3D } from './boteco3d';
 import { BarEventFx } from '../ui/barEventFx';
+import { Ambient3D } from './ambient3d';
 
 const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#fff4e6', fail: '#ff5a5f' };
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
@@ -57,6 +58,7 @@ export class Game3D {
   private fxs: Fx[] = [];
   private readonly boteco: Boteco3D;
   private readonly barFx: BarEventFx;
+  private readonly ambient: Ambient3D;
   private targetId: string | null = null;
   private lastMove = { x: 0, y: 0 };
   private ended = false;
@@ -110,6 +112,7 @@ export class Game3D {
       simNow: () => this.conn.now(),
     });
     this.barFx = new BarEventFx(this.overlay);
+    this.ambient = new Ambient3D(this.scene, conn.config, this.arena, (at, text, color, size, ms) => this.popup(at, text, color, size, ms));
 
     // Anel de seleção de alvo.
     this.selRing = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.7, 40), new THREE.MeshBasicMaterial({ color: 0xfff4e6, transparent: true, opacity: 0.9 }));
@@ -159,6 +162,7 @@ export class Game3D {
     this.fxs.forEach((f) => f.dispose());
     this.boteco.destroy();
     this.barFx.destroy();
+    this.ambient.destroy();
     this.hud.destroy();
     this.renderer.dispose();
     this.renderer.domElement.remove();
@@ -329,6 +333,7 @@ export class Game3D {
     const meId = this.conn.localPlayerId;
     for (const e of events) {
       this.boteco.onEvent(e);
+      this.ambient.onEvent(e);
       switch (e.type) {
         case 'signal': {
           const p = this.pos(e.playerId, 1.7);
@@ -559,6 +564,7 @@ export class Game3D {
     this.updateFx();
     this.boteco.update(snap, now, dt);
     this.barFx.update(snap.barEvent, now);
+    this.ambient.update(dt);
     this.arena.update(dt, now);
 
     // Tremidinha de câmera nos golpes.

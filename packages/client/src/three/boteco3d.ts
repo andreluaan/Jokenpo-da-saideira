@@ -393,6 +393,11 @@ export class Boteco3D {
       const next = cur + ((opening ? 1.15 : 0) - cur) * Math.min(1, dt * (opening ? 5 : 3));
       this.lidAngle.set(f.index, next);
       lid.rotation.x = -next;
+      // Vapor gelado saindo enquanto a tampa está aberta.
+      if (next > 0.4 && Math.random() < dt * 8) {
+        const c = this.w(o.x + o.w / 2 + (Math.random() - 0.5) * o.w, o.y + o.h / 2, 0.7);
+        this.d.puff(c, 0xe8f6ff, 2);
+      }
     }
   }
 

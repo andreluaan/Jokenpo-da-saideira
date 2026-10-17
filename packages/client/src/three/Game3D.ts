@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
+import { type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
-import { symbolPaths, symbolSvg } from '../ui/symbolIcons';
+import { symbolSvg } from '../ui/symbolIcons';
+import { BEAT_MS, QteHands } from '../ui/qteHands';
 import { toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
@@ -14,9 +15,6 @@ import { Ambient3D } from './ambient3d';
 import { MATCH_FOV, MATCH_TARGET, matchCameraPose } from './matchCamera';
 
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
-/** Batidas do Jo-Ken-Pô: o "PÔ!" cai exatamente no impacto (QTE perfeito). */
-const BEAT_MS = 400;
-const CHANT = ['JO', 'KEN', 'PÔ!'];
 const REVEAL_MS = 1300;
 const SYM_BY_CODE: Record<string, Rps> = { Digit1: 'rock', Digit2: 'paper', Digit3: 'scissors', KeyJ: 'rock', KeyK: 'paper', KeyL: 'scissors', Numpad1: 'rock', Numpad2: 'paper', Numpad3: 'scissors' };
 
@@ -68,7 +66,7 @@ export class Game3D {
   private readonly aims = new Map<string, THREE.Group>();
   private readonly selRing: THREE.Mesh;
   private readonly beer: THREE.Group;
-  private readonly qte: SVGSVGElement;
+  private readonly qte: QteHands;
   /** Instante (tempo do servidor) em que VOCÊ apertou a Última Palavra — para congelar a barra ali. */
   private localLock: number | null = null;
   private readonly center = document.createElement('div');
@@ -126,13 +124,8 @@ export class Game3D {
     this.beer.position.copy(this.arena.beerSpot);
     this.scene.add(this.beer);
 
-    this.qte = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.qte.setAttribute('class', 'qte3d');
-    // Barra curva estilo "shot meter": trilho (CEDO), fatia verde (PERFEITO), fatia vermelha (ROUBOU), enchimento,
-    // marca de quando o adversário botou (o malandro olha isso) e rótulo.
-    this.qte.innerHTML =
-      '<path class="edge"/><path class="track"/><path class="perf"/><path class="red"/><path class="fill"/><line class="tick"/><line class="opp"/><g class="oppsym"></g><text class="lbl"></text>';
-    this.overlay.appendChild(this.qte);
+    // QTE com as mãos (punho batendo no ritmo do Jo-Ken-Pô) ao lado do seu personagem.
+    this.qte = new QteHands(this.overlay);
     this.center.className = 'center3d';
     this.timer.className = 'timer3d';
     this.beerHint.className = 'beerhint3d';
@@ -798,104 +791,35 @@ export class Game3D {
     }
   }
 
-  /**
-   * Barra do QTE ao lado do seu personagem (estilo "shot meter"): enche de baixo para cima no ritmo do
-   * Jo-Ken-Pô e chega na fatia verde exatamente no "PÔ!" (instante do impacto). Ao apertar, congela e mostra a nota.
-   */
+  /** QTE com as mãos ao lado do seu personagem (ver ui/qteHands.ts). */
   private updateQte(snap: Snapshot, now: number, me: PlayerView | undefined): void {
-    const svg = this.qte;
-    svg.style.display = 'none';
     if (!me?.alive || !me.holding || me.impactAt === null) {
       this.localLock = null;
+      this.qte.hide();
       return;
     }
-    const { qte, attack } = this.conn.config;
-    const T = me.impactAt;
     const opp = snap.players.find((p) => p.id === me.targetId);
-
-    // Tamanho e posição: à direita do corpo, proporcional ao zoom da câmera.
-    const c = this.screen(this.world(me.x, me.y, 0.75));
-    const edge = this.screen(this.world(me.x, me.y, 0.75).add(new THREE.Vector3(0.75, 0, 0)));
-    const r = Math.max(46, Math.abs(edge.x - c.x) * 1.25);
-    svg.style.display = 'block';
-    svg.style.transform = `translate(${c.x}px, ${c.y}px)`;
-
-    // Tempo → posição na barra (0 = base, 1 = topo). Do início da preparação até o fim da janela.
-    const t0 = T - attack.windupMs;
-    const t1 = qteEnd(T, qte);
-    const u = (t: number) => Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
-    const A0 = (62 * Math.PI) / 180; // base (embaixo, à direita)
-    const A1 = (-62 * Math.PI) / 180; // topo
-    const pt = (k: number) => {
-      const a = A0 + (A1 - A0) * k;
-      return `${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`;
-    };
-    const arc = (k0: number, k1: number) => (k1 <= k0 ? '' : `M ${pt(k0)} A ${r} ${r} 0 0 0 ${pt(k1)}`);
-    const set = (cls: string, d: string) => (svg.querySelector(`.${cls}`) as SVGPathElement).setAttribute('d', d);
-    set('edge', arc(0, 1));
-    set('track', arc(0, 1));
-    set('perf', arc(u(T - qte.greenBeforeMs), u(T + qte.greenAfterMs)));
-    set('red', arc(u(T + qte.greenAfterMs), 1));
-
-    // Enchimento: até agora, ou congelado onde você apertou.
-    const lockAt = this.localLock ?? me.pickedAt;
-    const fillTo = u(lockAt ?? now);
-    const fill = svg.querySelector('.fill') as SVGPathElement;
-    fill.setAttribute('d', arc(0, Math.max(0.001, fillTo)));
-    const lbl = svg.querySelector('.lbl') as SVGTextElement;
-    const tick = svg.querySelector('.tick') as SVGLineElement;
-    const [tx, ty] = pt(u(T)).split(' ').map(Number);
-    tick.setAttribute('x1', String(tx * 0.86));
-    tick.setAttribute('y1', String(ty * 0.86));
-    tick.setAttribute('x2', String(tx * 1.14));
-    tick.setAttribute('y2', String(ty * 1.14));
-    const [lx, ly] = pt(1).split(' ').map(Number);
-    lbl.setAttribute('x', String(lx + 10));
-    lbl.setAttribute('y', String(ly - 12));
-    // Quando o adversário botou: risquinho na barra + o símbolo dele (é isso que o malandro espera para ver).
-    const oppLine = svg.querySelector('.opp') as SVGLineElement;
-    const oppSym = svg.querySelector('.oppsym') as SVGGElement;
-    if (opp?.symbol && opp.pickedAt !== null) {
-      const [ox, oy] = pt(u(opp.pickedAt)).split(' ').map(Number);
-      oppLine.setAttribute('x1', String(ox * 0.8));
-      oppLine.setAttribute('y1', String(oy * 0.8));
-      oppLine.setAttribute('x2', String(ox * 1.2));
-      oppLine.setAttribute('y2', String(oy * 1.2));
-      oppLine.style.stroke = hex(opp.color);
-      // Ícone do símbolo dele, pequeno, logo depois do risquinho (desenho 64×64 reduzido).
-      oppSym.setAttribute('transform', `translate(${(ox * 1.2 + 2).toFixed(1)} ${(oy * 1.2 - 11).toFixed(1)}) scale(0.36)`);
-      if (oppSym.dataset.sym !== opp.symbol) {
-        oppSym.dataset.sym = opp.symbol;
-        oppSym.innerHTML = symbolPaths(opp.symbol);
-      }
-      oppLine.style.display = oppSym.style.display = '';
-    } else oppLine.style.display = oppSym.style.display = 'none';
-
-    let state: string;
-    let text: string;
-    if (lockAt !== null) {
-      // Mesma regra do servidor (gradePick): antes do verde = cedo; verde = perfeito; vermelho = roubou.
-      const d = lockAt - T;
-      state = d < -qte.greenBeforeMs ? 'good' : d <= qte.greenAfterMs ? 'perfect' : 'fail';
-      // Sem texto depois de apertar: a cor do enchimento já mostra (verde, amarelo ou vermelho).
-      text = '';
-    } else if (now > t1) {
-      state = 'fail';
-      text = '';
-    } else if (now > T + qte.greenAfterMs) {
-      state = 'fail live';
-      text = 'VAI DAR ROUBO!';
-    } else {
-      // Jo-Ken-Pô pequeno, no rótulo da barra.
-      const dt = T - now;
-      state = dt <= qte.greenBeforeMs ? 'perfect live' : 'early live';
-      const beat = Math.round(dt / BEAT_MS); // 2 = JO, 1 = KEN, 0 = PÔ!
-      text = dt <= qte.greenBeforeMs ? CHANT[2] : beat >= 0 && beat <= 2 ? CHANT[2 - beat] : '';
-    }
-    fill.setAttribute('class', `fill ${state}`);
-    lbl.setAttribute('class', `lbl ${state}`);
-    lbl.textContent = text;
+    // À direita do corpo, no tamanho do zoom da câmera.
+    const c = this.screen(this.world(me.x, me.y, 0.9));
+    const edge = this.screen(this.world(me.x, me.y, 0.9).add(new THREE.Vector3(0.75, 0, 0)));
+    const px = Math.abs(edge.x - c.x);
+    // Do lado oposto ao adversário, para não ficar no meio da briga.
+    const oppX = opp ? this.screen(this.world(opp.x, opp.y, 0.9)).x : c.x - 1;
+    const left = oppX > c.x;
+    this.qte.update({
+      x: c.x + (left ? -1 : 1) * px * 0.85,
+      y: c.y,
+      left,
+      scale: Math.max(0.9, Math.min(1.7, px / 48)),
+      now,
+      impactAt: me.impactAt,
+      pickedAt: this.localLock ?? me.pickedAt,
+      symbol: me.symbol,
+      opp: opp ? { symbol: opp.symbol, pickedAt: opp.pickedAt } : null,
+      cfg: this.conn.config,
+    });
   }
+
 }
 
 function easeOutBack(t: number): number {

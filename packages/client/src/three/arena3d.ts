@@ -46,8 +46,13 @@ export interface ArenaHandles {
   beerSpot: THREE.Vector3;
   /** Porteira: um ponto do lado de fora e outro do lado de dentro da arena. */
   gate: { outside: THREE.Vector3; inside: THREE.Vector3 };
-  /** Banquinhos da mesa do lado de fora do bar. */
+  /** Banquinhos da mesa do lado de fora do bar (onde os jogadores sentam no menu). */
   seats: Seat[];
+  /** Cadeiras das mesas vermelhas (torcida sentada). */
+  fanSeats: Seat[];
+  /** Onde fica a picape com paredão (traseira virada para a arena) e o garçom do balcão. */
+  truck: { pos: THREE.Vector3; yaw: number };
+  barWaiter: { pos: THREE.Vector3; yaw: number };
   /** Grupo 3D de cada obstáculo (mesmo índice de config.obstacles; null quando não há grupo único). */
   props: (THREE.Group | null)[];
   /** Queda de luz: 0 = normal, 1 = quintal apagado (só brasa, luz do bar e as lâmpadas do varal). */
@@ -194,7 +199,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   for (const [x, z, h, kind] of [
     [8.6, -5.4, 2.6, 'tree_oak_fall'],
     [10.2, -2.6, 2.2, 'tree_fat_fall'],
-    [6.4, -6.8, 2.0, 'tree_default_fall'],
+    [7.3, -7.9, 2.0, 'tree_default_fall'],
     [-10.9, 1.4, 2.4, 'tree_detailed_fall'],
     [-10.9, -3.3, 2.0, 'tree_oak_fall'],
     [-2.6, -6.9, 2.1, 'tree_fat_fall'],
@@ -210,21 +215,18 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     if (z > -4.8 && x < 9) continue;
     scene.add(place('nature/crops_cornStageD', x + 2.2, z, { height: 0.9 + rng() * 0.2, rot: rng() * 6 }));
   }
-  // Horta à esquerda, na frente.
-  for (let r = 0; r < 3; r++) {
-    const z = 4.4 + r * 0.7;
-    for (let k = 0; k < 4; k++) {
-      const x = -10.2 + k * 0.85 + r * 0.25;
-      scene.add(place('nature/crops_dirtRow', x, z, { size: 0.85 }));
-      scene.add(place(r % 2 ? 'nature/crop_pumpkin' : 'nature/crop_carrot', x, z, { height: r % 2 ? 0.32 : 0.28, rot: rng() * 6 }));
-    }
-  }
-  // Mesas de plástico vermelhas com guarda-sol.
+  // Mesas de plástico vermelhas espalhadas em volta (quem não cabe na cerca assiste sentado).
+  const fanSeats: Seat[] = [];
   for (const [x, z, umb] of [
-    [8.2, 4.7, true],
-    [9.9, 3.2, false],
+    [9.2, 4.9, true],
+    [10.9, 1.5, false],
+    [10.6, -2.4, true],
+    [2.2, -7.6, true],
+    [-3.9, -7.0, false],
+    [-11.1, 2.6, true],
+    [-9.4, 4.8, true],
   ] as const) {
-    buildPatio(scene, x, z, umb);
+    fanSeats.push(...buildPatio(scene, x, z, umb));
   }
   // Lousa da saideira.
   const board = new THREE.Group();
@@ -233,8 +235,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   board.add(chalk);
   board.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), std(0x6a3f37), -0.42, 0.45, -0.05));
   board.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), std(0x6a3f37), 0.42, 0.45, -0.05));
-  board.position.set(-5.2, 0, 5.9);
-  board.rotation.y = 0.25;
+  board.position.set(-1.0, 0, -7.6);
+  board.rotation.y = 0;
   scene.add(board);
 
   // Grama, flores e pedrinhas espalhadas fora da arena.
@@ -243,7 +245,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     const x = (rng() - 0.5) * 24;
     const z = (rng() - 0.5) * 15;
     const k = (x / (ax + 1.1)) ** 2 + (z / (az + 1.1)) ** 2;
-    if (k < 1 || (x < -6.4 && z < -3.6)) continue;
+    // Fora da arena, do bar e do canto da picape (frente à esquerda).
+    if (k < 1 || (x < -6.4 && z < -3.6) || (x < -7.2 && z > 3)) continue;
     const kind = scatter[Math.floor(rng() * scatter.length)];
     scene.add(place(kind, x, z, { height: kind.includes('rock') ? 0.18 : kind.includes('bush') ? 0.45 : 0.25, rot: rng() * 6 }));
   }
@@ -282,6 +285,11 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     beerSpot,
     gate,
     seats,
+    fanSeats,
+    // Nos fundos à direita (aparece no menu e na partida). Frente apontando para longe da arena →
+    // caçamba e paredão virados para o ringue.
+    truck: { pos: new THREE.Vector3(5.4, 0, -7.6), yaw: Math.atan2(7.6, 5.4) },
+    barWaiter: { pos: new THREE.Vector3(-7.0, 0, -3.95), yaw: 0.35 },
     props,
     setDim(k) {
       if (Math.abs(k - dim) < 1e-3) return;
@@ -517,7 +525,8 @@ function buildOutdoorTable(scene: THREE.Scene, x: number, z: number): Seat[] {
   return seats;
 }
 
-function buildPatio(scene: THREE.Scene, x: number, z: number, umbrella: boolean): void {
+function buildPatio(scene: THREE.Scene, x: number, z: number, umbrella: boolean): Seat[] {
+  const seats: Seat[] = [];
   const red = { '*': 0xe0453a };
   const t = place('furniture/tableRound', x, z, { size: 0.95 });
   recolor(t, red);
@@ -528,6 +537,7 @@ function buildPatio(scene: THREE.Scene, x: number, z: number, umbrella: boolean)
     ch.rotation.y = -a - Math.PI / 2;
     recolor(ch, red);
     scene.add(ch);
+    seats.push({ pos: new THREE.Vector3(x + Math.cos(a) * 0.62, 0, z + Math.sin(a) * 0.62), face: new THREE.Vector3(-Math.cos(a), 0, -Math.sin(a)) });
   }
   scene.add(place('food/soda-bottle', x - 0.1, z, { height: 0.24, y: top }));
   scene.add(place('food/glass', x + 0.15, z + 0.1, { height: 0.1, y: top }));
@@ -549,4 +559,5 @@ function buildPatio(scene: THREE.Scene, x: number, z: number, umbrella: boolean)
     cone.castShadow = true;
     scene.add(cone);
   }
+  return seats;
 }

@@ -13,6 +13,10 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - **Entorno**: boteco (`buildShack`, telhado com nervuras, placa "BAR DO ZÉ", TV, rádio, banquetas, caixa de som), **mesa de fora com 4 banquinhos** (`buildOutdoorTable(-9.25,-1.3)` → `seats`), árvores de outono, milharal, horta, mesas vermelhas com guarda-sol (`buildPatio`), lousa "SAIDEIRA", grama/flores/pedras espalhadas (PRNG fixo), lenha, toco, lixeira.
 - **Luz** e névoa (ver 04).
 
+## Entorno (v0.7)
+Horta removida. 7 mesas vermelhas (`buildPatio` devolve as cadeiras → `fanSeats`), lousa da saideira nos fundos (-1,-7.6), picape com paredão em `truck` (5.4,-7.6), garçom do balcão em `barWaiter`. A mesa de fora com 4 banquinhos (`seats`) fica **livre** para os jogadores no menu.
+Layout dos obstáculos da arena: ver `shared/config.ts` (comentado) e 02-simulação.
+
 ## Interativo (v0.6)
 `ArenaHandles.props[i]` = grupo 3D do obstáculo i (null na mesa). Freezer tem `userData.lid` (tampa de vidro com pivô na borda de trás). `setDim(k)` = queda de luz.
 

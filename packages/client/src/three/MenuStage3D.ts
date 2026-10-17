@@ -3,6 +3,7 @@ import { CHARACTER_IDS, CHARACTER_INFO, DEFAULT_CONFIG, PLAYER_COLORS, type Char
 import { S, toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D } from './character3d';
+import { Ambient3D } from './ambient3d';
 
 export interface MenuState {
   /** Quem joga, na ordem das largadas (largada 1 = primeiro). */
@@ -46,6 +47,8 @@ export class MenuStage3D {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private arena!: ArenaHandles;
+  /** Torcida, cachorros, garçom e paredão: o menu já abre com o quintal cheio. */
+  private ambient: Ambient3D | null = null;
   private actors: Actor[] = [];
   private overlay!: HTMLDivElement;
   private ro: ResizeObserver | null = null;
@@ -76,6 +79,7 @@ export class MenuStage3D {
     this.overlay.className = 'overlay3d';
     this.parent.appendChild(this.overlay);
     this.arena = buildArena3D(this.scene, cfg);
+    this.ambient = new Ambient3D(this.scene, cfg, this.arena);
     this.t0 = performance.now();
 
     // Todo mundo começa sentado na mesa do lado de fora do bar.
@@ -116,6 +120,8 @@ export class MenuStage3D {
     if (!this.renderer) return;
     this.renderer.setAnimationLoop(null);
     this.ro?.disconnect();
+    this.ambient?.destroy();
+    this.ambient = null;
     this.renderer.dispose();
     this.renderer.domElement.remove();
     this.overlay.remove();
@@ -206,6 +212,7 @@ export class MenuStage3D {
     const dt = Math.min(0.05, raw);
     // A caminhada usa o tempo real (até 0,25 s por quadro) para não virar câmera lenta em máquina lenta.
     const walkDt = Math.min(0.25, raw);
+    this.ambient?.update(dt);
     const now = performance.now();
     const s = this.state();
     const slots = this.slots();

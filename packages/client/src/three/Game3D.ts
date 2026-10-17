@@ -567,6 +567,7 @@ export class Game3D {
     this.boteco.update(snap, now, dt);
     this.barFx.update(snap.barEvent, now);
     this.ambient.update(dt);
+    this.ambient.setWaiterAway(!!snap.waiter);
     this.arena.update(dt, now);
 
     // Tremidinha de câmera nos golpes.

@@ -100,6 +100,11 @@ export class Extra3D {
   update(dt: number): void {
     this.mixer.update(dt);
   }
+
+  /** Adianta a animação (para a torcida não balançar toda igual). */
+  offset(seconds: number): void {
+    this.mixer.update(seconds);
+  }
 }
 
 /** Bandeja com garrafas que o garçom carrega na mão. */

@@ -54,8 +54,15 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - **E** contextual: perto da mesa machucado = beber; perto do freezer = "[E] Abrir o freezer".
 `BarEventFx` (DOM): `.barfx.kind-*.stage-announce|active|end` → vinheta nas bordas (brasa pulsando / escuro / dourado de festa) + faixa grande (lousa; no Zé vira balão de fala) com contagem no aviso e barra de tempo. Cada estágio é uma classe CSS (gancho para sons depois).
 
-## Vida no entorno (`ambient3d.ts`)
-`Ambient3D` (só visual): torcida (`Extra3D` — 2 sentados na mesa de fora em `arena.seats` com y=0,14 como no menu; 2 em pé perto das mesas vermelhas) que pula/comemora em golpes, golpes finais, eliminações e no início dos eventos; **cachorro caramelo** procedural andando na elipse da cerca (+1,15), para, senta e abana o rabo, late ("Au! Au!") em golpes finais/eliminações; **faíscas** aditivas subindo das churrasqueiras. Vapor gelado sai do freezer aberto (em `boteco3d`).
+## Vida no entorno (`ambient3d.ts`, `paredao3d.ts`) — "evento da cidade"
+`Ambient3D` (só visual; usado na **partida e no menu**):
+- **Torcida em pé** colada na cerca (elipse +0,78), ~25 pessoas, sem as faixas `NO_CROWD` (porteira/mesa de fora/bar e o meio da frente, para não tapar a câmera); **sentada** nas cadeiras das mesas vermelhas (`arena.fanSeats`, y=0,14). Modelos Kenney variados (`CROWD`) com a camisa repintada (`SHIRTS`); `Extra3D.offset()` desencontra as animações. Mesmo tamanho dos jogadores (`CHAR_SCALE`).
+- Reações: golpe → `emote-yes`/`jump` (golpe final = quase todos), eliminação → todos pulam e os cães latem, início de evento → comemoram. Sem briga (menu), alguém comemora sozinho de vez em quando.
+- **3 cachorros** (caramelo, preto, branco) fazendo **ronda** em trechos diferentes da elipse (+1,65 a +2,5), vão e voltam, param, sentam e abanam o rabo.
+- **Garçom no balcão** do Bar do Zé (`arena.barWaiter`); some enquanto o garçom do evento atravessa (`setWaiterAway`).
+- **Picape com paredão** (`buildParedao`, procedural, sem marca) nos fundos à direita (`arena.truck`), caçamba virada para o ringue; falantes pulsam a ~120 bpm e a "energia" sobe com golpes e eventos.
+- Faíscas nas churrasqueiras; vapor do freezer aberto está no `boteco3d`.
+- **Desempenho:** a cena tem ~1.870 draw calls (~1.390 sem o entorno). Próximo passo natural: juntar a decoração estática (cerca, tampinhas, grama) em poucas malhas.
 
 ## Menos poluição (várias pessoas perto)
 - `relevant(id)`: você, seu alvo ou quem te ataca. Só isso vira pop-up (sinais ↻🔒✖ 22 px, DUELO! 20 px, manchete do confronto 20 px, sua nota 18 px, Errou!, Protegido). O resto fica no log.

@@ -848,7 +848,8 @@ export class Game3D {
     this.canDrink = false;
     this.beerHint.style.display = 'none';
     if (!b) return;
-    const ready = b.readyAt <= now;
+    // Online, Infinity ("alguém pegou") chega como null no JSON.
+    const ready = b.readyAt !== null && b.readyAt <= now;
     this.beer.visible = ready;
     this.beer.rotation.y = now / 900;
     const free = me?.alive && !me.holding && me.drinkingUntil <= now && me.openingUntil <= now;

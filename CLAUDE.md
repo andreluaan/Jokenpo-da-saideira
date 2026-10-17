@@ -14,6 +14,7 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
   v0.10: menu enxuto (personagem num card no canto, Como jogar em cards com fotos) e personagens mais fiéis às referências;
   v0.11: **malandragem** — Espaço desafia (1×1), QTE = apertar o símbolo; verde = perfeito, vermelho = pego roubando (DESIGN §5).
   **Histórico e o que o usuário aprovou/recusou: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)** — leia antes de propor ideias.
+- **Banco de ideias** (guardadas para depois, nada decidido): [`docs/IDEIAS.md`](docs/IDEIAS.md).
 - **Próximo:** o usuário vai jogar e avaliar. Depois: sons (ganchos prontos), Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.
 

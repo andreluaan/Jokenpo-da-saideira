@@ -20,6 +20,7 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 ## v0.12.1 — transição de câmera
 - Pedido: não o copo de cerveja, e sim **a câmera do menu indo suavemente até o enquadramento do começo da partida**. Feito (ida e volta). Copo de cerveja removido.
 - Card do personagem logo embaixo da lousa e crescendo com a tela.
+- Bug: uma rodinha de figurantes ficava em cima da cerca de trás (metade dentro da arena). Mudou de lugar e agora nenhum figurante de rodinha nasce dentro da cerca (`insideFence` em `ambient3d.ts`).
 
 ## v0.12 — ícones de verdade e transição
 - Símbolos viraram **desenhos cartunescos** (uma pedra, uma folha de papel, uma tesoura) no lugar dos emojis de mão: barra de ações, crachá, marca do adversário na barra e Como jogar.

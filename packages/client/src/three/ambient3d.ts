@@ -138,6 +138,8 @@ export class Ambient3D {
     const az = cfg.arena.ry * S;
     // Área da mesa dos jogadores: figurante nenhum chega perto (só os cachorros).
     const pa = arena.playersArea;
+    // Figurante nenhum dentro da cerca (elipse da arena + folga para a própria cerca).
+    const insideFence = (x: number, z: number) => (x / (cfg.arena.rx * S + 0.7)) ** 2 + (z / (cfg.arena.ry * S + 0.7)) ** 2 < 1;
     const nearPlayers = (x: number, z: number) => Math.hypot(x - pa.center.x, z - pa.center.z) < pa.r + 0.8;
 
     // Alguns na cerca, espaçados (nada de paredão de gente: dá sensação de aperto).
@@ -177,7 +179,7 @@ export class Ambient3D {
       for (let k = 0; k < n; k++) {
         const a = a0 + (k / n) * Math.PI * 2 + (rng() - 0.5) * 0.4;
         const r = 0.55 + rng() * 0.15;
-        if (nearPlayers(h.x + Math.cos(a) * r, h.z + Math.sin(a) * r)) continue;
+        if (nearPlayers(h.x + Math.cos(a) * r, h.z + Math.sin(a) * r) || insideFence(h.x + Math.cos(a) * r, h.z + Math.sin(a) * r)) continue;
         const e = pickLook();
         e.root.position.set(h.x + Math.cos(a) * r, 0, h.z + Math.sin(a) * r);
         e.root.rotation.y = Math.atan2(h.x - e.root.position.x, h.z - e.root.position.z);

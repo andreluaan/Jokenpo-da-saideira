@@ -104,7 +104,8 @@ const HANGOUTS: [number, number][] = [
   [-3.6, 6.6],
   [3.3, -6.4],
   [11.5, -0.4],
-  [-3.4, -4.7],
+  // (estava em -3,4/-4,7, em cima da cerca: metade da roda ficava dentro da arena)
+  [8.7, -5.3],
 ];
 
 /** Monta todo o quintal do Bar do Zé. */

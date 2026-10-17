@@ -5,7 +5,7 @@ import { recolorColormap } from './textures';
 import { WobbleRig } from '../art/rig';
 
 /** Escala do personagem (o modelo da Kenney tem ~0,67 de altura). */
-export const CHAR_SCALE = 1.6;
+export const CHAR_SCALE = 1.45;
 
 type Anim =
   | 'idle'

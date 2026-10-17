@@ -28,7 +28,7 @@ Estado: morto→`die` · `oneShot` (golpe/chute) · sentado→`sit` · bebendo�
 Ossos ajustados **depois** do mixer, partindo da rotação de repouso (`rest`) para não acumular: cabeça/braços seguem o rig; `pump` levanta os dois braços.
 
 ## Legibilidade: tamanho e contorno
-- `CHAR_SCALE = 1.6` (era 1,45): maior que o círculo de colisão de propósito, para ler bem na câmera da partida.
+- `CHAR_SCALE = 1.45` (testamos 1,6 e o usuário achou feio; voltou ao original). Vale para jogadores e figurantes (`Extra3D`), todo mundo do mesmo tamanho.
 - **Contorno escuro** (`addOutline`, cor `#2b1d22`): cada mesh opaco ganha um filho "casco invertido" (só faces de trás, `MeshBasicMaterial` compartilhado) inchado no shader **depois da projeção** (direção da normal na tela). Espessura fixa em pixels CSS (`OUTLINE_PX = 1.4` × pixel ratio), igual em qualquer monitor/resolução; `onBeforeRender` de cada contorno passa o tamanho do buffer do renderer atual (menu, partida e retratos são renderers diferentes).
 - **Armadilha vivida:** espessura em unidades do mundo (∝ distância) ficava grossa demais em telas grandes.
 - Usa normais **suavizadas** (atributo `olNormal`, média por posição, guardado na geometria compartilhada) para não abrir buracos nas quinas low-poly. Em `SkinnedMesh` o contorno é outro `SkinnedMesh` ligado ao mesmo esqueleto e a normal é deformada com `skinMatrix`.

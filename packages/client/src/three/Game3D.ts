@@ -7,6 +7,7 @@ import { S, toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
 import { signTexture, softCircle } from './textures';
+import { finisherModels, startFinisher, type Fx } from './finishers';
 
 const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#fff4e6', fail: '#ff5a5f' };
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
@@ -51,6 +52,7 @@ export class Game3D {
   private readonly cleanups: (() => void)[] = [];
   private reveals: Reveal[] = [];
   private dust: { s: THREE.Sprite; t: number; v: THREE.Vector3 }[] = [];
+  private fxs: Fx[] = [];
   private targetId: string | null = null;
   private lastMove = { x: 0, y: 0 };
   private ended = false;
@@ -87,6 +89,11 @@ export class Game3D {
     parent.appendChild(this.overlay);
 
     this.arena = buildArena3D(this.scene, conn.config);
+    // Pré-compila os golpes finais (senão o 1º golpe de cada tipo dá um tranco e pula quadros da animação).
+    const warm = finisherModels();
+    warm.forEach((o) => this.scene.add(o));
+    this.renderer.compile(this.scene, this.camera);
+    warm.forEach((o) => o.removeFromParent());
 
     // Anel de seleção de alvo.
     this.selRing = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.7, 40), new THREE.MeshBasicMaterial({ color: 0xfff4e6, transparent: true, opacity: 0.9 }));
@@ -134,6 +141,7 @@ export class Game3D {
     this.renderer.setAnimationLoop(null);
     this.ro.disconnect();
     this.cleanups.forEach((f) => f());
+    this.fxs.forEach((f) => f.dispose());
     this.hud.destroy();
     this.renderer.dispose();
     this.renderer.domElement.remove();
@@ -503,12 +511,21 @@ export class Game3D {
       const grace = now < p.graceUntil && Math.floor(now / 90) % 2 === 0;
       a.ring.position.set(w.x, 0.02, w.z);
       a.ring.visible = p.alive;
-      (a.ring.material as THREE.MeshBasicMaterial).opacity = grace ? 0.35 : 0.95;
+      const ringMat = a.ring.material as THREE.MeshBasicMaterial;
+      ringMat.opacity = grace ? 0.35 : 0.95;
+      // Lento (tesourada): o anel pisca em azul-gelo.
+      if (p.slowed) ringMat.color.setHex(0x8ecae6).lerp(new THREE.Color(p.color), 0.5 + 0.5 * Math.sin(now / 110));
+      else ringMat.color.setHex(p.color);
       if (a.ringMe) {
         a.ringMe.position.set(w.x, 0.021, w.z);
         a.ringMe.visible = p.alive;
       }
       a.c.model.traverse((o) => {
+        // Contorno usa um material compartilhado por todos: some durante o pisca em vez de ficar transparente.
+        if (o.userData.outline) {
+          o.visible = !grace;
+          return;
+        }
         const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
         if (mm && 'opacity' in mm) {
           mm.transparent = grace;
@@ -523,6 +540,7 @@ export class Game3D {
     this.updateBeer(snap, now, me);
     this.updateQte(snap, now, me);
     this.updateDust(dt);
+    this.updateFx();
     this.arena.update(dt, now);
 
     // Tremidinha de câmera nos golpes.
@@ -688,7 +706,8 @@ export class Game3D {
       });
       if (r.stage === 1 && t > 120) {
         r.stage = 2;
-        if (e.damagedId && e.winnerId) this.actors.get(e.winnerId)?.c.trigger('attack-kick-right', 600, simNow);
+        if (e.damagedId && e.winnerId && e.finisher) this.finisher(e.finisher, e.damagedId, e.winnerId, simNow);
+        else if (e.damagedId && e.winnerId) this.actors.get(e.winnerId)?.c.trigger('attack-kick-right', 600, simNow);
       }
       if (r.stage === 2 && t > 330) {
         r.stage = 3;
@@ -696,7 +715,9 @@ export class Game3D {
         const wd = this.world(d.x, d.y);
         const posOf = (id: string) => (id === a.id ? wa : wd);
         const otherOf = (id: string) => (id === a.id ? wd : wa);
-        if (e.damagedId) {
+        if (e.damagedId && e.finisher) {
+          // Golpe final: a animação do símbolo cuida do perdedor (ver finishers.ts).
+        } else if (e.damagedId) {
           const v = posOf(e.damagedId);
           const w = otherOf(e.damagedId);
           this.actors.get(e.damagedId)?.c.hit(w.x, w.z, v.x, v.z, 1.1, simNow, true);
@@ -718,6 +739,41 @@ export class Game3D {
     this.reveals = this.reveals.filter((r) => {
       const alive = now - r.start <= REVEAL_MS;
       if (!alive) r.signs.forEach((s) => s.removeFromParent());
+      return alive;
+    });
+  }
+
+  /** Dispara o golpe final do símbolo vencedor (mão de pedra, tesoura gigante ou bola de papel). */
+  private finisher(sym: Rps, victimId: string, winnerId: string, simNow: number): void {
+    const V = this.actors.get(victimId);
+    const W = this.actors.get(winnerId);
+    if (!V || !W) return;
+    W.c.trigger('attack-melee-right', 500, simNow);
+    const winnerPos = W.c.root.position.clone();
+    const fx = startFinisher(
+      sym,
+      {
+        scene: this.scene,
+        victimPos: () => V.c.root.position,
+        winnerPos,
+        victimRoot: V.c.root,
+        knock: (sweep, strength) => {
+          const v = V.c.root.position;
+          V.c.hit(winnerPos.x, winnerPos.z, v.x, v.z, strength, this.conn.now(), sweep);
+        },
+        puff: (at, color, n) => this.puff(at, color, n),
+        shake: (amount) => (this.shake = Math.max(this.shake, amount)),
+      },
+      performance.now(),
+    );
+    this.fxs.push(fx);
+  }
+
+  private updateFx(): void {
+    const now = performance.now();
+    this.fxs = this.fxs.filter((f) => {
+      const alive = f.update(now);
+      if (!alive) f.dispose();
       return alive;
     });
   }

@@ -131,6 +131,13 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 - Na revelação, os dois viram de frente e estendem o braço com o sinal desenhado (punho, palma ou "V"), na cor da mão de cada personagem (faixa do Fera, luva do Príncipe).
 - O vencedor varre a perna; o perdedor tomba (molas do ragdoll), levanta cambaleando, solta poeira (sem texto extra). No empate, os dois se esbarram.
 
+### 8.1.1 Golpes finais (vencer + acertar o QTE)
+- **Pedra:** um punho gigante de pedra desce do céu em cima do perdedor (poeira + tremor) e volta a subir; ele fica estatelado.
+- **Tesoura:** uma tesoura gigante passa cortando pelo meio dele (rastro branco); ele é arremessado e o anel pisca em azul-gelo enquanto está lento.
+- **Papel:** ele é embrulhado numa bola de papel de caderno, arremessado como bola de neve e o papel estoura quando cai.
+- Errou o QTE mas ganhou no símbolo: rasteira simples (sem golpe final).
+- Manchetes curtas: **ESMAGOU! · CORTOU! · EMBRULHOU!**
+
 ### 8.2 Bebendo
 - O braço leva a long neck (ou a caneca do Seu Pança) à boca, a cabeça vai para trás e sobem bolhas. No fim aparecem **+1 ❤** e **"hic!"**, e o personagem fica 2,2× mais cambaleante por 6 s.
 - Se apanhar bebendo: **"Derramou!"**.

@@ -32,6 +32,15 @@ Menu usa `setViewOffset(W,H,-side/2,…)` para centralizar a cena à direita da 
 - **QTE (barra estilo "shot meter" do NBA 2K):** SVG curvo à direita do jogador (arco de +62° a −62°, raio ≈ 1,25 × 0,75 un. projetado, mín. 46 px). Tempo → posição: `u(t) = (t − (T − windupMs)) / (windupMs + lateMs)`. Faixa âmbar = janela (`T − leadMs` até o topo), fatia verde = `T ± perfectMs` com risquinho em T. Enchimento branco sobe até agora; ao apertar (`pressCommit` guarda `localLock = conn.now()`), **congela** e mostra a nota calculada com a mesma regra do `gradeLock` (PERFEITO/BOM/BOM (cedo)/TARDE); passou do topo sem apertar = FALHA.
 - **Fim:** vencedor vivo toma a cerveja em loop (`drink`).
 
+## Golpes finais (`finishers.ts`)
+Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da revelação `Game3D.finisher()` cria um `Fx`
+(atualizado em `updateFx`, por relógio de parede) no lugar da rasteira:
+- **Pedra:** punho de pedra (dedos + polegar virados para a câmera, braço inclinado para trás) cai em 240 ms, `knock(sweep)`, poeira, tremor; sobe aos 700 ms.
+- **Tesoura:** tesoura gigante deitada atravessa o perdedor na direção vencedor→perdedor (aberta → "snip" no meio → reabre), rastro branco; perdedor tomba. Enquanto `view.slowed`, o anel dele pisca em azul-gelo.
+- **Papel:** bola de papel amassado com textura de caderno embrulha (esconde `c.root`), segue o empurrão da simulação num arco rolando e estoura em papel; perdedor reaparece deitado.
+- `finisherModels()` + `renderer.compile` no construtor pré-compilam os shaders. **Armadilha vivida:** sem isso o 1º golpe dava um tranco que pulava a fase de "embrulhar" e o perdedor nunca sumia — por isso o esconder também roda fora do `if` de cada fase.
+- O pisca da invulnerabilidade esconde os contornos (`userData.outline`) em vez de mexer na opacidade: o material do contorno é compartilhado por todos.
+
 ## Menos poluição (várias pessoas perto)
 - `relevant(id)`: você, seu alvo ou quem te ataca. Só isso vira pop-up (sinais ↻🔒✖ 22 px, DUELO! 20 px, manchete do confronto 20 px, sua nota 18 px, Errou!, Protegido). O resto fica no log.
 - Setas de mira de terceiros: opacidade 0,28 e sem pontinhos.

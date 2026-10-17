@@ -259,7 +259,7 @@ function ensureOutlineNormals(geo: THREE.BufferGeometry): void {
 }
 
 /** Põe contorno em todos os meshes opacos de `root` (corpo, cabeça, acessórios e adereços). */
-function addOutline(root: THREE.Object3D): void {
+export function addOutline(root: THREE.Object3D): void {
   const meshes: THREE.Mesh[] = [];
   root.traverse((o) => {
     const m = o as THREE.Mesh;

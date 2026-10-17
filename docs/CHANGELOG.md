@@ -17,6 +17,10 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.14 — objetos da arena e QTE com as mãos
+- **Objetos da arena no estilo da referência** (cantos arredondados, sombreado suave): isopor azul aberto com gelo e latinhas, freezer com vidro, engradados de plástico, churrasqueira de tambor e mesa GELADA quadrada. Cada cópia sai um pouco diferente (tamanho e giro).
+- **QTE com as mãos** no lugar da barra: punho batendo na mesinha no JO… KEN… PÔ!; aro e mesinha amarelo (cedo), verde (PÔ!) e vermelho (roubou); o símbolo do adversário aparece ao lado. Fica do lado oposto ao adversário.
+
 ## v0.13 — quintal arrumado
 - **Área dos jogadores** colada na porteira da arena e alinhada com a cerca: cercadinho retangular com **entradinha** (placa "SÓ QUEM JOGA" grande em cima) e **mesa comprida de 8 banquinhos** (já pensando em mais personagens). Os personagens saem da mesa contornando-a, passam pela entradinha e entram pela porteira.
 - **Placas mais visíveis**: lousa da SAIDEIRA maior e virada para a câmera; plaquinhas da cerca maiores.

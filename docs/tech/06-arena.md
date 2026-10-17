@@ -1,5 +1,8 @@
 # 06 — Arena e cenário 3D (`three/arena3d.ts`)
 
+## Objetos da arena (v0.14) — `three/props3d.ts`
+Estilo "brinquedo" da referência do usuário: `rbox` (RoundedBoxGeometry), `rcyl` (cilindro com borda arredondada via Lathe), material `soft` sem facetas. `buildCooler` (isopor azul com tampa branca aberta, gelo transbordando e latinhas), `buildFreezer` (branco, faixa vermelha GELADA, tampa de vidro com moldura vazada em `userData.lid`), `buildCrates` (dois engradados de plástico com alça vazada e gargalos), `buildGrill` (tambor arredondado com aros, pernas, brasa, grelha e espetinhos), `buildBeerTable` (mesa quadrada de plástico amarela com 4 cadeiras). Em `buildObstacle`, cada cópia ganha **variação de tamanho (±6%) e de giro** — só visual, a colisão é a da simulação.
+
 ## Conceito
 `buildArena3D(scene, cfg)` monta o quintal do Bar do Zé e devolve `ArenaHandles` { `beerSpot`, `gate {outside, inside}`, `seats[]`, `update(dt, now)` }.
 Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **exatamente** `cfg.obstacles` (colisão é da simulação).

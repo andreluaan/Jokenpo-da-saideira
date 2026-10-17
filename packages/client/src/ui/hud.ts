@@ -5,8 +5,7 @@ const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
 export interface HudActions {
   symbol(s: Rps): void;
-  commit(): void;
-  cancel(): void;
+  challenge(): void;
   dash(): void;
   drink(): void;
 }
@@ -65,7 +64,8 @@ export class Hud {
     const playing = snap.phase === 'playing' && me.alive;
     for (const b of this.symButtons) {
       b.classList.toggle('current', me.symbol === b.dataset.sym);
-      b.disabled = !playing || me.locked;
+      // Símbolos só valem dentro do duelo, uma vez.
+      b.disabled = !playing || !me.holding || me.locked;
     }
     for (const b of this.actButtons) {
       const act = b.dataset.act;
@@ -74,28 +74,25 @@ export class Hud {
         (act === 'drink'
           ? !canDrink
           : act === 'dash'
-            ? me.holding || now < me.dashReadyAt || me.drinkingUntil > now
-            : !me.holding || me.locked);
+            ? me.locked || now < me.dashReadyAt || me.drinkingUntil > now
+            : me.holding || me.busy || me.stunned);
     }
 
-    const attackers = snap.players.filter((p) => p.alive && p.targetId === this.meId);
+    const opp = me.holding ? snap.players.find((p) => p.id === me.targetId) : undefined;
     let text = '';
     let warn = false;
     if (!me.alive) text = 'Você foi eliminado. Assista ao fim da partida.';
     else if (snap.phase !== 'playing') text = '';
-    else if (me.drinkingUntil > now) {
-      warn = attackers.length > 0;
-      text = 'Glub, glub… bebendo! Se levar um golpe agora, derrama.';
-    } else if (me.stunned) text = 'Atordoado!';
+    else if (me.drinkingUntil > now) text = 'Glub, glub… bebendo! Se te chamarem pro duelo agora, derrama.';
+    else if (me.stunned) text = 'Atordoado!';
     else if (me.holding && !me.locked) {
-      text = `Segurando ${me.symbol ? labelOf(me.symbol) : ''} — troque (1/2/3), cancele (X) ou dê a Última Palavra (Espaço). Trocas restantes: ${me.swapsLeft}`;
-    } else if (me.holding) text = 'Símbolo travado. Aguarde o impacto.';
-    else if (attackers.length) {
-      warn = true;
-      text = `${attackers.map((a) => a.name).join(' e ')} está atacando você! Responda (1/2/3), afaste-se ou use a investida (Shift).`;
-    } else if (canDrink) text = 'Tem uma gelada na mesa: aperte E para beber e recuperar 1 ❤ (fica parado e vulnerável).';
+      warn = !me.challenger;
+      const seen = opp?.symbol ? ` ${opp.name} já mostrou ${labelOf(opp.symbol)}!` : '';
+      text = `Jo-Ken-Pô contra ${opp?.name ?? '?'}! Bote 1/2/3 no VERDE.${seen} Passou pro vermelho = pego roubando.`;
+    } else if (me.holding) text = `Você botou ${me.symbol ? labelOf(me.symbol) : ''}. Agora é ver no que dá…`;
+    else if (canDrink) text = 'Tem uma gelada na mesa: aperte E para beber e recuperar 1 ❤ (fica parado e vulnerável).';
     else if (me.busy) text = 'Recuperando…';
-    else text = 'Escolha um alvo (clique/Tab) e um símbolo (1/2/3) para atacar.';
+    else text = 'Escolha um alvo (clique/Tab) e aperte Espaço para chamar pro Jo-Ken-Pô.';
     this.hint.textContent = text;
     this.hint.classList.toggle('warn', warn);
   }

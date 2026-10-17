@@ -77,7 +77,7 @@ export class LocalConnection implements GameConnection {
   }
 
   send(input: PlayerInput): void {
-    const msg = input.type === 'commit' ? { ...input, at: this.now() } : input;
+    const msg = input.type === 'symbol' ? { ...input, at: this.now() } : input;
     this.sim.applyInput(this.localPlayerId, msg);
   }
 

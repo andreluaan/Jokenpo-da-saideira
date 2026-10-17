@@ -67,7 +67,7 @@ export class SocketConnection implements GameConnection {
 
   send(input: PlayerInput): void {
     // A confirmação leva o instante em que o jogador apertou, no relógio do servidor.
-    const msg = input.type === 'commit' ? { ...input, at: this.now() } : input;
+    const msg = input.type === 'symbol' ? { ...input, at: this.now() } : input;
     this.socket.emit('input', msg);
   }
 

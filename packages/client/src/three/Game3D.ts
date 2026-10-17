@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GRADE_LABEL, RPS_ICON, type CharacterId, type ExchangeEvent, type GameEvent, type Grade, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
+import { GRADE_LABEL, RPS_ICON, qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type Grade, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { DENY_TEXT, WHIFF_TEXT, describeExchange } from '../ui/describe';
@@ -12,7 +12,7 @@ import { Boteco3D } from './boteco3d';
 import { BarEventFx } from '../ui/barEventFx';
 import { Ambient3D } from './ambient3d';
 
-const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#fff4e6', fail: '#ff5a5f' };
+const GRADE_COLOR: Record<Grade, string> = { perfect: '#5ad19a', good: '#ffc145', caught: '#ff5a5f', fail: '#c9b5a8' };
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
 /** Batidas do Jo-Ken-Pô: o "PÔ!" cai exatamente no impacto (QTE perfeito). */
 const BEAT_MS = 400;
@@ -129,9 +129,10 @@ export class Game3D {
 
     this.qte = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.qte.setAttribute('class', 'qte3d');
-    // Barra curva estilo "shot meter": contorno, trilho, janela (BOM), fatia verde (PERFEITO), enchimento e rótulo.
+    // Barra curva estilo "shot meter": trilho (CEDO), fatia verde (PERFEITO), fatia vermelha (ROUBOU), enchimento,
+    // marca de quando o adversário botou (o malandro olha isso) e rótulo.
     this.qte.innerHTML =
-      '<path class="edge"/><path class="track"/><path class="win"/><path class="perf"/><path class="fill"/><line class="tick"/><text class="lbl"></text>';
+      '<path class="edge"/><path class="track"/><path class="perf"/><path class="red"/><path class="fill"/><line class="tick"/><line class="opp"/><text class="oppsym"></text><text class="lbl"></text>';
     this.overlay.appendChild(this.qte);
     this.center.className = 'center3d';
     this.timer.className = 'timer3d';
@@ -141,8 +142,7 @@ export class Game3D {
 
     this.hud = new Hud(conn.localPlayerId, {
       symbol: (s) => this.pressSymbol(s),
-      commit: () => this.pressCommit(),
-      cancel: () => conn.send({ type: 'cancel' }),
+      challenge: () => this.pressChallenge(),
       dash: () => this.pressDash(),
       drink: () => conn.send({ type: 'drink' }),
     });
@@ -213,9 +213,7 @@ export class Game3D {
       if (sym) return this.pressSymbol(sym);
       switch (e.code) {
         case 'Space':
-          return this.pressCommit();
-        case 'KeyX':
-          return this.conn.send({ type: 'cancel' });
+          return this.pressChallenge();
         case 'ShiftLeft':
         case 'ShiftRight':
           return this.pressDash();
@@ -230,7 +228,7 @@ export class Game3D {
     const canvas = this.renderer.domElement;
     const ctx = (e: MouseEvent) => e.preventDefault();
     const click = (e: PointerEvent) => {
-      if (e.button === 2) return this.conn.send({ type: 'cancel' });
+      if (e.button !== 0) return;
       const r = canvas.getBoundingClientRect();
       const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       const ray = new THREE.Raycaster();
@@ -270,22 +268,24 @@ export class Game3D {
     return snap.players.find((p) => p.id === this.conn.localPlayerId);
   }
 
+  /** 1/2/3: bota o símbolo no duelo (a conexão carimba o instante em que apertou). */
   private pressSymbol(s: Rps): void {
     const snap = this.conn.latest();
     const me = snap && this.me(snap);
     if (!snap || !me) return;
-    if (me.holding) return this.conn.send({ type: 'symbol', symbol: s });
-    const attacker = snap.players.filter((p) => p.alive && p.targetId === me.id && p.impactAt !== null).sort((a, b) => a.impactAt! - b.impactAt!)[0];
-    const target = attacker ?? this.currentTarget(snap, me);
-    if (!target) return this.popup(this.world(me.x, me.y, 1.6), 'Sem alvo', '#c9b5a8', 18);
-    this.targetId = target.id;
-    this.conn.send({ type: 'symbol', symbol: s, targetId: target.id });
+    if (!me.holding) return this.popup(this.world(me.x, me.y, 1.6), 'Desafie primeiro (Espaço)', '#c9b5a8', 16);
+    if (!me.locked && this.localLock === null) this.localLock = this.conn.now();
+    this.conn.send({ type: 'symbol', symbol: s });
   }
 
-  private pressCommit(): void {
-    const me = this.conn.latest() && this.me(this.conn.latest()!);
-    if (me?.holding && !me.locked && this.localLock === null) this.localLock = this.conn.now();
-    this.conn.send({ type: 'commit' });
+  /** Espaço: chama o alvo (clicado/Tab, ou o mais perto) para o Jo-Ken-Pô. */
+  private pressChallenge(): void {
+    const snap = this.conn.latest();
+    const me = snap && this.me(snap);
+    if (!snap || !me || me.holding) return;
+    const target = this.currentTarget(snap, me);
+    if (!target) return this.popup(this.world(me.x, me.y, 1.6), 'Sem alvo', '#c9b5a8', 18);
+    this.conn.send({ type: 'challenge', targetId: target.id });
   }
 
   private pressDash(): void {
@@ -336,18 +336,17 @@ export class Game3D {
       this.boteco.onEvent(e);
       this.ambient.onEvent(e);
       switch (e.type) {
-        case 'signal': {
-          const p = this.pos(e.playerId, 1.7);
-          if (!p || !this.relevant(e.playerId)) break;
-          const t = e.kind === 'swap' ? '↻' : e.kind === 'lock' ? '🔒' : '✖';
-          const c = e.kind === 'swap' ? '#ffd166' : e.kind === 'lock' ? '#8ecae6' : '#ff5a5f';
-          this.popup(p.add(new THREE.Vector3(0.35, 0, 0)), t, c, 22);
+        case 'pick': {
+          // Pego no ato: todo mundo vê o malandro que passou do ponto.
+          const p = this.pos(e.playerId, 1.8);
+          if (p && e.grade === 'caught') this.popup(p, 'ROUBOU!', '#ff5a5f', 24, 1100);
+          else if (p && e.grade === 'good' && this.relevant(e.playerId)) this.popup(p.add(new THREE.Vector3(0.45, 0, 0)), 'cedo…', '#ffc145', 15, 800);
           break;
         }
         case 'duel': {
           const a = this.pos(e.a, 1.4);
           const b = this.pos(e.b, 1.4);
-          if (a && b && (e.a === meId || e.b === meId)) this.popup(a.add(b).multiplyScalar(0.5), 'DUELO!', '#ffc145', 20, 800);
+          if (a && b && (e.a === meId || e.b === meId)) this.popup(a.add(b).multiplyScalar(0.5), e.b === meId ? 'TE CHAMARAM!' : 'JO-KEN-PÔ!', '#ffc145', 20, 900);
           break;
         }
         case 'exchange': {
@@ -360,7 +359,7 @@ export class Game3D {
             this.popup(this.world(e.x, e.y, 2.3), headline, e.damagedId ? '#ffc145' : '#fff4e6', 20, 1400);
             const myGrade = e.attackerId === meId ? e.attackerGrade : e.defenderGrade;
             const mp = this.pos(meId, -0.1);
-            if (mp && myGrade) this.popup(mp, GRADE_LABEL[myGrade], GRADE_COLOR[myGrade], 18, 1100);
+            if (mp) this.popup(mp, GRADE_LABEL[myGrade], GRADE_COLOR[myGrade], 18, 1100);
           }
           if (e.damagedId === meId) this.shake = 0.18;
           else if (e.winnerId === meId) this.shake = 0.08;
@@ -414,8 +413,6 @@ export class Game3D {
             this.ended = true;
             setTimeout(() => this.onEnd(e.winnerId), 1500);
           }
-          break;
-        case 'attackStart':
           break;
       }
     }
@@ -519,7 +516,7 @@ export class Game3D {
           faceX: pose ? pose.x : p.faceX,
           faceZ: pose ? pose.y : p.faceY,
           speed: a.speed,
-          pump: this.pumpFor(p, snap, now),
+          pump: this.pumpFor(p, now),
           // No fim, quem ficou de pé por último leva a cerveja — e toma ali mesmo.
           drink:
             p.drinkingUntil > now
@@ -584,7 +581,7 @@ export class Game3D {
     a.tag.style.visibility = this.boteco.blackout && p.id !== this.conn.localPlayerId ? 'hidden' : '';
     a.tag.classList.toggle('dead', !p.alive);
     let hand = '';
-    if (p.alive && p.holding) hand = (p.symbol ? RPS_ICON[p.symbol] : '❔') + (p.locked ? '🔒' : '');
+    if (p.alive && p.holding) hand = p.symbol ? RPS_ICON[p.symbol] : '❔';
     else if (p.alive && p.drinkingUntil > now) hand = '🍺';
     // Status público: 🧊 escudo de gelo do freezer.
     const st = p.alive && p.shielded ? '🧊' : '';
@@ -600,17 +597,20 @@ export class Game3D {
     const handEl = a.tag.querySelector('.hand') as HTMLElement;
     if (p.alive && p.holding && p.impactAt) {
       const frac = Math.max(0, Math.min(1, (p.impactAt - now) / this.conn.config.attack.windupMs));
+      // Botou cedo? o crachá fica amarelo (todo mundo já viu a mão).
+      handEl.classList.toggle('shown', !!p.symbol);
       handEl.style.background = `conic-gradient(${hex(p.color)} ${frac * 360}deg, #2b1d2299 0)`;
     } else {
       handEl.style.background = '';
     }
   }
 
-  /** Setas brancas no chão apontando o alvo (sem revelar o símbolo). */
+  /** Seta no chão de quem desafiou até o desafiado. */
   private updateAims(snap: Snapshot, now: number, me: PlayerView | undefined): void {
     const active = new Set<string>();
     for (const p of snap.players) {
-      if (!p.alive || !p.holding || !p.targetId) continue;
+      // Uma seta por duelo, saindo de quem desafiou.
+      if (!p.alive || !p.holding || !p.targetId || !p.challenger) continue;
       const t = snap.players.find((o) => o.id === p.targetId);
       if (!t) continue;
       active.add(p.id);
@@ -642,12 +642,11 @@ export class Game3D {
       const dir = b.clone().sub(a);
       const len = dir.length();
       dir.normalize();
-      const duel = p.clashWith === t.id;
       const arrow = g.getObjectByName('arrow') as THREE.Group;
       arrow.position.copy(a).addScaledVector(dir, 0.6);
       arrow.rotation.y = Math.atan2(-dir.x, -dir.z);
       const am = (arrow.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      am.color.set(duel ? 0xffc145 : 0xffffff);
+      am.color.set(0xffc145);
       const mine = t.id === me?.id || p.id === me?.id;
       am.opacity = t.id === me?.id ? 0.95 : mine ? 0.8 : 0.28;
       const dots = g.children.filter((c) => c.name === 'dot');
@@ -671,10 +670,9 @@ export class Game3D {
   }
 
   /** Altura dos punhos no Jo-Ken-Pô: descem em cada batida até o impacto. */
-  private pumpFor(p: PlayerView, snap: Snapshot, now: number): number {
+  private pumpFor(p: PlayerView, now: number): number {
     if (!p.holding || p.impactAt === null) return 0;
-    const T = Math.min(p.impactAt, ...snap.players.filter((o) => o.alive && o.targetId === p.id && o.impactAt !== null).map((o) => o.impactAt!));
-    const d = T - now;
+    const d = p.impactAt - now;
     if (d > BEAT_MS * 3 || d < -120) return 0;
     const k = (((d % BEAT_MS) + BEAT_MS) % BEAT_MS) / BEAT_MS;
     return Math.sin(k * Math.PI);
@@ -893,9 +891,8 @@ export class Game3D {
       return;
     }
     const { qte, attack } = this.conn.config;
-    const impacts = [me.impactAt, ...snap.players.filter((p) => p.alive && p.targetId === me.id && p.impactAt !== null).map((p) => p.impactAt!)];
-    const T = Math.min(...impacts.filter((t) => t + qte.lateMs >= now));
-    if (!Number.isFinite(T)) return;
+    const T = me.impactAt;
+    const opp = snap.players.find((p) => p.id === me.targetId);
 
     // Tamanho e posição: à direita do corpo, proporcional ao zoom da câmera.
     const c = this.screen(this.world(me.x, me.y, 0.75));
@@ -906,7 +903,7 @@ export class Game3D {
 
     // Tempo → posição na barra (0 = base, 1 = topo). Do início da preparação até o fim da janela.
     const t0 = T - attack.windupMs;
-    const t1 = T + qte.lateMs;
+    const t1 = qteEnd(T, qte);
     const u = (t: number) => Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
     const A0 = (62 * Math.PI) / 180; // base (embaixo, à direita)
     const A1 = (-62 * Math.PI) / 180; // topo
@@ -918,11 +915,11 @@ export class Game3D {
     const set = (cls: string, d: string) => (svg.querySelector(`.${cls}`) as SVGPathElement).setAttribute('d', d);
     set('edge', arc(0, 1));
     set('track', arc(0, 1));
-    set('win', arc(u(T - qte.leadMs), 1));
-    set('perf', arc(u(T - qte.perfectMs), u(T + qte.perfectMs)));
+    set('perf', arc(u(T - qte.greenBeforeMs), u(T + qte.greenAfterMs)));
+    set('red', arc(u(T + qte.greenAfterMs), 1));
 
     // Enchimento: até agora, ou congelado onde você apertou.
-    const lockAt = this.localLock ?? (me.locked ? now : null);
+    const lockAt = this.localLock ?? me.pickedAt;
     const fillTo = u(lockAt ?? now);
     const fill = svg.querySelector('.fill') as SVGPathElement;
     fill.setAttribute('d', arc(0, Math.max(0.001, fillTo)));
@@ -936,23 +933,41 @@ export class Game3D {
     const [lx, ly] = pt(1).split(' ').map(Number);
     lbl.setAttribute('x', String(lx + 10));
     lbl.setAttribute('y', String(ly - 12));
+    // Quando o adversário botou: risquinho na barra + o símbolo dele (é isso que o malandro espera para ver).
+    const oppLine = svg.querySelector('.opp') as SVGLineElement;
+    const oppSym = svg.querySelector('.oppsym') as SVGTextElement;
+    if (opp?.symbol && opp.pickedAt !== null) {
+      const [ox, oy] = pt(u(opp.pickedAt)).split(' ').map(Number);
+      oppLine.setAttribute('x1', String(ox * 0.8));
+      oppLine.setAttribute('y1', String(oy * 0.8));
+      oppLine.setAttribute('x2', String(ox * 1.2));
+      oppLine.setAttribute('y2', String(oy * 1.2));
+      oppLine.style.stroke = hex(opp.color);
+      oppSym.setAttribute('x', String(ox * 1.2 + 4));
+      oppSym.setAttribute('y', String(oy * 1.2 + 8));
+      oppSym.textContent = RPS_ICON[opp.symbol];
+      oppLine.style.display = oppSym.style.display = '';
+    } else oppLine.style.display = oppSym.style.display = 'none';
 
     let state: string;
     let text: string;
     if (lockAt !== null) {
-      // Mesma regra do servidor (gradeLock): perto do PÔ! = perfeito; antes/depois dentro do limite = bom.
+      // Mesma regra do servidor (gradePick): antes do verde = cedo; verde = perfeito; vermelho = roubou.
       const d = lockAt - T;
-      state = Math.abs(d) <= qte.perfectMs ? 'perfect' : d > qte.lateMs ? 'fail' : 'good';
-      text = state === 'perfect' ? 'PERFEITO!' : state === 'good' ? (d < -qte.leadMs ? 'BOM (cedo)' : 'BOM') : 'TARDE!';
-    } else if (now > T + qte.lateMs) {
+      state = d < -qte.greenBeforeMs ? 'good' : d <= qte.greenAfterMs ? 'perfect' : 'fail';
+      text = state === 'perfect' ? 'PERFEITO!' : state === 'good' ? 'CEDO! (já viram)' : 'ROUBOU!';
+    } else if (now > t1) {
       state = 'fail';
-      text = 'FALHA';
+      text = 'NADA!';
+    } else if (now > T + qte.greenAfterMs) {
+      state = 'fail live';
+      text = 'VAI DAR ROUBO!';
     } else {
-      // Jo-Ken-Pô pequeno, no rótulo da barra (antes era um texto grande flutuando em cima do duelo).
+      // Jo-Ken-Pô pequeno, no rótulo da barra.
       const dt = T - now;
-      state = Math.abs(dt) <= qte.perfectMs ? 'perfect live' : dt <= qte.leadMs ? 'window live' : 'early live';
+      state = dt <= qte.greenBeforeMs ? 'perfect live' : 'early live';
       const beat = Math.round(dt / BEAT_MS); // 2 = JO, 1 = KEN, 0 = PÔ!
-      text = Math.abs(dt) <= qte.perfectMs ? CHANT[2] : beat >= 0 && beat <= 2 ? CHANT[2 - beat] : '';
+      text = dt <= qte.greenBeforeMs ? CHANT[2] : beat >= 0 && beat <= 2 ? CHANT[2 - beat] : '';
     }
     fill.setAttribute('class', `fill ${state}`);
     lbl.setAttribute('class', `lbl ${state}`);

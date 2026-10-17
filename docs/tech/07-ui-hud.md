@@ -10,7 +10,7 @@ Ganchos só em DEV: `window.__menu`, `__ppt` (conexão), `__ppt3d` (Game3D).
 
 ## Menu (cardápio de boteco) — v0.10: enxuto e animado
 - Lousa à esquerda **só com o essencial**: placa (balança), frase curta, apelido, abas 🤖 Treino / 🍻 Online, NPCs + dificuldade, botão "🍺 Disputar a gelada" (respira + brilho passando) e "📖 Como jogar". Altura acompanha o conteúdo.
-- **Personagem num card no canto inferior direito** (`ui/characterSelect.ts`): retrato 3D, nome, frase, 2 "jeitões" (`VIBE`, só enfeite), setas ‹ › (pulam quem está ocupado na sala online), bolinhas e "ou clique nele na mesa". Ao trocar, o retrato dá um pulinho (`.swap`). `portraitOf()` devolve `url(...)` para a lista da sala.
+- **Personagem num card embaixo, à esquerda, colado na lousa** (`ui/characterSelect.ts`): retrato 3D, nome, frase, 2 "jeitões" (`VIBE`, só enfeite), setas ‹ › (pulam quem está ocupado na sala online), bolinhas e "ou clique nele na mesa". Ao trocar, o retrato dá um pulinho (`.swap`). `portraitOf()` devolve `url(...)` para a lista da sala.
 - **Como jogar** (`ui/howto.ts`): janela com 1 card por vez — foto do jogo, título, frase, teclas — Voltar/Próximo, bolinhas, ← → e Esc; o último vira "🍺 Bora jogar!". Fotos em `public/howto/*.jpg` (960×540), capturadas do próprio jogo (ver 09). Para trocar uma foto: recapturar e sobrescrever o arquivo com o mesmo nome.
 - **Câmera do menu** (`MenuStage3D.resize`): enquadra a arena e depois **se afasta até o Bar do Zé inteiro (telhado incluído) caber** na área livre à direita da lousa (`BAR`/`BAR_EXTENT` em `arena3d.ts`). Mudou o tamanho do bar → ajuste `BAR_EXTENT`.
 - Entrada animada (lousa desliza, card sobe); `prefers-reduced-motion` desliga as animações contínuas.
@@ -19,7 +19,7 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 ## HUD da partida
 - `ui/hud.ts` — cartões de jogadores (topo), log de confrontos (`#side`), barra de ações (🤜 Desafiar/Espaço, símbolos 1/2/3 só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
 - `ui/describe.ts` — frases do log e títulos (`describeExchange`), textos de erro/recusa.
-- No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo próprio, nome, ❤, foco, anel de preparação em `conic-gradient`), pop-ups `.pop3d`, `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
+- No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo próprio, nome, ❤, foco, anel de preparação em `conic-gradient`), `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
 
 ## Boteco (v0.6)
 - **E contextual**: dica `.beerhint3d` muda o texto ("[E] Beber uma gelada" / "[E] Abrir o freezer (escudo de gelo)"); o botão 🍺 da barra habilita nos dois casos (`canDrink`).

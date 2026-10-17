@@ -17,6 +17,10 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.11.1 — menos texto na tela
+- **Sem pop-ups de texto** na partida (golpes, CEDO/PERFEITO, ROUBOU!, Protegido, +1 ❤, Au! Au!…): o resultado fica no log da direita e na cor do enchimento da barra (verde/amarelo/vermelho). A barra só fala JO… KEN… PÔ! e "VAI DAR ROUBO!".
+- Card do personagem do menu foi para **baixo, à esquerda**, colado na lousa.
+
 ## v0.11 — malandragem no Jo-Ken-Pô
 - Pedido: faltava a "gaiatice" brasileira (no par ou ímpar, o malandro bota com atraso para ver o do outro).
 - Agora: **Espaço desafia** (1 contra 1) e o QTE é **apertar o símbolo**. Botou cedo, todo mundo vê. **Verde** no PÔ! = golpe final. **Vermelho** logo depois = **pego roubando** e apanha. Não botou nada = apanha. Os dois roubaram = o Zé anula.

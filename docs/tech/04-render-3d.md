@@ -7,7 +7,7 @@ Nada aqui altera regras: tudo lê `conn.latest()` e eventos.
 ## Arquivos
 | Arquivo | Papel |
 |---|---|
-| `Game3D.ts` | Partida: renderer, câmera, atores, setas de mira, anel de seleção, revelação/rasteira, Jo-Ken-Pô, cerveja na mesa, anel do QTE (SVG), pop-ups, entrada, `Hud` |
+| `Game3D.ts` | Partida: renderer, câmera, atores, setas de mira, anel de seleção, revelação/rasteira, Jo-Ken-Pô, cerveja na mesa, anel do QTE (SVG), entrada, `Hud` (sem pop-ups de texto na arena desde a v0.11.1: o resultado fica no log e na cor da barra) |
 | `MenuStage3D.ts` | Fundo do menu: mesma arena, turma sentada → porteira → largadas (ver 06/07) |
 | `arena3d.ts` | Cenário inteiro + luzes (ver 06) |
 | `character3d.ts` | Personagem 3D (ver 05) |

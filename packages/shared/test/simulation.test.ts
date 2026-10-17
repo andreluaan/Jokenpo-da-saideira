@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GameSimulation, makeConfig, type ExchangeEvent, type GameEvent } from '../src';
 
-// Itens e eventos do bar desligados nos testes de combate (são testados à parte).
-const cfg = makeConfig({ match: { countdownMs: 0 }, items: { enabled: false }, barEvents: { enabled: false } });
+// Eventos do bar desligados nos testes de combate (são testados à parte).
+const cfg = makeConfig({ match: { countdownMs: 0 }, barEvents: { enabled: false } });
 const LATE = cfg.qte.lateMs;
 
 function newSim(n = 2): GameSimulation {

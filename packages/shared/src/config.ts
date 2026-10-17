@@ -112,18 +112,10 @@ export interface GameConfig {
     /** Distância extra, além da borda da mesa, em que dá para alcançar a cerveja. */
     reach: number;
   };
-  /** Itens que o garçom joga no chão: pegar é só passar por cima. */
+  /** Cervejas que o garçom larga no chão no evento do Zé: pegar é só passar por cima. */
   items: {
-    enabled: boolean;
-    firstMs: number;
-    everyMs: [number, number];
-    maxOnGround: number;
     pickupRadius: number;
-    /** Cachaça da casa: próximo golpe final turbinado, mas fica bêbado (escorrega) por buzzMs. */
-    cachaca: { buzzMs: number; accelMul: number; decelMul: number; boostKnockback: number; boostStun: number };
-    /** Amendoim: investida de graça e com recarga curtinha por um tempo. */
-    amendoim: { ms: number; dashCooldownMs: number };
-    /** Gole rápido das cervejas que aparecem no chão (Zé grita). */
+    /** Gole rápido (parado e vulnerável). */
     beerDrinkMs: number;
   };
   hazards: {
@@ -236,16 +228,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   },
   perfectFocusBonus: 15,
   beer: { drinkMs: 2200, heal: 1, respawnMs: 25_000, reach: 36 },
-  items: {
-    enabled: true,
-    firstMs: 9000,
-    everyMs: [11_000, 17_000],
-    maxOnGround: 2,
-    pickupRadius: 30,
-    cachaca: { buzzMs: 6000, accelMul: 0.5, decelMul: 0.4, boostKnockback: 1.5, boostStun: 1.4 },
-    amendoim: { ms: 6000, dashCooldownMs: 350 },
-    beerDrinkMs: 1300,
-  },
+  items: { pickupRadius: 30, beerDrinkMs: 1300 },
   hazards: {
     grill: { minSpeed: 0.45, stunMs: 500, push: 70, cooldownMs: 1500 },
     crate: { hp: 2, minSpeed: 0.3, cooldownMs: 500 },

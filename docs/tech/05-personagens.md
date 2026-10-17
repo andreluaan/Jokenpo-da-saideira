@@ -23,7 +23,7 @@ Corpo e cabeça recebem **texturas separadas** (assim o terno vira azul sem apag
 
 ## Hierarquia e animação
 `root` (posição) → `tilt` (balanço/tombo no mundo) → `facing` (yaw suave) → `model`.
-Gatilhos curtos (`trigger`): golpe/chute, `pick-up` (pegar item), `jump` (queimadura), `interact-right` (abrir freezer), `emote-yes` (escudo pronto). Beber usa a duração real do gole (`drinkStart` no Game3D) e a cachaça dá um "golão" visual (`boteco.swig`).
+Gatilhos curtos (`trigger`): golpe/chute, `jump` (queimadura), `interact-right` (abrir freezer), `emote-yes` (escudo pronto). Beber usa a duração real do gole (`drinkStart` no Game3D).
 Estado: morto→`die` · `oneShot` (golpe/chute) · sentado→`sit` · bebendo→`holding-right` (+braço à boca procedural) · andando→`walk`/`sprint` (timeScale pela velocidade) · senão `idle`.
 Ossos ajustados **depois** do mixer, partindo da rotação de repouso (`rest`) para não acumular: cabeça/braços seguem o rig; `pump` levanta os dois braços.
 

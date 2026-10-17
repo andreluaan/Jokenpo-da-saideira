@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import type { GameConfig, GameEvent, ItemKind, Snapshot } from '@ppt/shared';
+import type { GameConfig, GameEvent, Snapshot } from '@ppt/shared';
 import { S, gltf, instance, toWorld } from './assets';
 import type { ArenaHandles } from './arena3d';
 import { CHAR_SCALE, addOutline, makeBottle, type Character3D } from './character3d';
-import { recolorColormap, softCircle, textTexture } from './textures';
+import { recolorColormap, softCircle } from './textures';
 
 /**
  * Visual do "boteco vivo": itens no chão, poças, engradado quebrando, freezer abrindo, escudo de gelo,
@@ -36,53 +36,15 @@ const SOFT = softCircle();
 
 // ------------------------------------------------------------------ modelos dos itens
 
-/** Garrafinha de cachaça da casa (vidro claro, líquido dourado, rolha e rótulo). */
-function cachacaModel(): THREE.Group {
-  const g = new THREE.Group();
-  g.add(part(new THREE.CylinderGeometry(0.075, 0.08, 0.2, 10), std(0xe2a93a, { roughness: 0.25, emissive: 0x3a2200 }), 0, 0.1, 0));
-  g.add(part(new THREE.CylinderGeometry(0.03, 0.07, 0.08, 10), std(0xe2a93a, { roughness: 0.25 }), 0, 0.24, 0));
-  g.add(part(new THREE.CylinderGeometry(0.028, 0.028, 0.05, 8), std(0x9a6a3a), 0, 0.3, 0));
-  const label = part(
-    new THREE.CylinderGeometry(0.082, 0.082, 0.09, 12, 1, true),
-    new THREE.MeshStandardMaterial({ map: textTexture('PINGA', { w: 256, h: 96, bg: 0xf4e3b0, size: 58, color: '#7a2e1f' }), roughness: 0.8 }),
-    0,
-    0.1,
-    0,
-  );
-  g.add(label);
-  addOutline(g);
-  return g;
-}
-
-/** Saquinho de amendoim (cone de papel pardo cheio). */
-function amendoimModel(): THREE.Group {
-  const g = new THREE.Group();
-  const cone = part(new THREE.ConeGeometry(0.12, 0.26, 8), std(0xc9a06a), 0, 0.13, 0);
-  cone.rotation.x = Math.PI;
-  g.add(cone);
-  const nut = std(0xd99a4e);
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2;
-    const n = part(new THREE.SphereGeometry(0.035, 6, 4), nut, Math.cos(a) * 0.06, 0.27 + (i % 2) * 0.02, Math.sin(a) * 0.06);
-    n.scale.set(1, 0.7, 1.4);
-    g.add(n);
-  }
-  g.add(part(new THREE.SphereGeometry(0.04, 6, 4), nut, 0, 0.3, 0));
-  addOutline(g);
-  return g;
-}
-
-function itemModel(kind: ItemKind): THREE.Object3D {
-  if (kind === 'cachaca') return cachacaModel();
-  if (kind === 'amendoim') return amendoimModel();
+/** Long neck "GELADA" em pé no chão (largada pelo garçom no evento do Zé). */
+function beerModel(): THREE.Object3D {
   const b = makeBottle();
   b.scale.setScalar(1.4);
   addOutline(b);
   return b;
 }
 
-const ITEM_GLOW: Record<ItemKind, number> = { cachaca: 0xffb347, amendoim: 0xffe08a, beer: 0xffd27a };
-const ITEM_LABEL: Record<ItemKind, string> = { cachaca: '🥃 Cachaça! Golpe final turbinado', amendoim: '🥜 Amendoim! Investida de graça', beer: '🍺 Gole!' };
+const BEER_GLOW = 0xffd27a;
 
 // ------------------------------------------------------------------ figurante (garçom)
 
@@ -166,15 +128,11 @@ export class Boteco3D {
   private readonly items = new Map<number, { g: THREE.Group; glow: THREE.Mesh; born: number }>();
   private readonly puddles = new Map<number, THREE.Mesh>();
   private readonly shields = new Map<string, THREE.Mesh>();
-  private readonly auras = new Map<string, THREE.Mesh>();
   private debris: Debris[] = [];
   private readonly lidAngle = new Map<number, number>();
   private waiter: { e: Extra3D; tray: THREE.Group; wobble: number } | null = null;
   private dim = 0;
   private readonly brokenSeen = new Set<number>();
-  /** Golão de cachaça logo depois de pegar (só visual): início/fim em tempo da simulação. */
-  private readonly swigs = new Map<string, { start: number; end: number; hic: boolean }>();
-  private readonly nextHic = new Map<string, number>();
   private readonly nextSplash = new Map<string, number>();
   private readonly lastPos = new Map<string, { x: number; y: number }>();
   private seenItems = new Set<number>();
@@ -192,18 +150,7 @@ export class Boteco3D {
     const { d } = this;
     switch (e.type) {
       case 'pickup': {
-        const c = d.character(e.playerId);
-        // Abaixa e pega do chão; a cachaça ainda desce num golão direto do gargalo.
-        if (e.kind !== 'beer') c?.trigger('pick-up', 450, d.simNow());
-        if (e.kind === 'cachaca') {
-          c?.drunk(d.simNow(), d.cfg.items.cachaca.buzzMs);
-          this.swigs.set(e.playerId, { start: e.at + 380, end: e.at + 1150, hic: false });
-          this.nextHic.set(e.playerId, e.at + 2600);
-        }
-        const at = this.w(e.x, e.y, 0.3);
-        d.puff(at, ITEM_GLOW[e.kind], 8);
-        const mine = e.playerId === d.localId;
-        if (e.kind !== 'beer') d.popup(at.clone().setY(1.9), mine ? ITEM_LABEL[e.kind] : e.kind === 'cachaca' ? '🥃' : '🥜', '#ffd27a', mine ? 18 : 22, 1300);
+        d.puff(this.w(e.x, e.y, 0.3), BEER_GLOW, 8);
         break;
       }
       case 'burn': {
@@ -301,32 +248,13 @@ export class Boteco3D {
     this.d.arena.setDim(this.dim);
   }
 
-  /** Progresso (0–1) do golão de cachaça para a animação de beber, ou -1. */
-  swig(id: string, now: number): number {
-    const s = this.swigs.get(id);
-    if (!s || now < s.start) return -1;
-    if (now > s.end) {
-      if (!s.hic) {
-        s.hic = true;
-        const c = this.d.character(id);
-        if (c) this.d.popup(c.root.position.clone().setY(2.1).add(new THREE.Vector3(0.35, 0, 0)), 'hic!', '#ffd27a', 22, 900);
-      }
-      return -1;
-    }
-    return (now - s.start) / (s.end - s.start);
-  }
-
-  /** Bêbado solta "hic!" de vez em quando; quem anda numa poça escorrega e respinga. */
+  /** Quem anda numa poça escorrega e respinga. */
   private updateQuirks(snap: Snapshot, now: number): void {
     for (const p of snap.players) {
       if (!p.alive) continue;
       const c = this.d.character(p.id);
       if (!c) continue;
       const pos = c.root.position;
-      if (p.buzzed && now >= (this.nextHic.get(p.id) ?? 0)) {
-        this.nextHic.set(p.id, now + 1800 + Math.random() * 1500);
-        this.d.popup(pos.clone().setY(2.05).add(new THREE.Vector3(0.3, 0, 0)), 'hic!', '#ffd27a', 16, 800);
-      }
       const last = this.lastPos.get(p.id);
       this.lastPos.set(p.id, { x: p.x, y: p.y });
       const moving = !!last && Math.hypot(p.x - last.x, p.y - last.y) > 1.5;
@@ -359,10 +287,10 @@ export class Boteco3D {
       let it = this.items.get(i.id);
       if (!it) {
         const g = new THREE.Group();
-        g.add(itemModel(i.kind));
+        g.add(beerModel());
         const glow = new THREE.Mesh(
-          new THREE.CircleGeometry(0.55, 24),
-          new THREE.MeshBasicMaterial({ map: SOFT, color: ITEM_GLOW[i.kind], transparent: true, opacity: 0.8, depthWrite: false }),
+          new THREE.CircleGeometry(0.42, 24),
+          new THREE.MeshBasicMaterial({ map: SOFT, color: BEER_GLOW, transparent: true, opacity: 0.6, depthWrite: false }),
         );
         glow.rotation.x = -Math.PI / 2;
         this.d.scene.add(g, glow);
@@ -370,14 +298,11 @@ export class Boteco3D {
         this.items.set(i.id, it);
       }
       const p = this.w(i.x, i.y);
-      // Cai do alto quando aparece (o garçom jogou), depois flutua girando.
-      const age = t - it.born;
-      const drop = Math.max(0, 1 - age / 0.45);
-      it.g.position.set(p.x, 0.15 + Math.sin(t * 3 + i.id) * 0.06 + drop * drop * 3, p.z);
-      it.g.rotation.y = t * 1.6 + i.id;
-      it.g.scale.setScalar(1.9);
+      // Em pé no chão, onde o garçom largou (só um brilho fraquinho embaixo para achar).
+      it.g.position.set(p.x, 0, p.z);
+      it.g.rotation.y = i.id * 1.7;
+      it.g.scale.setScalar(1.2 * Math.min(1, (t - it.born) / 0.2 + 0.2));
       it.glow.position.set(p.x, 0.015, p.z);
-      (it.glow.material as THREE.MeshBasicMaterial).opacity = 0.75 + Math.sin(t * 4 + i.id) * 0.25;
     }
   }
 
@@ -458,7 +383,7 @@ export class Boteco3D {
     }
   }
 
-  /** Escudo de gelo, aura da cachaça (golpe turbinado) e brilho do amendoim. */
+  /** Escudo de gelo do freezer. */
   private updatePlayerFx(snap: Snapshot, t: number): void {
     for (const p of snap.players) {
       const pos = this.w(p.x, p.y);
@@ -478,25 +403,6 @@ export class Boteco3D {
       } else if (s) {
         s.removeFromParent();
         this.shields.delete(p.id);
-      }
-      // Aura no chão: laranja = golpe final turbinado (cachaça); amarela = amendoim.
-      const want = p.alive && (p.boosted || p.nuts);
-      let a = this.auras.get(p.id);
-      if (want) {
-        if (!a) {
-          a = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.72, 32), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
-          a.rotation.x = -Math.PI / 2;
-          this.d.scene.add(a);
-          this.auras.set(p.id, a);
-        }
-        const m = a.material as THREE.MeshBasicMaterial;
-        m.color.setHex(p.boosted ? 0xff8a2a : 0xffe08a);
-        m.opacity = 0.45 + Math.sin(t * 8) * 0.25;
-        a.position.copy(pos).setY(0.025);
-        a.scale.setScalar(1 + Math.sin(t * 4) * 0.05);
-      } else if (a) {
-        a.removeFromParent();
-        this.auras.delete(p.id);
       }
     }
   }
@@ -555,7 +461,6 @@ export class Boteco3D {
     for (const it of this.items.values()) it.g.removeFromParent(), it.glow.removeFromParent();
     for (const m of this.puddles.values()) m.removeFromParent();
     for (const m of this.shields.values()) m.removeFromParent();
-    for (const m of this.auras.values()) m.removeFromParent();
     this.debris.forEach((p) => p.m.removeFromParent());
     this.waiter?.e.root.removeFromParent();
   }

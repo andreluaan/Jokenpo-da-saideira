@@ -524,8 +524,6 @@ export class Game3D {
           drink:
             p.drinkingUntil > now
               ? this.drinkProgress(p.id, p.drinkingUntil, now)
-              : this.boteco.swig(p.id, now) >= 0
-                ? this.boteco.swig(p.id, now)
               : snap.phase === 'ended' && p.id === snap.winnerId && p.alive
                 ? (now % 2200) / 2200
                 : -1,
@@ -587,8 +585,8 @@ export class Game3D {
     let hand = '';
     if (p.alive && p.holding) hand = (p.symbol ? RPS_ICON[p.symbol] : '❔') + (p.locked ? '🔒' : '');
     else if (p.alive && p.drinkingUntil > now) hand = '🍺';
-    // Status públicos: 🥃 golpe final turbinado (cachaça), 🥜 amendoim, 🧊 escudo de gelo.
-    const st = p.alive ? `${p.boosted ? '🥃' : ''}${p.nuts ? '🥜' : ''}${p.shielded ? '🧊' : ''}` : '';
+    // Status público: 🧊 escudo de gelo do freezer.
+    const st = p.alive && p.shielded ? '🧊' : '';
     const key = `${p.hp}:${p.alive}:${Math.round(p.focus / 5)}:${hand}:${st}`;
     if (key !== a.tagKey) {
       a.tagKey = key;

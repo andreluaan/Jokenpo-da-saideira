@@ -177,13 +177,9 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 
 ## 9. Boteco vivo (v0.6)
 
-### 9.1 Itens no chão
-O garçom joga um item a cada [11–17 s] (o primeiro aos [9 s]), no máximo [2] no chão. Pegar = passar por cima.
-| Item | Efeito |
-|---|---|
-| **Cachaça da casa** | Próximo golpe final **turbinado** (empurrão ×[1,5], atordoamento ×[1,4]). Mas fica bêbado [6 s]: acelera e freia pouco (escorrega). Público. |
-| **Amendoim** | [6 s] de investida de graça (sem foco) com recarga de [0,35 s]. |
-| **Cerveja do chão** (só no evento do Zé) | Gole rápido [1,3 s] parado e vulnerável: +1 ❤. Só pega se estiver machucado. |
+### 9.1 Cerveja do chão
+Só no evento do Zé: o garçom larga cervejas pelo caminho. Pegar = passar por cima, machucado e de mãos livres → gole rápido [1,3 s] parado e vulnerável: +1 ❤.
+(Cachaça da casa e amendoim existiram na v0.6 e foram **removidos** na v0.7 a pedido do usuário.)
 
 ### 9.2 Arena interativa
 - **Churrasqueira quente:** quem é **arremessado** nela (empurrão forte) queima: atordoa [0,5 s] e é jogado para longe.

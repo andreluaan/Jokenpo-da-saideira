@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
-import { clamp, clampInArena, dist, distToObstacle, insideObstacle, lineBlocked, normalize, obstacleCenter, pushOutOfObstacle } from './geometry';
+import { clamp, clampInArena, dist, distToObstacle, lineBlocked, normalize, obstacleCenter, pushOutOfObstacle } from './geometry';
 import { makeRng } from './bot';
 import type { Obstacle } from './config';
 import { gradeLock, resolveExchange } from './rules';
@@ -72,11 +72,6 @@ interface Player {
   dashY: number;
   /** Lento até este instante (golpe final de Tesoura). */
   slowUntil: number;
-  /** Cachaça: bêbado até; próximo golpe final turbinado. */
-  buzzedUntil: number;
-  boosted: boolean;
-  /** Amendoim: investida de graça até. */
-  nutsUntil: number;
   /** Escudo de gelo do freezer (segura 1 golpe). */
   shield: boolean;
   openingUntil: number;
@@ -134,7 +129,6 @@ export class GameSimulation {
   private readonly rng: () => number;
   private items: Item[] = [];
   private itemSeq = 0;
-  private nextItemAt = Number.POSITIVE_INFINITY;
   private puddles: Puddle[] = [];
   private puddleSeq = 0;
   private readonly crateHp = new Map<number, number>();
@@ -186,9 +180,6 @@ export class GameSimulation {
         dashX: 0,
         dashY: 0,
         slowUntil: 0,
-        buzzedUntil: 0,
-        boosted: false,
-        nutsUntil: 0,
         shield: false,
         openingUntil: 0,
         openingFreezer: -1,
@@ -346,17 +337,16 @@ export class GameSimulation {
     const now = this.now;
     if (p.attack) return this.deny(p, 'busy');
     if (now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
-    const nuts = now < p.nutsUntil;
     if (now < p.dashReadyAt) return this.deny(p, 'cooldown');
-    if (!nuts && p.focus < this.config.costs.dash) return this.deny(p, 'focus');
+    if (p.focus < this.config.costs.dash) return this.deny(p, 'focus');
     let dir = normalize(x ?? 0, y ?? 0);
     if (dir.x === 0 && dir.y === 0) dir = normalize(p.moveX, p.moveY);
     if (dir.x === 0 && dir.y === 0) dir = { x: p.faceX, y: p.faceY };
-    if (!nuts) p.focus -= this.config.costs.dash;
+    p.focus -= this.config.costs.dash;
     p.dashX = dir.x;
     p.dashY = dir.y;
     p.dashUntil = now + this.config.dash.durationMs;
-    p.dashReadyAt = now + (nuts ? this.config.items.amendoim.dashCooldownMs : this.config.dash.cooldownMs);
+    p.dashReadyAt = now + this.config.dash.cooldownMs;
   }
 
   // ------------------------------------------------------------------ passo
@@ -399,13 +389,11 @@ export class GameSimulation {
         const stunned = this.now < p.stunUntil || this.now < p.drinkingUntil || this.now < p.openingUntil;
         const slow = this.now < p.slowUntil ? this.config.finisher.scissors.slowMul : 1;
         const speed = stunned ? 0 : (player.speed / 1000) * slow * (p.attack ? player.holdingSpeedMul : 1);
-        // Bêbado de cachaça ou pisando em poça de cerveja: escorrega (acelera e freia pouco).
-        const { cachaca } = this.config.items;
+        // Pisando em poça de cerveja: escorrega (acelera e freia pouco).
         const { puddle } = this.config.hazards;
-        const buzzed = this.now < p.buzzedUntil;
         const wet = this.puddles.some((q) => dist(p.x, p.y, q.x, q.y) < q.r);
-        const accelMul = (buzzed ? cachaca.accelMul : 1) * (wet ? puddle.accelMul : 1);
-        const decelMul = (buzzed ? cachaca.decelMul : 1) * (wet ? puddle.decelMul : 1);
+        const accelMul = wet ? puddle.accelMul : 1;
+        const decelMul = wet ? puddle.decelMul : 1;
         const tx = p.moveX * speed;
         const ty = p.moveY * speed;
         const dvx = tx - p.vx;
@@ -553,14 +541,9 @@ export class GameSimulation {
         if (fin) {
           // Golpe final do símbolo: Pedra prende, Tesoura corta e deixa lento, Papel arremessa longe.
           const f = this.config.finisher[fin];
-          // Cachaça turbina o próximo golpe final; na Saideira dupla o golpe final tira mais vida.
-          const boost = winner.boosted;
-          winner.boosted = false;
-          const { cachaca } = this.config.items;
-          const kb = f.knockback * (boost ? cachaca.boostKnockback : 1);
-          const stun = f.stunMs * (boost ? cachaca.boostStun : 1);
+          // Na Saideira dupla o golpe final tira mais vida.
           const dmg = this.eventActive('saideira') ? this.config.barEvents.saideira.finisherDamage : this.config.attack.damage;
-          if (this.hit(loser, winner, kb, stun, this.config.finisher.graceMs, dmg)) ev.protectedId = loser.id;
+          if (this.hit(loser, winner, f.knockback, f.stunMs, this.config.finisher.graceMs, dmg)) ev.protectedId = loser.id;
           else {
             ev.damagedId = loser.id;
             ev.finisher = fin;
@@ -679,10 +662,9 @@ export class GameSimulation {
 
   // ------------------------------------------------------------------ boteco: itens, arena e eventos
 
-  /** Sorteia o evento da rodada e agenda o primeiro item (ao começar a luta). */
+  /** Sorteia o evento da rodada (ao começar a luta). */
   private planRound(): void {
-    const { items, barEvents } = this.config;
-    if (items.enabled) this.nextItemAt = this.now + items.firstMs;
+    const { barEvents } = this.config;
     if (!barEvents.enabled) return;
     const kinds: BarEventKind[] = ['saideira', 'blackout', 'ze'];
     const kind = kinds[Math.floor(this.rng() * kinds.length)];
@@ -764,33 +746,16 @@ export class GameSimulation {
 
   private updateItems(): void {
     const { items, player } = this.config;
-    if (items.enabled && this.now >= this.nextItemAt) {
-      const [a, b] = items.everyMs;
-      this.nextItemAt = this.now + a + this.rng() * (b - a);
-      const loose = this.items.filter((i) => i.kind !== 'beer').length;
-      if (loose < items.maxOnGround) {
-        const spot = this.freeSpot();
-        if (spot) this.spawnItem(this.rng() < 0.5 ? 'cachaca' : 'amendoim', spot.x, spot.y);
-      }
-    }
     for (const p of this.players) {
       if (!p.alive || this.now < p.stunUntil) continue;
       const it = this.items.find((i) => dist(p.x, p.y, i.x, i.y) < player.radius + items.pickupRadius);
       if (!it) continue;
-      if (it.kind === 'beer') {
-        // Cerveja do chão: gole rápido (parado e vulnerável), só se precisar de vida e estiver de mãos livres.
-        if (p.hp >= player.maxHp || p.attack || this.now < p.drinkingUntil || this.now < p.openingUntil) continue;
-        p.drinkingUntil = this.now + items.beerDrinkMs;
-        p.drinkStation = -1;
-        p.vx = p.vy = 0;
-        this.emit({ type: 'drink', at: this.now, playerId: p.id, stage: 'start', hp: p.hp });
-      } else if (it.kind === 'cachaca') {
-        p.buzzedUntil = this.now + items.cachaca.buzzMs;
-        p.boosted = true;
-      } else {
-        p.nutsUntil = this.now + items.amendoim.ms;
-        p.dashReadyAt = Math.min(p.dashReadyAt, this.now);
-      }
+      // Cerveja do chão: gole rápido (parado e vulnerável), só se precisar de vida e estiver de mãos livres.
+      if (p.hp >= player.maxHp || p.attack || this.now < p.drinkingUntil || this.now < p.openingUntil) continue;
+      p.drinkingUntil = this.now + items.beerDrinkMs;
+      p.drinkStation = -1;
+      p.vx = p.vy = 0;
+      this.emit({ type: 'drink', at: this.now, playerId: p.id, stage: 'start', hp: p.hp });
       this.items = this.items.filter((i) => i !== it);
       this.emit({ type: 'pickup', at: this.now, playerId: p.id, kind: it.kind, x: it.x, y: it.y });
     }
@@ -801,21 +766,6 @@ export class GameSimulation {
     let pos = clampInArena(x, y, player.radius + 10, arena);
     for (const o of this.active) pos = pushOutOfObstacle(pos.x, pos.y, 30, o);
     this.items.push({ id: ++this.itemSeq, kind, x: pos.x, y: pos.y });
-  }
-
-  /** Lugar livre na arena (longe de obstáculos e de jogadores). */
-  private freeSpot(): { x: number; y: number } | null {
-    const { arena } = this.config;
-    for (let t = 0; t < 30; t++) {
-      const a = this.rng() * Math.PI * 2;
-      const k = Math.sqrt(this.rng()) * 0.8;
-      const x = arena.cx + Math.cos(a) * arena.rx * k;
-      const y = arena.cy + Math.sin(a) * arena.ry * k;
-      if (insideObstacle(x, y, 45, this.active)) continue;
-      if (this.players.some((p) => p.alive && dist(p.x, p.y, x, y) < 120)) continue;
-      return { x, y };
-    }
-    return null;
   }
 
   private addPuddle(x: number, y: number, r = this.config.hazards.puddle.r): void {
@@ -929,9 +879,6 @@ export class GameSimulation {
         drinkingUntil: now < p.drinkingUntil ? p.drinkingUntil : 0,
         swapsLeft: self && p.attack ? this.config.costs.maxSwaps - p.attack.swaps : null,
         slowed: now < p.slowUntil,
-        buzzed: now < p.buzzedUntil,
-        boosted: p.boosted,
-        nuts: now < p.nutsUntil,
         shielded: p.shield,
         openingUntil: now < p.openingUntil ? p.openingUntil : 0,
       };

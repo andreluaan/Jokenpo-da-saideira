@@ -19,7 +19,7 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 
 ## Boteco (v0.6)
 - **E contextual**: dica `.beerhint3d` muda o texto ("[E] Beber uma gelada" / "[E] Abrir o freezer (escudo de gelo)"); o botão 🍺 da barra habilita nos dois casos (`canDrink`).
-- **Crachá**: linha `.st` com 🥃 (golpe final turbinado), 🥜 (amendoim), 🧊 (escudo). Some na queda de luz (exceto o seu).
+- **Crachá**: linha `.st` com 🧊 (escudo). Some na queda de luz (exceto o seu).
 - **Eventos**: `ui/barEventFx.ts` (ver 04) — classes `.barfx.kind-*.stage-*` em `style.css`.
 - Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
 

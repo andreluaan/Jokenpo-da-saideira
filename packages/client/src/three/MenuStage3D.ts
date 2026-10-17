@@ -309,9 +309,6 @@ function viewOf(a: Actor, pos: THREE.Vector3, cfg: typeof DEFAULT_CONFIG): Playe
     swapsLeft: null,
     drinkingUntil: 0,
     slowed: false,
-    buzzed: false,
-    boosted: false,
-    nuts: false,
     shielded: false,
     openingUntil: 0,
   };

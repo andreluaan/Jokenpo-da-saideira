@@ -255,10 +255,9 @@ export class BotBrain {
       return;
     }
 
-    // 3) Item no chão por perto e ninguém em cima? Vai pegar (cerveja do chão só se estiver machucado).
-    if (safe && me.openingUntil <= now) {
+    // 3) Cerveja do chão (evento do Zé) por perto, machucado e ninguém em cima? Vai pegar.
+    if (safe && me.openingUntil <= now && me.hp < me.maxHp) {
       const item = view.items
-        .filter((i) => i.kind !== 'beer' || me.hp < me.maxHp)
         .map((i) => ({ i, d: dist(me.x, me.y, i.x, i.y) }))
         .filter((x) => x.d < 380)
         .sort((a, b) => a.d - b.d)[0]?.i;

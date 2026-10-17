@@ -55,19 +55,14 @@ export interface PlayerView {
   drinkingUntil: number;
   /** Lento por golpe final de Tesoura (público). */
   slowed: boolean;
-  /** Tomou cachaça: cambaleando (público). */
-  buzzed: boolean;
-  /** Próximo golpe final turbinado pela cachaça (público). */
-  boosted: boolean;
-  /** Efeito do amendoim ativo (público). */
-  nuts: boolean;
   /** Escudo de gelo do freezer (segura 1 golpe; público). */
   shielded: boolean;
   /** > agora enquanto abre o freezer (público). */
   openingUntil: number;
 }
 
-export type ItemKind = 'cachaca' | 'amendoim' | 'beer';
+/** Só a cerveja do chão (evento do Zé). Cachaça e amendoim foram removidos na v0.7. */
+export type ItemKind = 'beer';
 export interface ItemView {
   id: number;
   kind: ItemKind;

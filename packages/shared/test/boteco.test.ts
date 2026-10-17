@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GameSimulation, makeConfig, type ExchangeEvent, type GameConfig, type GameEvent } from '../src';
 
-// Itens/eventos automáticos desligados: cada teste liga o que precisa à mão.
-const base = makeConfig({ match: { countdownMs: 0 }, items: { enabled: false }, barEvents: { enabled: false } });
+// Eventos automáticos desligados: cada teste liga o que precisa à mão.
+const base = makeConfig({ match: { countdownMs: 0 }, barEvents: { enabled: false } });
 
 function newSim(cfg: GameConfig = base): GameSimulation {
   const sim = new GameSimulation(
@@ -29,41 +29,6 @@ function finisher(sim: GameSimulation, symbol: 'rock' | 'paper' | 'scissors'): G
 }
 
 const view = (sim: GameSimulation, id: string) => sim.snapshotFor(null).players.find((p) => p.id === id)!;
-
-describe('itens do chão', () => {
-  it('cachaça: deixa bêbado e turbina o próximo golpe final (empurra mais)', () => {
-    const plain = newSim();
-    plain.debugPlace('A', 780, 520);
-    plain.debugPlace('B', 880, 520);
-    finisher(plain, 'paper');
-    advanceTo(plain, plain.now + 800);
-    const plainDist = plain.debugPlayer('B').x - 880;
-
-    const sim = newSim();
-    sim.debugPlace('A', 780, 520);
-    sim.debugPlace('B', 880, 520);
-    sim.debugSpawnItem('cachaca', 780, 520);
-    const ev = sim.step(10);
-    expect(ev).toContainEqual(expect.objectContaining({ type: 'pickup', kind: 'cachaca', playerId: 'A' }));
-    expect(view(sim, 'A')).toMatchObject({ buzzed: true, boosted: true });
-    finisher(sim, 'paper');
-    advanceTo(sim, sim.now + 800);
-    expect(sim.debugPlayer('B').x - 880).toBeGreaterThan(plainDist);
-    expect(view(sim, 'A').boosted).toBe(false);
-  });
-
-  it('amendoim: investida de graça (não gasta foco)', () => {
-    const sim = newSim();
-    sim.debugPlace('A', 780, 520);
-    sim.debugSpawnItem('amendoim', 780, 520);
-    sim.step(10);
-    expect(view(sim, 'A').nuts).toBe(true);
-    const f0 = sim.debugPlayer('A').focus;
-    sim.applyInput('A', { type: 'dash', x: 1, y: 0 });
-    expect(sim.debugPlayer('A').focus).toBeGreaterThanOrEqual(f0);
-    expect(sim.debugPlayer('A').dashUntil).toBeGreaterThan(sim.now);
-  });
-});
 
 describe('arena interativa', () => {
   it('churrasqueira quente: quem é arremessado nela queima e fica atordoado', () => {
@@ -129,7 +94,7 @@ describe('arena interativa', () => {
 
 describe('eventos do bar', () => {
   it('sorteia exatamente 1 evento por rodada, com aviso antes', () => {
-    const cfg = makeConfig({ match: { countdownMs: 0 }, items: { enabled: false } });
+    const cfg = makeConfig({ match: { countdownMs: 0 } });
     const sim = newSim(cfg);
     sim.debugPlace('A', 400, 400);
     sim.debugPlace('B', 1500, 800);

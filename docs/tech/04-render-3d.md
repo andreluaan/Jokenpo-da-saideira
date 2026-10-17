@@ -43,11 +43,11 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 
 ## Boteco vivo (`boteco3d.ts`, `ui/barEventFx.ts`)
 `Boteco3D` (criado no Game3D; recebe todos os eventos em `onEvent` e o snapshot em `update`):
-- **Itens** (`snap.items`): cachaça (garrafinha "PINGA"), amendoim (cone de papel), cerveja (long neck) — caem do alto, flutuam girando com brilho no chão. Pegar = `pickup` → animação `interact-right`, poeira colorida, pop-up (texto longo só para você). Cachaça também chama `c.drunk()`.
+- **Cervejas do chão** (`snap.items`, só evento do Zé): long neck em pé no chão com brilho fraco embaixo; pegar = `pickup` → poeira. (Cachaça/amendoim removidos na v0.7.)
 - **Poças** (`snap.puddles`): forma irregular âmbar e brilhante; espalha ao nascer e seca no fim.
 - **Engradado**: `crate` rachou → chacoalha/tomba; quebrou → some (`arena.props[i]`) e solta cacos com gravidade. `snap.broken` sincroniza quem entra depois.
 - **Freezer**: tampa de vidro (`props[i].userData.lid`) abre enquanto alguém está abrindo (`openingUntil` + distância). **Escudo de gelo**: icosaedro translúcido azul em volta de quem tem `shielded`; ao quebrar, estilhaços.
-- **Auras no chão**: laranja = golpe final turbinado (cachaça), amarela = amendoim. Crachá mostra 🥃 🥜 🧊.
+- Crachá mostra 🧊 (escudo).
 - **Churrasqueira**: `burn` → fogo + fumaça + "AI, QUENTE!" + tranco no rig.
 - **Garçom**: `Extra3D` (Kenney male-e repintado: gravata preta) com bandeja erguida; anda pelo `snap.waiter`; esbarrão balança a bandeja.
 - **Queda de luz**: `arena.setDim(k)` (hemisfério/sol caem, luz do bar sobe, fundo/névoa escurecem; brasas, anéis e lâmpadas continuam). Durante o escuro o Game3D esconde crachás e setas dos outros (`boteco.blackout`).

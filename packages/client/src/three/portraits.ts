@@ -57,9 +57,6 @@ function fakeView(id: CharacterId): PlayerView {
     swapsLeft: null,
     drinkingUntil: 0,
     slowed: false,
-    buzzed: false,
-    boosted: false,
-    nuts: false,
     shielded: false,
     openingUntil: 0,
   };

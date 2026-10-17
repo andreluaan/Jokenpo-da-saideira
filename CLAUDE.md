@@ -11,7 +11,7 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 - **Etapa 2 (multiplayer real): feita** — servidor Node + Socket.IO autoritativo, salas por código, lobby, reconexão (ver `docs/tech/11-multiplayer.md`).
 - **Em andamento: passe de arte.** Feito: luz/cor (arena clara × entorno escuro) e legibilidade (contorno, câmera, escala).
   Fila combinada: detalhes dos personagens de perto → freezer/isopor → entorno vazio → log do HUD.
-- **Boteco vivo (v0.6, out/2026): feito** — itens (cachaça, amendoim), churrasqueira quente, engradado que quebra, poças,
+- **Boteco vivo (v0.6, out/2026): feito** — churrasqueira quente, engradado que quebra, poças,
   freezer (escudo), 1 evento por rodada (Saideira dupla / Queda de luz / Zé grita) com garçom, torcida, cachorro, animações.
   Investida curta/cara; finta removida. Ver `docs/DESIGN.md` §9 e `docs/tech/04`. Próximo: usuário testar; sons depois.
 - **Gameplay (out/2026):** vitória de símbolo sempre vale; acertar o QTE = **golpe final** do símbolo (Pedra/Tesoura/Papel,

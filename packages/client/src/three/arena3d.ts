@@ -4,6 +4,7 @@ import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
 import { makeBottle } from './character3d';
 import { grassTexture, roadTexture, softCircle, speckleTexture, textTexture } from './textures';
 import { mergeStatic } from './merge';
+import { buildBeerTable, buildCooler, buildCrates, buildFreezer, buildGrill } from './props3d';
 
 const SOFT = softCircle();
 const std = (color: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) =>
@@ -270,8 +271,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   // --- obstáculos (mesmas posições da simulação) ---
   let beerSpot = new THREE.Vector3();
   const props: (THREE.Group | null)[] = [];
-  for (const o of cfg.obstacles) {
-    const { spot, group } = buildObstacle(scene, cfg, o, smokes);
+  for (const [i, o] of cfg.obstacles.entries()) {
+    const { spot, group } = buildObstacle(scene, cfg, o, smokes, i);
     if (o.prop === 'beerTable' && spot) beerSpot = spot;
     props.push(group);
   }
@@ -479,50 +480,30 @@ function buildObstacle(
   cfg: GameConfig,
   o: Obstacle,
   smokes: { s: THREE.Sprite; t: number; x: number; z: number }[],
+  index: number,
 ): { spot: THREE.Vector3 | null; group: THREE.Group | null } {
+  // Cada cópia sai um tiquinho diferente (tamanho e giro): só no visual, a colisão é a da simulação.
+  const rnd = makeRng(9100 + index * 31);
+  const vary = (g: THREE.Group, yaw = 0.06) => {
+    g.scale.setScalar(0.93 + rnd() * 0.12);
+    g.rotation.y += (rnd() - 0.5) * yaw;
+  };
   if (o.kind === 'circle') {
     const c = toWorld(cfg, o.x, o.y);
     const r = o.r * S;
     if (o.prop === 'beerTable') {
-      // Mesa de plástico amarela de boteco ("GELADA" é marca fictícia) com 4 cadeiras.
-      const yellow = { '*': 0xf6c514 };
-      const table = place('furniture/tableRound', c.x, c.z, { size: r * 1.75 });
-      recolor(table, yellow);
-      scene.add(table);
-      const top = new THREE.Box3().setFromObject(table).max.y;
-      const logo = new THREE.Mesh(
-        new THREE.CircleGeometry(r * 0.55, 32),
-        new THREE.MeshStandardMaterial({ map: textTexture('GELADA', { w: 512, h: 256, bg: 0xd8443c, ellipse: true, size: 120 }), transparent: true, roughness: 0.6 }),
-      );
-      logo.rotation.x = -Math.PI / 2;
-      logo.scale.y = 0.55;
-      logo.position.set(c.x, top + 0.003, c.z);
-      scene.add(logo);
-      for (let i = 0; i < 4; i++) {
-        const a = Math.PI / 4 + (i * Math.PI) / 2;
-        const ch = place('furniture/chair', c.x + Math.cos(a) * r * 1.15, c.z + Math.sin(a) * r * 1.15, { height: 0.6 });
-        ch.rotation.y = -a - Math.PI / 2;
-        recolor(ch, yellow);
-        scene.add(ch);
-      }
+      // Mesa de plástico amarela quadrada de boteco ("GELADA" é marca fictícia) com 4 cadeiras (props3d).
+      const { group, top } = buildBeerTable(r);
+      group.position.copy(c);
+      scene.add(group);
       // Petiscos na mesa.
       scene.add(place('food/fries', c.x - r * 0.35, c.z + r * 0.25, { height: 0.12, y: top }));
       scene.add(place('food/glass', c.x + r * 0.35, c.z + r * 0.3, { height: 0.12, y: top }));
       return { spot: new THREE.Vector3(c.x + r * 0.15, top, c.z - r * 0.2), group: null };
     }
-    // Churrasqueira de tambor.
-    const g = new THREE.Group();
-    const drum = fit(instance('food/barrel'), { height: 0.62 });
-    recolor(drum, { '*': 0x4a4a52 });
-    g.add(drum);
-    const ember = mesh(new THREE.CylinderGeometry(r * 0.95, r * 0.95, 0.02, 16), new THREE.MeshStandardMaterial({ color: 0xff7a2f, emissive: 0xff5a10, emissiveIntensity: 1.6 }), 0, 0.63, 0);
-    g.add(ember);
-    for (let k = -2; k <= 2; k++) g.add(mesh(new THREE.BoxGeometry(r * 2, 0.012, 0.012), std(0x2a2a30), 0, 0.65, k * r * 0.35));
-    for (const dz of [-0.08, 0.08]) {
-      const sk = fit(instance('food/skewer'), { size: r * 2.2 });
-      sk.position.set(0, 0.66, dz);
-      g.add(sk);
-    }
+    // Churrasqueira de tambor (props3d).
+    const g = buildGrill(r, () => fit(instance('food/skewer'), { size: r * 2.0 }));
+    vary(g, 0.6);
     g.position.copy(c);
     scene.add(g);
     const glow = new THREE.PointLight(0xff7a2f, 2.2, 2.2, 1.5);
@@ -539,62 +520,13 @@ function buildObstacle(
   const c = toWorld(cfg, o.x + o.w / 2, o.y + o.h / 2);
   const w = o.w * S;
   const d = o.h * S;
-  const g = new THREE.Group();
+  let g: THREE.Group;
+  if (o.prop === 'crates') g = buildCrates(w, d, index);
+  else if (o.prop === 'cooler') g = buildCooler(w, d, index);
+  else if (o.prop === 'freezer') g = buildFreezer(w, d, index);
+  else g = new THREE.Group();
+  vary(g);
   g.position.copy(c);
-  if (o.prop === 'crates') {
-    // Engradados de cerveja (amarelo embaixo, verde em cima) com as tampinhas aparecendo.
-    const crate = (cw: number, cd: number, y: number, col: number) => {
-      const h = 0.26;
-      g.add(mesh(new THREE.BoxGeometry(cw, h, cd), std(col), 0, y + h / 2, 0));
-      g.add(mesh(new THREE.BoxGeometry(cw * 0.7, 0.05, 0.01), std(0x000000, { transparent: true, opacity: 0.25 }), 0, y + h * 0.6, cd / 2 + 0.006));
-      const nx = 4;
-      const nz = 3;
-      for (let i = 0; i < nx; i++) {
-        for (let j = 0; j < nz; j++) {
-          const bx = -cw / 2 + ((i + 0.5) * cw) / nx;
-          const bz = -cd / 2 + ((j + 0.5) * cd) / nz;
-          g.add(mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.05, 8), std(0x6b3a1f, { roughness: 0.3 }), bx, y + h + 0.02, bz));
-          g.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.012, 8), std(0xe8d9a0, { metalness: 0.5 }), bx, y + h + 0.05, bz));
-        }
-      }
-    };
-    crate(w, d, 0, 0xf2b134);
-    crate(w * 0.8, d * 0.75, 0.26, 0x4f9a5c);
-  } else if (o.prop === 'cooler') {
-    // Isopor com gelo e latinhas.
-    const h = 0.38;
-    g.add(mesh(new THREE.BoxGeometry(w, h, d), std(0xf6f4ef), 0, h / 2, 0));
-    g.add(mesh(new THREE.BoxGeometry(w * 0.88, 0.02, d * 0.82), std(0xbfe4f0, { roughness: 0.3 }), 0, h - 0.02, 0));
-    const lid = mesh(new THREE.BoxGeometry(w, 0.05, d * 0.9), std(0xfafaf7), 0, h + 0.18, -d / 2 - 0.02);
-    lid.rotation.x = -1.2;
-    g.add(lid);
-    const cans = ['food/soda-can', 'food/can', 'food/soda-can'];
-    cans.forEach((cn, i) => {
-      const can = fit(instance(cn), { height: 0.16 });
-      can.position.set(-w * 0.28 + i * w * 0.28, h - 0.06, (i % 2 ? 0.05 : -0.05) * d * 3);
-      can.rotation.z = (i - 1) * 0.4;
-      g.add(can);
-    });
-  } else if (o.prop === 'freezer') {
-    // Freezer horizontal de bar: branco, faixa vermelha, vidro com bebida.
-    const h = 0.62;
-    g.add(mesh(new THREE.BoxGeometry(w, h, d), std(0xf4f3f3, { roughness: 0.4 }), 0, h / 2, 0));
-    g.add(mesh(new THREE.BoxGeometry(w + 0.005, 0.09, d + 0.005), std(0xd8443c), 0, h * 0.45, 0));
-    // Tampa de vidro presa na borda de trás (o "lid" gira para abrir — ver boteco3d).
-    const lid = new THREE.Group();
-    lid.position.set(0, h + 0.007, -d * 0.4);
-    lid.add(mesh(new THREE.BoxGeometry(w * 0.9, 0.012, d * 0.8), new THREE.MeshStandardMaterial({ color: 0x9fd3e8, transparent: true, opacity: 0.75, roughness: 0.1, metalness: 0.2 }), 0, 0, d * 0.4));
-    g.add(lid);
-    g.userData.lid = lid;
-    for (let i = 0; i < 5; i++) {
-      const can = fit(instance(i % 2 ? 'food/soda-can' : 'food/can'), { height: 0.14 });
-      can.position.set(-w * 0.35 + i * w * 0.175, h - 0.15, 0);
-      g.add(can);
-    }
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.5, 0.12), new THREE.MeshStandardMaterial({ map: textTexture('GELADA', { w: 512, h: 128, size: 92 }), transparent: true }));
-    label.position.set(0, h * 0.45, d / 2 + 0.006);
-    g.add(label);
-  }
   shadows(g);
   scene.add(g);
   return { spot: null, group: g };

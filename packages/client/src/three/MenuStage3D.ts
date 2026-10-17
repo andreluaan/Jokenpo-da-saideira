@@ -175,9 +175,9 @@ export class MenuStage3D {
     const halfW = cfg.arena.rx * S + 2.5;
     const halfH = cfg.arena.ry * S + 1.4;
     let dist = Math.max(halfW / (t * (freeW / H)), halfH / t, 9);
-    const target = new THREE.Vector3(-1.6, 0, -0.4);
+    const target = new THREE.Vector3(-1.6, 0, -0.9);
     const dir = new THREE.Vector3(0, 1, 0.95).normalize();
-    // Afasta até o Bar do Zé caber inteiro (telhado incluído) na área livre, com uma folguinha.
+    // Afasta só o necessário para o Bar do Zé caber inteiro (telhado encostando no alto da tela).
     const e = BAR_EXTENT;
     const corners: THREE.Vector3[] = [];
     for (const x of [-e.halfW, e.halfW]) for (const z of [-e.back, e.front]) for (const y of [0, e.top]) corners.push(new THREE.Vector3(BAR.x + x, y, BAR.z + z));
@@ -188,9 +188,9 @@ export class MenuStage3D {
       this.camera.lookAt(target);
       this.camera.updateMatrixWorld();
       this.camera.updateProjectionMatrix();
-      const fits = corners.every((c) => (p.copy(c).project(this.camera), p.y < 0.9 && p.x > left + 0.03));
+      const fits = corners.every((c) => (p.copy(c).project(this.camera), p.y < 0.985 && p.x > left + 0.01));
       if (fits) break;
-      dist *= 1.03;
+      dist *= 1.015;
     }
     this.camera.userData.base = this.camera.position.clone();
     this.camera.userData.target = target;

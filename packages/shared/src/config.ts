@@ -191,11 +191,11 @@ export const DEFAULT_CONFIG: GameConfig = {
   },
   dash: { distance: 150, durationMs: 230, cooldownMs: 2200 },
   finisher: {
-    graceMs: 1600,
+    graceMs: 2000,
     // Mão de pedra cai em cima: quase não empurra, mas prende no chão.
-    rock: { knockback: 40, stunMs: 1300 },
+    rock: { knockback: 40, stunMs: 1700 },
     // Tesoura corta passando: empurra médio e deixa lento.
-    scissors: { knockback: 200, stunMs: 700, slowMs: 1800, slowMul: 0.55 },
+    scissors: { knockback: 200, stunMs: 700, slowMs: 2500, slowMul: 0.55 },
     // Embrulhado e arremessado como bola de neve: vai mais longe, sem lentidão.
     paper: { knockback: 300, stunMs: 900 },
   },

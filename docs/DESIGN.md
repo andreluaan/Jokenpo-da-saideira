@@ -132,11 +132,11 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 **QTE nunca transforma uma derrota de símbolo em vitória — nem uma vitória em empate.**
 
 ### 5.8 Golpes finais (v0.5)
-- **Golpes finais** (vencer + acertar o QTE). Invulnerabilidade igual para os três: [1600 ms].
+- **Golpes finais** (vencer + acertar o QTE). Invulnerabilidade igual para os três: [2000 ms].
   | Símbolo | Efeito | Animação |
   |---|---|---|
-  | Pedra | atordoa [1300 ms], empurra pouco [40] | mão gigante de pedra cai em cima |
-  | Tesoura | empurra [200], atordoa [700], depois fica lento ×[0,55] por [1800 ms] | tesoura gigante corta passando pelo meio |
+  | Pedra | atordoa [1700 ms], empurra pouco [40] | mão gigante de pedra cai em cima |
+  | Tesoura | empurra [200], atordoa [700], depois fica lento ×[0,55] por [2500 ms] | tesoura gigante corta passando pelo meio |
   | Papel | empurra mais longe [300], atordoa [900], sem lentidão | embrulha e arremessa como bola de neve |
 
 ### 5.5 Efeitos

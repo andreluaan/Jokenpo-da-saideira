@@ -126,11 +126,64 @@ describe('duelo (resposta)', () => {
     expect(sim.debugPlayer('A').hp).toBe(cfg.player.maxHp - 1);
   });
 
-  it('vencedor que não confirma desperdiça a vantagem', () => {
+  it('vencedor que não confirma ainda vence, mas sem golpe final', () => {
     const { x, sim } = duel('paper', 'rock', null, 'early');
-    expect(x.kind).toBe('wasted');
-    expect(sim.debugPlayer('A').hp).toBe(cfg.player.maxHp);
-    expect(sim.debugPlayer('B').hp).toBe(cfg.player.maxHp);
+    expect(x).toMatchObject({ kind: 'win', winnerId: 'A', damagedId: 'B', finisher: null });
+    expect(sim.debugPlayer('B').hp).toBe(cfg.player.maxHp - 1);
+  });
+
+  it('golpe final de Pedra: atordoa mais e quase não empurra', () => {
+    const { x, sim } = duel('rock', 'scissors', 'early', 'early');
+    expect(x).toMatchObject({ winnerId: 'A', damagedId: 'B', finisher: 'rock' });
+    const b = sim.debugPlayer('B');
+    expect(b.stunUntil - sim.now).toBeGreaterThan(cfg.finisher.rock.stunMs - 50);
+    expect(b.graceUntil - sim.now).toBeGreaterThan(cfg.finisher.graceMs - 50);
+  });
+
+  it('golpe final de Tesoura deixa lento; Papel empurra mais longe e não deixa lento', () => {
+    const cut = duel('scissors', 'paper', 'early', 'early');
+    expect(cut.x.finisher).toBe('scissors');
+    expect(cut.sim.snapshotFor(null).players.find((p) => p.id === 'B')!.slowed).toBe(true);
+
+    const wrap = duel('paper', 'rock', 'early', 'early');
+    expect(wrap.x.finisher).toBe('paper');
+    advanceTo(wrap.sim, wrap.sim.now + 800);
+    advanceTo(cut.sim, cut.sim.now + 800);
+    const paperDist = wrap.sim.debugPlayer('B').x - 880;
+    const scissorsDist = cut.sim.debugPlayer('B').x - 880;
+    expect(paperDist).toBeGreaterThan(scissorsDist);
+    expect(wrap.sim.snapshotFor(null).players.find((p) => p.id === 'B')!.slowed).toBe(false);
+  });
+
+  it('mão cansada: depois de revelar Pedra 2x seguidas, não pode escolher Pedra (histórico é público)', () => {
+    const sim = newSim();
+    for (let i = 0; i < 2; i++) {
+      sim.debugPlace('A', 780, 520);
+      sim.debugPlace('B', 880, 520);
+      sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
+      sim.applyInput('A', { type: 'commit' });
+      advanceTo(sim, impactOf(sim, 'A') + LATE + 1);
+      advanceTo(sim, sim.now + 1000);
+    }
+    expect(sim.snapshotFor('B').players.find((p) => p.id === 'A')!.recent).toEqual(['rock', 'rock']);
+    sim.debugPlace('A', 780, 520);
+    sim.debugPlace('B', 880, 520);
+    const denied = advanceTo(sim, sim.now); // sem passos: só coleta o evento da recusa abaixo
+    sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
+    denied.push(...sim.step(1));
+    expect(denied.some((e) => e.type === 'denied' && e.reason === 'tired')).toBe(true);
+    expect(sim.debugPlayer('A').attack).toBeNull();
+    sim.applyInput('A', { type: 'symbol', symbol: 'paper', targetId: 'B' });
+    expect(sim.debugPlayer('A').attack?.symbol).toBe('paper');
+  });
+
+  it('a invulnerabilidade depois do golpe final é igual para os três símbolos', () => {
+    const graces = (['rock', 'paper', 'scissors'] as const).map((s) => {
+      const loser = s === 'rock' ? 'scissors' : s === 'paper' ? 'rock' : 'paper';
+      const { sim } = duel(s, loser, 'early', 'early');
+      return sim.debugPlayer('B').graceUntil - sim.now;
+    });
+    expect(new Set(graces).size).toBe(1);
   });
 
   it('mesmo símbolo: choque sem dano; Perfeito faz o outro cambalear', () => {

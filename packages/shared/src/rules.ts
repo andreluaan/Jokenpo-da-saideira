@@ -27,8 +27,10 @@ export interface Side {
 export interface ExchangeResult {
   kind: ExchangeKind;
   winner: 'a' | 'b' | null;
-  /** Vencedor com Perfeito: empurrão forte e bônus de foco. */
+  /** Vencedor com Perfeito: bônus de foco. */
   strong: boolean;
+  /** Vencedor acertou o QTE (Bom/Perfeito): golpe final do símbolo dele. */
+  finisher: boolean;
   /** Perdedor com Perfeito: impacto amortecido. */
   softened: boolean;
   /** Perdedor com Falha: atordoamento maior. */
@@ -36,16 +38,17 @@ export interface ExchangeResult {
   staggered: 'a' | 'b' | null;
 }
 
-const none = { strong: false, softened: false, punished: false, staggered: null } as const;
+const none = { strong: false, finisher: false, softened: false, punished: false, staggered: null } as const;
 
 /**
  * Resolve uma troca. `a` é sempre o atacante (tem símbolo); `b` é o alvo, com ou sem mão.
- * O QTE nunca transforma uma derrota de símbolo em vitória: Falha rebaixa um degrau, Perfeito só amplia/amortece.
+ * O símbolo decide quem vence; o QTE só decide o tamanho do golpe (vencedor que acerta = golpe final)
+ * e quem cambaleia num empate. Vencedor que falha o QTE ainda vence, com um golpe simples.
  */
 export function resolveExchange(a: Side & { symbol: Rps; grade: Grade }, b: Side): ExchangeResult {
   if (b.symbol === null) {
     if (a.grade === 'fail') return { ...none, kind: 'fumble', winner: null };
-    return { ...none, kind: 'defenseless', winner: 'a', strong: a.grade === 'perfect' };
+    return { ...none, kind: 'defenseless', winner: 'a', strong: a.grade === 'perfect', finisher: true };
   }
   const bGrade = b.grade ?? 'fail';
   if (a.grade === 'fail' && bGrade === 'fail') return { ...none, kind: 'both-fumble', winner: null };
@@ -61,15 +64,22 @@ export function resolveExchange(a: Side & { symbol: Rps; grade: Grade }, b: Side
   const winner: 'a' | 'b' = beats(a.symbol, b.symbol) ? 'a' : 'b';
   const wGrade = winner === 'a' ? a.grade : bGrade;
   const lGrade = winner === 'a' ? bGrade : a.grade;
-  if (wGrade === 'fail') return { ...none, kind: 'wasted', winner: null };
   return {
     kind: 'win',
     winner,
     strong: wGrade === 'perfect',
+    finisher: wGrade !== 'fail',
     softened: lGrade === 'perfect',
     punished: lGrade === 'fail',
     staggered: null,
   };
+}
+
+/** Mão cansada: símbolo revelado `n` vezes seguidas (no fim de `recent`) não pode ser usado de novo. */
+export function tiredSymbol(recent: readonly Rps[], n: number): Rps | null {
+  if (n <= 0 || recent.length < n) return null;
+  const last = recent[recent.length - 1];
+  return recent.slice(-n).every((s) => s === last) ? last : null;
 }
 
 export const RPS_LABEL: Record<Rps, string> = { rock: 'Pedra', paper: 'Papel', scissors: 'Tesoura' };

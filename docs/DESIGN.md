@@ -119,16 +119,27 @@ Enquanto a mão **não estiver travada**:
 Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, ou sem mão).
 
 0. Alvo morto, fora de alcance [175 px] ou linha de visão bloqueada por obstáculo → **Errou** (recuperação longa [650 ms]).
-1. B sem mão: A Falha → **Errou**; senão A vence (**Indefeso**).
+1. B sem mão: A Falha → **Errou**; senão A vence (**Indefeso**) com **golpe final**.
 2. Ambos Falha → nada acontece (ambos erraram).
-3. Há vencedor por símbolo:
-   - Vencedor com Falha → **Empate** ("vantagem desperdiçada").
-   - Senão, perdedor leva **1 de dano**. Vencedor Perfeito → empurrão forte + [15 foco]. Perdedor Perfeito → empurrão e atordoamento amortecidos. Perdedor Falha → atordoamento maior.
+3. Há vencedor por símbolo (v0.5: **o símbolo decide, o QTE só decide o tamanho do golpe**):
+   - Perdedor sempre leva **1 de dano**.
+   - Vencedor acertou o QTE (Bom/Perfeito) → **golpe final** do símbolo dele (ver 5.8). Perfeito ainda dá [15 foco].
+   - Vencedor com Falha → golpe simples (rasteira): empurrão normal; perdedor Perfeito amortece, perdedor Falha fica mais atordoado.
 4. Símbolos iguais:
    - Um lado Falha, ou um Perfeito contra um não-Perfeito → o lado pior fica **cambaleando** [450 ms] (sem dano, perde a mão).
    - Senão → **choque**: ambos são empurrados, sem dano.
 
-**QTE nunca transforma uma derrota de símbolo em vitória.**
+**QTE nunca transforma uma derrota de símbolo em vitória — nem uma vitória em empate.**
+
+### 5.8 Escolha do símbolo com peso (v0.5)
+- **Histórico público:** os 2 últimos símbolos revelados de cada jogador aparecem no crachá dele.
+- **Mão cansada:** quem revelou o mesmo símbolo [2] vezes seguidas **não pode** escolhê-lo de novo (nem na troca) até revelar outro. Todos sabem → leitura: se o outro não pode Pedra, jogar Tesoura ganha do Papel e empata com Tesoura.
+- **Golpes finais** (vencer + acertar o QTE). Invulnerabilidade igual para os três: [1600 ms].
+  | Símbolo | Efeito | Animação |
+  |---|---|---|
+  | Pedra | atordoa [1300 ms], empurra pouco [40] | mão gigante de pedra cai em cima |
+  | Tesoura | empurra [200], atordoa [700], depois fica lento ×[0,55] por [1800 ms] | tesoura gigante corta passando pelo meio |
+  | Papel | empurra mais longe [300], atordoa [900], sem lentidão | embrulha e arremessa como bola de neve |
 
 ### 5.5 Efeitos
 - Dano: −1 vida, atordoamento [450 ms], **graça** [900 ms] (sem dano), empurrão [120 px | 190 forte | 70 amortecido], perde a mão.

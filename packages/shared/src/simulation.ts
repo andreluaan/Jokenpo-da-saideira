@@ -1,6 +1,6 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
 import { clamp, clampInArena, dist, lineBlocked, normalize, pushOutOfObstacle } from './geometry';
-import { gradeLock, resolveExchange } from './rules';
+import { gradeLock, resolveExchange, tiredSymbol } from './rules';
 import { CHARACTER_IDS } from './types';
 import type {
   CharacterId,
@@ -65,6 +65,10 @@ interface Player {
   drinkStation: number;
   dashX: number;
   dashY: number;
+  /** Últimos símbolos revelados (público), para a regra da mão cansada. */
+  recent: Rps[];
+  /** Lento até este instante (golpe final de Tesoura). */
+  slowUntil: number;
 }
 
 export type PlayerDebugState = Readonly<Player>;
@@ -125,6 +129,8 @@ export class GameSimulation {
         drinkStation: -1,
         dashX: 0,
         dashY: 0,
+        recent: [],
+        slowUntil: 0,
       };
       this.players.push(p);
       this.byId.set(p.id, p);
@@ -170,6 +176,7 @@ export class GameSimulation {
     if (!isRps(symbol)) return;
     const now = this.now;
     if (now < p.busyUntil || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
+    if (this.isTired(p, symbol)) return this.deny(p, 'tired');
     const t = targetId ? this.byId.get(targetId) : undefined;
     if (!t || t === p || !t.alive) return this.deny(p, 'target');
 
@@ -204,12 +211,23 @@ export class GameSimulation {
     const atk = p.attack!;
     if (!isRps(symbol) || symbol === atk.symbol) return;
     if (atk.lockedAt !== null) return this.deny(p, 'locked');
+    if (this.isTired(p, symbol)) return this.deny(p, 'tired');
     if (atk.swaps >= this.config.costs.maxSwaps) return this.deny(p, 'limit');
     if (p.focus < this.config.costs.swap) return this.deny(p, 'focus');
     p.focus -= this.config.costs.swap;
     atk.swaps++;
     atk.symbol = symbol;
     this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'swap' });
+  }
+
+  /** Mão cansada: o mesmo símbolo revelado `tiredAfter` vezes seguidas não pode ser escolhido de novo. */
+  private isTired(p: Player, symbol: Rps): boolean {
+    return tiredSymbol(p.recent, this.config.tiredAfter) === symbol;
+  }
+
+  private remember(p: Player, symbol: Rps): void {
+    p.recent.push(symbol);
+    if (p.recent.length > 2) p.recent.shift();
   }
 
   /** Finta: sinal idêntico ao da troca, mesmo custo, símbolo não muda. */
@@ -328,7 +346,8 @@ export class GameSimulation {
       } else {
         // Inércia: acelera até a velocidade desejada; ao soltar (ou atordoado) escorrega até parar.
         const stunned = this.now < p.stunUntil || this.now < p.drinkingUntil;
-        const speed = stunned ? 0 : (player.speed / 1000) * (p.attack ? player.holdingSpeedMul : 1);
+        const slow = this.now < p.slowUntil ? this.config.finisher.scissors.slowMul : 1;
+        const speed = stunned ? 0 : (player.speed / 1000) * slow * (p.attack ? player.holdingSpeedMul : 1);
         const tx = p.moveX * speed;
         const ty = p.moveY * speed;
         const dvx = tx - p.vx;
@@ -451,10 +470,14 @@ export class GameSimulation {
       damagedId: null,
       protectedId: null,
       staggeredId: null,
+      finisher: null,
       x: (x.x + y.x) / 2,
       y: (x.y + y.y) / 2,
     };
     this.emit(ev);
+    // Símbolos revelados entram no histórico público (mão cansada).
+    this.remember(x, atk.symbol);
+    if (yAtk) this.remember(y, yAtk.symbol);
 
     // O ataque de X sempre termina aqui; o de Y só se for duelo (defensor que vence mantém a ação).
     const recovery = r.kind === 'fumble' || r.kind === 'both-fumble' ? timings.whiffMs : timings.afterResolveMs;
@@ -468,10 +491,22 @@ export class GameSimulation {
         const loser = winner === x ? y : x;
         ev.winnerId = winner.id;
         if (r.strong) winner.focus = Math.min(this.config.player.maxFocus, winner.focus + this.config.perfectFocusBonus);
-        const pushDist = r.strong ? knockback.strong : r.softened ? knockback.softened : knockback.normal;
-        const stun = r.softened ? timings.softenedHitstunMs : r.punished ? timings.punishedHitstunMs : timings.hitstunMs;
-        if (this.hit(loser, winner, pushDist, stun)) ev.protectedId = loser.id;
-        else ev.damagedId = loser.id;
+        const fin = r.finisher ? (winner === x ? atk.symbol : yAtk!.symbol) : null;
+        if (fin) {
+          // Golpe final do símbolo: Pedra prende, Tesoura corta e deixa lento, Papel arremessa longe.
+          const f = this.config.finisher[fin];
+          if (this.hit(loser, winner, f.knockback, f.stunMs, this.config.finisher.graceMs)) ev.protectedId = loser.id;
+          else {
+            ev.damagedId = loser.id;
+            ev.finisher = fin;
+            if (fin === 'scissors') loser.slowUntil = this.now + this.config.finisher.scissors.stunMs + this.config.finisher.scissors.slowMs;
+          }
+        } else {
+          // Venceu no símbolo mas falhou o QTE: golpe simples (rasteira).
+          const stun = r.softened ? timings.softenedHitstunMs : r.punished ? timings.punishedHitstunMs : timings.hitstunMs;
+          if (this.hit(loser, winner, knockback.normal, stun)) ev.protectedId = loser.id;
+          else ev.damagedId = loser.id;
+        }
         break;
       }
       case 'tie-stagger': {
@@ -483,7 +518,6 @@ export class GameSimulation {
         break;
       }
       case 'clank':
-      case 'wasted':
         this.pushApart(x, y, knockback.clank);
         break;
       case 'fumble':
@@ -493,7 +527,7 @@ export class GameSimulation {
   }
 
   /** Aplica um golpe vencedor. Retorna true se o alvo estava protegido (graça). */
-  private hit(loser: Player, winner: Player, pushDist: number, stunMs: number): boolean {
+  private hit(loser: Player, winner: Player, pushDist: number, stunMs: number, graceMs = this.config.timings.graceMs): boolean {
     if (this.now < loser.graceUntil) {
       this.push(loser, winner.x, winner.y, this.config.knockback.protectedPush);
       return true;
@@ -502,7 +536,7 @@ export class GameSimulation {
     loser.hp = Math.max(0, loser.hp - this.config.attack.damage);
     this.consume(loser, 0);
     loser.stunUntil = this.now + stunMs;
-    loser.graceUntil = this.now + this.config.timings.graceMs;
+    loser.graceUntil = this.now + graceMs;
     loser.dashUntil = 0;
     this.push(loser, winner.x, winner.y, pushDist);
     if (loser.hp <= 0) {
@@ -603,6 +637,8 @@ export class GameSimulation {
         dashReadyAt: p.dashReadyAt,
         drinkingUntil: now < p.drinkingUntil ? p.drinkingUntil : 0,
         swapsLeft: self && p.attack ? this.config.costs.maxSwaps - p.attack.swaps : null,
+        recent: [...p.recent],
+        slowed: now < p.slowUntil,
       };
     });
     const beers = this.stations.map((s) => {

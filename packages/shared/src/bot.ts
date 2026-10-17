@@ -1,7 +1,10 @@
 import type { GameConfig } from './config';
 import { arenaDepth, dist, insideObstacle, lineBlocked, normalize } from './geometry';
-import { counterOf } from './rules';
+import { counterOf, tiredSymbol } from './rules';
 import { RPS_LIST, type GameEvent, type PlayerInput, type PlayerView, type Rps, type Snapshot } from './types';
+
+/** Símbolo que `s` vence. */
+const BEATEN_BY: Record<Rps, Rps> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
@@ -93,6 +96,7 @@ export class BotBrain {
   private lastStep = 0;
   private wantsBeer = false;
   private beerDecisionAt = 0;
+  private view: Snapshot | null = null;
 
   constructor(
     readonly id: string,
@@ -120,6 +124,7 @@ export class BotBrain {
   }
 
   think(view: Snapshot): PlayerInput[] {
+    this.view = view;
     const now = view.now;
     const dt = Math.max(1, now - this.lastStep);
     this.lastStep = now;
@@ -315,6 +320,19 @@ export class BotBrain {
   // ---------------------------------------------------------------- escolha
 
   private choose(opponentId: string, current: Rps | null): Rps {
+    const tired = (id: string) => {
+      const p = this.view?.players.find((q) => q.id === id);
+      return p ? tiredSymbol(p.recent, this.config.tiredAfter) : null;
+    };
+    const mine = tired(this.id);
+    const allowed = (s: Rps) => s !== current && s !== mine;
+    // Adversário com a mão cansada só tem 2 opções: jogar o que o símbolo cansado vence
+    // ganha de uma e empata com a outra.
+    const oppTired = tired(opponentId);
+    if (oppTired && this.rng() < this.profile.readChance + 0.25) {
+      const pick = BEATEN_BY[oppTired];
+      if (allowed(pick)) return pick;
+    }
     const hist = this.history.get(opponentId) ?? [];
     if (hist.length > 0 && this.rng() < this.profile.readChance) {
       // Leitura simples: o adversário tende a repetir o que mais usou recentemente.
@@ -322,9 +340,9 @@ export class BotBrain {
       hist.slice(-4).forEach((s, i) => (counts[s] += 1 + i * 0.5));
       const predicted = RPS_LIST.reduce((a, b) => (counts[b] > counts[a] ? b : a));
       const pick = counterOf(predicted);
-      if (pick !== current) return pick;
+      if (allowed(pick)) return pick;
     }
-    const options = RPS_LIST.filter((s) => s !== current);
+    const options = RPS_LIST.filter(allowed);
     const total = options.reduce((sum, s) => sum + this.bias[s], 0);
     let r = this.rng() * total;
     for (const s of options) {

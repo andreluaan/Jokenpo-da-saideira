@@ -15,13 +15,18 @@ export function describeExchange(e: ExchangeEvent, nameOf: NameOf): { headline: 
 
   switch (e.kind) {
     case 'defenseless':
-      return { headline: 'Indefeso!', line: `${a} acertou ${B}, que estava sem defesa.${hurt}` };
+      return {
+        headline: e.finisher ? FINISHER_HEADLINE[e.finisher] : 'Indefeso!',
+        line: `${a} acertou ${B}, que estava sem defesa${e.finisher ? ` — ${FINISHER_TEXT[e.finisher]}` : ''}.${hurt}`,
+      };
     case 'win': {
       const [w, l] = e.winnerId === e.attackerId ? [e.attackerSymbol, e.defenderSymbol!] : [e.defenderSymbol!, e.attackerSymbol];
-      return { headline: `${RPS_LABEL[w]} vence ${RPS_LABEL[l]}`, line: `${a} × ${b} → ${RPS_LABEL[w]} vence ${RPS_LABEL[l]}.${hurt}` };
+      const how = e.finisher ? ` ${FINISHER_TEXT[e.finisher]}` : ' (golpe simples: vencedor errou o QTE)';
+      return {
+        headline: e.finisher ? FINISHER_HEADLINE[e.finisher] : `${RPS_LABEL[w]} vence ${RPS_LABEL[l]}`,
+        line: `${a} × ${b} → ${RPS_LABEL[w]} vence ${RPS_LABEL[l]}${how}.${hurt}`,
+      };
     }
-    case 'wasted':
-      return { headline: 'Vantagem desperdiçada!', line: `${a} × ${b} → quem tinha o símbolo vencedor falhou o QTE. Empate.` };
     case 'clank':
       return { headline: 'Choque!', line: `${a} × ${b} → mesmo símbolo, empate.` };
     case 'tie-stagger':
@@ -36,6 +41,14 @@ export function describeExchange(e: ExchangeEvent, nameOf: NameOf): { headline: 
   }
 }
 
+/** Golpes finais (vencer + acertar o QTE). */
+const FINISHER_HEADLINE: Record<Rps, string> = { rock: 'ESMAGOU!', scissors: 'CORTOU!', paper: 'EMBRULHOU!' };
+const FINISHER_TEXT: Record<Rps, string> = {
+  rock: 'mão de pedra: atordoado no chão',
+  scissors: 'tesourada: arremessado e lento',
+  paper: 'embrulhado e arremessado longe',
+};
+
 export const WHIFF_TEXT: Record<WhiffReason, string> = {
   range: 'Errou! (fora de alcance)',
   blocked: 'Errou! (bloqueado)',
@@ -43,6 +56,7 @@ export const WHIFF_TEXT: Record<WhiffReason, string> = {
 };
 
 export const DENY_TEXT: Record<DenyReason, string> = {
+  tired: 'Mão cansada! Use outro símbolo',
   busy: 'Ocupado',
   range: 'Fora de alcance',
   target: 'Sem alvo',

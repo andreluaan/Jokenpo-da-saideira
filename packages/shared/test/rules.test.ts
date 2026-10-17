@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, beats, gradeLock, resolveExchange } from '../src';
+import { DEFAULT_CONFIG, beats, gradeLock, resolveExchange, tiredSymbol } from '../src';
 
 const qte = DEFAULT_CONFIG.qte;
 
@@ -47,10 +47,20 @@ describe('resolução da troca', () => {
     expect(r.softened).toBe(true);
   });
 
-  it('vencedor por símbolo que falha desperdiça a vantagem (empate, sem dano)', () => {
+  it('vencedor por símbolo que falha o QTE ainda vence, mas sem golpe final', () => {
     const r = resolveExchange({ symbol: 'paper', grade: 'fail' }, { symbol: 'rock', grade: 'good' });
-    expect(r.kind).toBe('wasted');
-    expect(r.winner).toBeNull();
+    expect(r).toMatchObject({ kind: 'win', winner: 'a', finisher: false });
+  });
+
+  it('vencedor que acerta o QTE (Bom ou Perfeito) faz o golpe final', () => {
+    expect(resolveExchange({ symbol: 'paper', grade: 'good' }, { symbol: 'rock', grade: 'good' }).finisher).toBe(true);
+    expect(resolveExchange({ symbol: 'paper', grade: 'perfect' }, { symbol: 'rock', grade: 'fail' }).finisher).toBe(true);
+  });
+
+  it('mão cansada: mesmo símbolo revelado 2x seguidas', () => {
+    expect(tiredSymbol(['rock', 'rock'], 2)).toBe('rock');
+    expect(tiredSymbol(['paper', 'rock'], 2)).toBeNull();
+    expect(tiredSymbol(['rock'], 2)).toBeNull();
   });
 
   it('perdedor que falha continua perdendo, com punição maior', () => {

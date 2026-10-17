@@ -21,6 +21,8 @@ o mesmo `step(dt)` e as mesmas entradas. Regras de design em `docs/DESIGN.md` (s
 `feint` · `cancel` · `dash` · `drink`. Recusas emitem `denied` com `DenyReason`.
 
 ## Pontos-chave
+- **Mão cansada:** `Player.recent` (últimos 2 símbolos revelados, público na view) + `tiredSymbol(recent, tiredAfter)` (rules.ts). `startAttack`/`swap` recusam com `denied: 'tired'`.
+- **Golpe final:** `resolveExchange` marca `finisher` quando o vencedor não falhou; `resolveAttack` aplica `config.finisher[símbolo]` (empurrão, atordoamento, `graceMs` único) e preenche `ExchangeEvent.finisher`. Tesoura seta `slowUntil` (view `slowed`; `integrate` multiplica a velocidade). Vencedor com Falha = golpe simples (não existe mais `wasted`).
 - **Duelo:** atacar quem já te ataca (com ≥ `responseCutoffMs` restantes) une os impactos (`clashWith`), T ≥ agora + `minResponseMs`.
 - **Uma mão só:** a mão atual do defensor vale contra qualquer atacante; defensor que vence (não-duelo) mantém a ação.
 - **Graça** após dano → no máximo 1 de dano por janela (ataques simultâneos viram `protectedId`).

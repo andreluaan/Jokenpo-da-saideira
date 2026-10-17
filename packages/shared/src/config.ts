@@ -93,6 +93,18 @@ export interface GameConfig {
     tauMs: number;
   };
   dash: { distance: number; durationMs: number; cooldownMs: number };
+  /**
+   * Golpe final: vencer pelo símbolo E acertar o QTE (Bom/Perfeito). Cada símbolo tem seu efeito;
+   * a invulnerabilidade depois (graceMs) é a mesma para os três.
+   */
+  finisher: {
+    graceMs: number;
+    rock: { knockback: number; stunMs: number };
+    scissors: { knockback: number; stunMs: number; slowMs: number; slowMul: number };
+    paper: { knockback: number; stunMs: number };
+  };
+  /** Mesmo símbolo revelado N vezes seguidas = mão cansada: não pode usar de novo na próxima. */
+  tiredAfter: number;
   perfectFocusBonus: number;
   beer: {
     /** Tempo parado bebendo (vulnerável: levar dano derrama a cerveja). */
@@ -180,6 +192,16 @@ export const DEFAULT_CONFIG: GameConfig = {
     tauMs: 140,
   },
   dash: { distance: 150, durationMs: 230, cooldownMs: 2200 },
+  finisher: {
+    graceMs: 1600,
+    // Mão de pedra cai em cima: quase não empurra, mas prende no chão.
+    rock: { knockback: 40, stunMs: 1300 },
+    // Tesoura corta passando: empurra médio e deixa lento.
+    scissors: { knockback: 200, stunMs: 700, slowMs: 1800, slowMul: 0.55 },
+    // Embrulhado e arremessado como bola de neve: vai mais longe, sem lentidão.
+    paper: { knockback: 300, stunMs: 900 },
+  },
+  tiredAfter: 2,
   perfectFocusBonus: 15,
   beer: { drinkMs: 2200, heal: 1, respawnMs: 25_000, reach: 36 },
   match: { countdownMs: 3000, durationMs: 240_000 },

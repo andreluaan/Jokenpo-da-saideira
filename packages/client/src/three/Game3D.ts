@@ -706,7 +706,7 @@ export class Game3D {
           const w = otherOf(e.protectedId);
           this.actors.get(e.protectedId)?.c.hit(w.x, w.z, v.x, v.z, 0.5, simNow);
           if (e.protectedId === this.conn.localPlayerId) this.popup(v.clone().setY(1.9), 'Protegido', '#8ecae6', 22);
-        } else if (e.kind === 'clank' || e.kind === 'wasted' || e.kind === 'tie-stagger') {
+        } else if (e.kind === 'clank' || e.kind === 'tie-stagger') {
           A.c.hit(wd.x, wd.z, wa.x, wa.z, 0.6, simNow);
           D.c.hit(wa.x, wa.z, wd.x, wd.z, 0.6, simNow);
           this.puff(wa.clone().add(wd).multiplyScalar(0.5), 0xfff4e6, 8);

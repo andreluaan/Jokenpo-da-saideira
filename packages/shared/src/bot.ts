@@ -8,13 +8,20 @@ export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
 export interface BotProfile {
   reactionMs: [number, number];
-  /** Desvio padrão do erro de tempo do QTE. */
+  /** Tempo para perceber o símbolo que o outro botou e virar a mão (reflexo de malandro). */
+  readReactMs: [number, number];
+  /** Desvio padrão do erro de tempo no Jo-Ken-Pô. */
   timingSigmaMs: number;
-  earlyLockChance: number;
+  /** Chance de botar cedo (antes do verde): seguro, mas entrega o símbolo. */
+  earlyChance: number;
+  /** Mira este tanto depois do PÔ! para ver o do outro (malandro: mais leitura, mais risco de vermelho). */
+  lateBiasMs: number;
+  /** Chance de aproveitar o símbolo que o outro mostrou (se percebeu a tempo). */
+  readRevealChance: number;
   /** Chance de usar o histórico do adversário em vez de escolher ao acaso. */
   readChance: number;
-  swapOnSignalChance: number;
-  respondChance: number;
+  /** Chance de tentar fugir (investida) quando é chamado para um duelo. */
+  fleeChance: number;
   dashChance: number;
   /** Ataques iniciados por segundo quando em alcance e livre. */
   aggression: number;
@@ -25,33 +32,39 @@ export interface BotProfile {
 export const BOT_PROFILES: Record<BotDifficulty, BotProfile> = {
   easy: {
     reactionMs: [480, 750],
-    timingSigmaMs: 140,
-    earlyLockChance: 0.5,
+    readReactMs: [380, 600],
+    timingSigmaMs: 120,
+    earlyChance: 0.45,
+    lateBiasMs: 0,
+    readRevealChance: 0.5,
     readChance: 0.15,
-    swapOnSignalChance: 0.1,
-    respondChance: 0.45,
+    fleeChance: 0.12,
     dashChance: 0.15,
     aggression: 0.35,
     beerGreed: 0.5,
   },
   normal: {
     reactionMs: [330, 540],
-    timingSigmaMs: 85,
-    earlyLockChance: 0.35,
+    readReactMs: [260, 400],
+    timingSigmaMs: 75,
+    earlyChance: 0.25,
+    lateBiasMs: 30,
+    readRevealChance: 0.75,
     readChance: 0.4,
-    swapOnSignalChance: 0.3,
-    respondChance: 0.7,
+    fleeChance: 0.12,
     dashChance: 0.3,
     aggression: 0.55,
     beerGreed: 0.7,
   },
   hard: {
     reactionMs: [230, 380],
+    readReactMs: [190, 290],
     timingSigmaMs: 50,
-    earlyLockChance: 0.25,
+    earlyChance: 0.12,
+    lateBiasMs: 55,
+    readRevealChance: 0.95,
     readChance: 0.65,
-    swapOnSignalChance: 0.4,
-    respondChance: 0.85,
+    fleeChance: 0.1,
     dashChance: 0.45,
     aggression: 0.8,
     beerGreed: 0.85,
@@ -71,19 +84,15 @@ export function makeRng(seed: number): () => number {
 }
 
 /**
- * NPC. Recebe apenas o snapshot filtrado (não vê símbolos alheios) e os eventos públicos,
+ * NPC. Recebe o mesmo snapshot que um humano (vê o símbolo de quem já botou) e os eventos públicos,
  * e devolve as mesmas entradas que um humano enviaria.
  */
 export class BotBrain {
   private readonly rng: () => number;
   private readonly history = new Map<string, Rps[]>();
   private readonly bias: Record<Rps, number>;
-  private signals: { playerId: string; at: number }[] = [];
-  private plannedImpact: number | null = null;
-  private commitAt: number | null = null;
-  private reactedSignalAt = -1;
-  private reaction: { at: number; attackerId: string } | null = null;
-  private handledAttackKey = '';
+  /** Plano do duelo atual: quando e o que botar, e se vai tentar fugir. */
+  private plan: { key: string; pickAt: number; symbol: Rps; flee: boolean; running: boolean; read: boolean } | null = null;
   private strafeDir = 1;
   private strafeUntil = 0;
   private lastStep = 0;
@@ -109,13 +118,10 @@ export class BotBrain {
   observe(events: GameEvent[]): void {
     for (const e of events) {
       if (e.type === 'exchange') {
-        this.remember(e.attackerId, e.attackerSymbol);
+        if (e.attackerSymbol) this.remember(e.attackerId, e.attackerSymbol);
         if (e.defenderSymbol) this.remember(e.defenderId, e.defenderSymbol);
-      } else if (e.type === 'signal' && e.kind === 'swap' && e.playerId !== this.id) {
-        this.signals.push({ playerId: e.playerId, at: e.at });
       }
     }
-    if (this.signals.length > 20) this.signals = this.signals.slice(-20);
   }
 
   think(view: Snapshot): PlayerInput[] {
@@ -128,61 +134,62 @@ export class BotBrain {
 
     const out: PlayerInput[] = [];
     const others = view.players.filter((p) => p.alive && p.id !== this.id);
-    const incoming = others.filter((p) => p.targetId === this.id && p.impactAt !== null);
 
-    if (me.holding) {
-      this.reaction = null;
-      this.thinkHolding(view, me, incoming, out);
-    } else {
-      this.plannedImpact = this.commitAt = null;
-      this.thinkFree(view, me, others, incoming, dt, out);
+    if (me.holding) this.thinkDuel(view, me, out);
+    else {
+      this.plan = null;
+      this.thinkFree(view, me, others, dt, out);
     }
     return out;
   }
 
-  // ---------------------------------------------------------------- com mão
+  // ---------------------------------------------------------------- no duelo
 
-  private thinkHolding(view: Snapshot, me: PlayerView, incoming: PlayerView[], out: PlayerInput[]): void {
+  private thinkDuel(view: Snapshot, me: PlayerView, out: PlayerInput[]): void {
     const now = view.now;
     const { qte } = this.config;
-    const target = view.players.find((p) => p.id === me.targetId);
+    const opp = view.players.find((p) => p.id === me.targetId);
+    const T = me.impactAt!;
+    const key = `${me.targetId}:${T}`;
 
-    // Próximo impacto relevante: o meu ou o de quem me ataca, o que vier primeiro.
-    const impacts = [me.impactAt!, ...incoming.map((p) => p.impactAt!)].filter((t) => t + qte.lateMs >= now);
-    const T = Math.min(...impacts);
-
-    if (!me.locked && Number.isFinite(T) && T !== this.plannedImpact) {
-      this.plannedImpact = T;
-      const ownAttack = T === me.impactAt && !me.clashWith;
-      if (ownAttack && T - now > qte.leadMs + 150 && this.rng() < this.profile.earlyLockChance) {
-        this.commitAt = now + 80 + this.rng() * 200;
-      } else {
-        this.commitAt = T + this.gauss() * this.profile.timingSigmaMs;
-      }
+    if (!this.plan || this.plan.key !== key) {
+      // Cedo (seguro, mas mostra a mão) ou mirando no verde — o malandro mira mais tarde para ver a do outro.
+      const early = this.rng() < this.profile.earlyChance;
+      const pickAt = early
+        ? now + this.reactionDelay() * 0.6
+        : T + this.profile.lateBiasMs + this.gauss() * this.profile.timingSigmaMs;
+      const flee = !me.challenger && this.rng() < this.profile.fleeChance * (me.hp < me.maxHp ? 2 : 1);
+      this.plan = { key, pickAt, symbol: this.choose(me.targetId!, null), flee, running: flee, read: false };
     }
+    const plan = this.plan;
 
     if (!me.locked) {
-      // Reage a sinais de troca de quem está envolvido comigo.
-      const involved = new Set([me.targetId, ...incoming.map((p) => p.id)]);
-      const sig = this.signals.find((s) => involved.has(s.playerId) && s.at > this.reactedSignalAt && now - s.at < 350);
-      if (sig) {
-        this.reactedSignalAt = sig.at;
-        if ((me.swapsLeft ?? 0) > 0 && me.focus >= this.config.costs.swap && this.rng() < this.profile.swapOnSignalChance) {
-          const opp = me.targetId ?? sig.playerId;
-          const next = this.choose(opp, me.symbol);
-          if (next !== me.symbol) out.push({ type: 'symbol', symbol: next });
-        }
+      // O outro já botou? Se percebeu a tempo (antes da hora em que ia apertar), vira a mão para ganhar.
+      if (opp?.symbol && opp.pickedAt !== null && !plan.read) {
+        const [a, b] = this.profile.readReactMs;
+        const noticeAt = opp.pickedAt + a + this.rng() * (b - a);
+        if (noticeAt <= plan.pickAt) {
+          plan.read = true;
+          if (this.rng() < this.profile.readRevealChance) plan.symbol = counterOf(opp.symbol);
+        } else if (now >= noticeAt) plan.read = true;
       }
-      if (this.commitAt !== null && now >= this.commitAt) {
-        out.push({ type: 'commit', at: this.commitAt });
-        this.commitAt = null;
+      if (plan.flee && now >= me.dashReadyAt && me.focus >= this.config.costs.dash && opp) {
+        const away = normalize(me.x - opp.x, me.y - opp.y);
+        out.push({ type: 'dash', x: away.x, y: away.y });
+        plan.flee = false;
+        plan.pickAt = Math.max(plan.pickAt, T - qte.greenBeforeMs);
       }
+      if (now >= plan.pickAt) out.push({ type: 'symbol', symbol: plan.symbol, at: plan.pickAt });
     }
 
-    // Mantém o alvo em alcance.
-    if (target) {
-      const d = dist(me.x, me.y, target.x, target.y);
-      const n = normalize(target.x - me.x, target.y - me.y);
+    // Fica em alcance do adversário (ou corre dele, se decidiu fugir).
+    if (opp) {
+      const d = dist(me.x, me.y, opp.x, opp.y);
+      const n = normalize(opp.x - me.x, opp.y - me.y);
+      if (plan.running) {
+        out.push(this.steer(me, -n.x, -n.y));
+        return;
+      }
       const want = this.config.attack.hitRange * 0.65;
       const k = d > want ? 1 : d < want * 0.6 ? -0.6 : 0;
       out.push(this.steer(me, n.x * k - n.y * 0.25 * this.strafeDir, n.y * k + n.x * 0.25 * this.strafeDir));
@@ -191,46 +198,9 @@ export class BotBrain {
 
   // ---------------------------------------------------------------- sem mão
 
-  private thinkFree(
-    view: Snapshot,
-    me: PlayerView,
-    others: PlayerView[],
-    incoming: PlayerView[],
-    dt: number,
-    out: PlayerInput[],
-  ): void {
+  private thinkFree(view: Snapshot, me: PlayerView, others: PlayerView[], dt: number, out: PlayerInput[]): void {
     const now = view.now;
     const cfg = this.config;
-
-    // 1) Sendo atacado: decide (após tempo de reação) responder, investir para longe ou fugir.
-    const threat = incoming.sort((a, b) => a.impactAt! - b.impactAt!)[0];
-    if (threat) {
-      const key = `${threat.id}:${threat.impactAt}`;
-      if (this.handledAttackKey !== key && !this.reaction) {
-        this.reaction = { at: now + this.reactionDelay(), attackerId: threat.id };
-      }
-      if (this.reaction && now >= this.reaction.at) {
-        this.handledAttackKey = key;
-        this.reaction = null;
-        const d = dist(me.x, me.y, threat.x, threat.y);
-        const canRespond = !me.busy && !me.stunned && d <= cfg.attack.engageRange + 50 && threat.impactAt! - now > 150;
-        if (canRespond && this.rng() < this.profile.respondChance) {
-          out.push({ type: 'symbol', symbol: this.choose(threat.id, null), targetId: threat.id });
-          return;
-        }
-        const away = normalize(me.x - threat.x, me.y - threat.y);
-        if (now >= me.dashReadyAt && me.focus >= cfg.costs.dash && this.rng() < this.profile.dashChance) {
-          out.push({ type: 'dash', x: away.x, y: away.y });
-        }
-      }
-      if (this.handledAttackKey === key) {
-        const away = normalize(me.x - threat.x, me.y - threat.y);
-        out.push(this.steer(me, away.x, away.y));
-        return;
-      }
-    } else {
-      this.reaction = null;
-    }
 
     // 2) Machucado e sem ninguém perto? Vai até a mesa tomar uma.
     if (me.drinkingUntil > now) {
@@ -285,8 +255,9 @@ export class BotBrain {
       }
     }
 
-    // 5) Caça o adversário mais próximo (com preferência por quem tem menos vida).
+    // 5) Caça o adversário mais próximo (com preferência por quem tem menos vida) que esteja livre para duelar.
     const target = others
+      .filter((p) => !p.holding && p.graceUntil <= now)
       .map((p) => ({ p, score: dist(me.x, me.y, p.x, p.y) + p.hp * 40 }))
       .sort((a, b) => a.score - b.score)[0]?.p;
     if (!target) {
@@ -307,7 +278,7 @@ export class BotBrain {
     const clear = !lineBlocked(me.x, me.y, target.x, target.y, this.obstacles);
     const ready = clear && !me.busy && !me.stunned && d <= cfg.attack.hitRange * 0.85;
     if (ready && this.rng() < (this.profile.aggression * dt) / 1000) {
-      out.push({ type: 'symbol', symbol: this.choose(target.id, null), targetId: target.id });
+      out.push({ type: 'challenge', targetId: target.id });
     }
   }
 

@@ -42,40 +42,32 @@ export interface GameConfig {
     focusRegen: number;
   };
   attack: {
-    /** Distância máxima para iniciar um ataque. */
+    /** Distância máxima para desafiar alguém (Espaço). */
     engageRange: number;
-    /** Distância máxima no momento do impacto. */
+    /** Distância máxima no momento do PÔ! (quem fugiu para longe escapa). */
     hitRange: number;
+    /** Do desafio até o PÔ! (o JO… KEN… da barra). */
     windupMs: number;
-    /** Tempo mínimo garantido a quem responde formando um duelo. */
-    minResponseMs: number;
-    /** Abaixo deste tempo restante não se forma mais duelo. */
-    responseCutoffMs: number;
-    /** Confirmar cedo multiplica o tempo restante por este fator (ataque simples). */
-    earlyLockSpeedup: number;
-    minAfterLockMs: number;
     damage: number;
   };
+  /**
+   * Barra do Jo-Ken-Pô (v0.11, malandragem). T = PÔ!.
+   * antes de T − greenBeforeMs: CEDO (vale, mas o outro já vê o seu símbolo)
+   * T ± green: PERFEITO (golpe final) · até T + greenAfterMs + redMs: ROUBOU (pego, apanha) · depois: não botou nada.
+   */
   qte: {
-    /** Janela visual abre em T - leadMs. Confirmar antes disso = "confirmar cedo". */
-    leadMs: number;
-    perfectMs: number;
-    /** Ainda vale confirmar até T + lateMs; a troca se resolve nesse instante. */
-    lateMs: number;
-    /** Recuo máximo aceito no carimbo de tempo de uma confirmação. */
+    greenBeforeMs: number;
+    greenAfterMs: number;
+    redMs: number;
+    /** Recuo máximo aceito no carimbo de tempo de quem apertou (compensa a rede; pequeno para não dar brecha). */
     maxRewindMs: number;
   };
   costs: {
-    swap: number;
-    cancel: number;
     dash: number;
-    /** Trocas de símbolo por ação. */
-    maxSwaps: number;
   };
   timings: {
     afterResolveMs: number;
     whiffMs: number;
-    cancelMs: number;
     hitstunMs: number;
     softenedHitstunMs: number;
     punishedHitstunMs: number;
@@ -179,31 +171,26 @@ export const DEFAULT_CONFIG: GameConfig = {
     focusRegen: 9,
   },
   attack: {
-    engageRange: 250,
-    hitRange: 175,
+    // Desafio só de perto; o PÔ! ainda pega um pouco além (quem quer fugir precisa da investida).
+    engageRange: 190,
+    hitRange: 215,
     windupMs: 1500,
-    minResponseMs: 700,
-    responseCutoffMs: 300,
-    earlyLockSpeedup: 0.7,
-    minAfterLockMs: 400,
     damage: 1,
   },
   qte: {
-    leadMs: 650,
-    perfectMs: 100,
-    lateMs: 220,
-    maxRewindMs: 200,
+    // Verde de 260 ms: dá para ler quem botou CEDO; ler quem botou no começo do verde exige reflexo de malandro.
+    greenBeforeMs: 130,
+    greenAfterMs: 130,
+    // Vermelho logo depois: quem esperou demais para ver o do outro é pego roubando.
+    redMs: 300,
+    maxRewindMs: 120,
   },
   costs: {
-    swap: 20,
-    cancel: 15,
     dash: 50,
-    maxSwaps: 2,
   },
   timings: {
     afterResolveMs: 550,
     whiffMs: 900,
-    cancelMs: 700,
     hitstunMs: 700,
     softenedHitstunMs: 450,
     punishedHitstunMs: 950,

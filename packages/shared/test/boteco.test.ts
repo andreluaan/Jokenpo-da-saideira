@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GameSimulation, makeConfig, type ExchangeEvent, type GameConfig, type GameEvent } from '../src';
+import { GameSimulation, makeConfig, qteEnd, type ExchangeEvent, type GameConfig, type GameEvent } from '../src';
 
 // Eventos automáticos desligados: cada teste liga o que precisa à mão.
 const base = makeConfig({ match: { countdownMs: 0 }, barEvents: { enabled: false } });
@@ -21,11 +21,13 @@ function advanceTo(sim: GameSimulation, t: number, events: GameEvent[] = []): Ga
   return events;
 }
 
-/** A ataca B (indefeso) com `symbol`, confirmando cedo (BOM) → golpe final. */
+/** A desafia B e bota `symbol` no verde; B não bota nada → golpe final de A. */
 function finisher(sim: GameSimulation, symbol: 'rock' | 'paper' | 'scissors'): GameEvent[] {
-  sim.applyInput('A', { type: 'symbol', symbol, targetId: 'B' });
-  sim.applyInput('A', { type: 'commit' });
-  return advanceTo(sim, sim.debugPlayer('A').attack!.impactAt + base.qte.lateMs + 1);
+  sim.applyInput('A', { type: 'challenge', targetId: 'B' });
+  const T = sim.debugPlayer('A').attack!.impactAt;
+  const ev = advanceTo(sim, T);
+  sim.applyInput('A', { type: 'symbol', symbol, at: T });
+  return advanceTo(sim, qteEnd(T, base.qte) + 20, ev);
 }
 
 const view = (sim: GameSimulation, id: string) => sim.snapshotFor(null).players.find((p) => p.id === id)!;

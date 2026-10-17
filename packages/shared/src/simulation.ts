@@ -2,7 +2,7 @@ import { DEFAULT_CONFIG, type GameConfig } from './config';
 import { clamp, clampInArena, dist, distToObstacle, insideObstacle, lineBlocked, normalize, obstacleCenter, pushOutOfObstacle } from './geometry';
 import { makeRng } from './bot';
 import type { Obstacle } from './config';
-import { gradeLock, resolveExchange } from './rules';
+import { gradePick, qteEnd, resolveExchange } from './rules';
 import { CHARACTER_IDS } from './types';
 import type {
   BarEventKind,
@@ -29,14 +29,17 @@ export interface PlayerSetup {
   character?: CharacterId;
 }
 
+/** Lado de um jogador num duelo (os dois duelistas têm um, apontando um para o outro). */
 interface Attack {
-  symbol: Rps;
+  /** Adversário do duelo. */
   targetId: string;
+  /** Quem chamou (Espaço). */
+  challenger: boolean;
   startedAt: number;
+  /** PÔ! (centro da faixa verde). */
   impactAt: number;
-  lockedAt: number | null;
-  swaps: number;
-  clashWith: string | null;
+  symbol: Rps | null;
+  pickedAt: number | null;
 }
 
 interface Player {
@@ -214,12 +217,10 @@ export class GameSimulation {
     if (this.phase !== 'playing' || !p.alive) return this.deny(p, 'phase');
 
     switch (input.type) {
+      case 'challenge':
+        return this.challenge(p, input.targetId);
       case 'symbol':
-        return p.attack ? this.swap(p, input.symbol) : this.startAttack(p, input.symbol, input.targetId);
-      case 'commit':
-        return this.commit(p, input.at);
-      case 'cancel':
-        return this.cancel(p);
+        return this.pick(p, input.symbol, input.at);
       case 'dash':
         return this.dash(p, input.x, input.y);
       case 'drink':
@@ -227,76 +228,42 @@ export class GameSimulation {
     }
   }
 
-  private startAttack(p: Player, symbol: Rps, targetId: string | undefined): void {
-    if (!isRps(symbol)) return;
+  /** Espaço: chama o alvo para um Jo-Ken-Pô. Os dois entram no duelo; ninguém mais mexe com eles até acabar. */
+  private challenge(p: Player, targetId: string | undefined): void {
     const now = this.now;
-    if (now < p.busyUntil || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
+    if (p.attack) return this.deny(p, 'locked');
+    if (!this.free(p)) return this.deny(p, 'busy');
     const t = targetId ? this.byId.get(targetId) : undefined;
     if (!t || t === p || !t.alive) return this.deny(p, 'target');
-
-    const respondingTo = t.attack && t.attack.targetId === p.id ? t.attack : null;
-    const range = this.config.attack.engageRange + (respondingTo ? 60 : 0);
-    if (dist(p.x, p.y, t.x, t.y) > range) return this.deny(p, 'range');
-
-    const attack: Attack = {
-      symbol,
-      targetId: t.id,
-      startedAt: now,
-      impactAt: now + this.config.attack.windupMs,
-      lockedAt: null,
-      swaps: 0,
-      clashWith: null,
-    };
-    p.attack = attack;
-
-    if (respondingTo && respondingTo.impactAt - now >= this.config.attack.responseCutoffMs) {
-      const T = Math.max(respondingTo.impactAt, now + this.config.attack.minResponseMs);
-      respondingTo.impactAt = T;
-      respondingTo.clashWith = p.id;
-      attack.impactAt = T;
-      attack.clashWith = t.id;
-      this.emit({ type: 'duel', at: now, a: t.id, b: p.id, impactAt: T });
-    } else {
-      this.emit({ type: 'attackStart', at: now, attackerId: p.id, targetId: t.id, impactAt: attack.impactAt });
-    }
+    if (t.attack) return this.deny(p, 'engaged');
+    if (now < t.graceUntil) return this.deny(p, 'grace');
+    if (dist(p.x, p.y, t.x, t.y) > this.config.attack.engageRange) return this.deny(p, 'range');
+    const impactAt = now + this.config.attack.windupMs;
+    p.attack = { targetId: t.id, challenger: true, startedAt: now, impactAt, symbol: null, pickedAt: null };
+    t.attack = { targetId: p.id, challenger: false, startedAt: now, impactAt, symbol: null, pickedAt: null };
+    // Quem foi chamado larga o que estava fazendo (cerveja derrama, freezer fica aberto).
+    this.spill(t);
+    this.interruptOpening(t);
+    this.emit({ type: 'duel', at: now, a: p.id, b: t.id, impactAt });
   }
 
-  private swap(p: Player, symbol: Rps): void {
-    const atk = p.attack!;
-    if (!isRps(symbol) || symbol === atk.symbol) return;
-    if (atk.lockedAt !== null) return this.deny(p, 'locked');
-    if (atk.swaps >= this.config.costs.maxSwaps) return this.deny(p, 'limit');
-    if (p.focus < this.config.costs.swap) return this.deny(p, 'focus');
-    p.focus -= this.config.costs.swap;
-    atk.swaps++;
+  /** Livre para chamar um duelo (sem atordoamento, investida, bebida ou freezer em andamento). */
+  private free(p: Player): boolean {
+    const now = this.now;
+    return now >= p.busyUntil && now >= p.stunUntil && now >= p.dashUntil && now >= p.drinkingUntil && now >= p.openingUntil;
+  }
+
+  /** Bota o símbolo (uma vez por duelo). Aparece na hora para todo mundo: quem bota cedo pode ser lido. */
+  private pick(p: Player, symbol: Rps, at: number | undefined): void {
+    if (!isRps(symbol)) return;
+    const atk = p.attack;
+    if (!atk) return this.deny(p, 'noduel');
+    if (atk.symbol !== null) return this.deny(p, 'locked');
+    const { qte } = this.config;
+    const pressedAt = clamp(Number.isFinite(at) ? (at as number) : this.now, Math.max(atk.startedAt, this.now - qte.maxRewindMs), this.now);
     atk.symbol = symbol;
-    this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'swap' });
-  }
-
-  private cancel(p: Player): void {
-    const atk = p.attack;
-    if (!atk) return;
-    if (atk.lockedAt !== null) return this.deny(p, 'locked');
-    if (p.focus < this.config.costs.cancel) return this.deny(p, 'focus');
-    p.focus -= this.config.costs.cancel;
-    this.consume(p, this.config.timings.cancelMs);
-    this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'cancel' });
-  }
-
-  /** Última Palavra: trava a mão. */
-  private commit(p: Player, at: number | undefined): void {
-    const atk = p.attack;
-    if (!atk) return;
-    if (atk.lockedAt !== null) return;
-    const { qte, attack } = this.config;
-    const pressedAt = clamp(Number.isFinite(at) ? (at as number) : this.now, this.now - qte.maxRewindMs, this.now + 34);
-    atk.lockedAt = pressedAt;
-    this.emit({ type: 'signal', at: this.now, playerId: p.id, kind: 'lock' });
-    // Confirmar cedo num ataque simples acelera o impacto.
-    if (!atk.clashWith && pressedAt < atk.impactAt - qte.leadMs) {
-      const remaining = atk.impactAt - this.now;
-      atk.impactAt = this.now + Math.max(attack.minAfterLockMs, remaining * attack.earlyLockSpeedup);
-    }
+    atk.pickedAt = pressedAt;
+    this.emit({ type: 'pick', at: this.now, playerId: p.id, symbol, grade: gradePick(pressedAt, atk.impactAt, qte) });
   }
 
   /**
@@ -335,7 +302,8 @@ export class GameSimulation {
 
   private dash(p: Player, x?: number, y?: number): void {
     const now = this.now;
-    if (p.attack) return this.deny(p, 'busy');
+    // No duelo, dá para fugir com a investida enquanto não botou o símbolo (longe demais no PÔ! = escapou).
+    if (p.attack?.symbol) return this.deny(p, 'locked');
     if (now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
     if (now < p.dashReadyAt) return this.deny(p, 'cooldown');
     if (p.focus < this.config.costs.dash) return this.deny(p, 'focus');
@@ -475,43 +443,44 @@ export class GameSimulation {
     }
   }
 
+  /** Duelos prontos: os dois já botaram (e já passou do PÔ!) ou a barra acabou. Resolvido pelo lado de quem chamou. */
   private resolveDue(): void {
-    const late = this.config.qte.lateMs;
+    const { qte } = this.config;
     const due = this.players
-      .filter((p) => p.alive && p.attack && this.now >= p.attack.impactAt + late)
+      .filter((p) => p.alive && p.attack?.challenger)
+      .filter((p) => {
+        const atk = p.attack!;
+        const other = this.byId.get(atk.targetId)?.attack;
+        const both = atk.symbol !== null && other?.symbol != null;
+        return this.now >= (both ? atk.impactAt : qteEnd(atk.impactAt, qte));
+      })
       .sort((a, b) => a.attack!.impactAt - b.attack!.impactAt || (a.id < b.id ? -1 : 1));
-    for (const x of due) {
-      if (!x.alive || !x.attack || this.now < x.attack.impactAt + late) continue;
-      this.resolveAttack(x);
-    }
+    for (const x of due) if (x.alive && x.attack?.challenger) this.resolveAttack(x);
   }
 
   private resolveAttack(x: Player): void {
     const atk = x.attack!;
     const y = this.byId.get(atk.targetId)!;
+    const yAtk = y.attack && y.attack.targetId === x.id ? y.attack : null;
     const T = atk.impactAt;
     const { timings, knockback, qte } = this.config;
-    const duel = y.alive && atk.clashWith === y.id && y.attack?.clashWith === x.id;
 
-    if (!y.alive) return this.whiff([x], y, 'gone');
-    if (dist(x.x, x.y, y.x, y.y) > this.config.attack.hitRange) return this.whiff(duel ? [x, y] : [x], y, 'range');
-    if (lineBlocked(x.x, x.y, y.x, y.y, this.active)) {
-      return this.whiff(duel ? [x, y] : [x], y, 'blocked');
-    }
+    if (!y.alive || !yAtk) return this.whiff([x], y, 'gone');
+    if (dist(x.x, x.y, y.x, y.y) > this.config.attack.hitRange) return this.whiff([x, y], y, 'range');
+    if (lineBlocked(x.x, x.y, y.x, y.y, this.active)) return this.whiff([x, y], y, 'blocked');
 
-    const aGrade = gradeLock(atk.lockedAt, T, qte);
-    const yAtk = y.attack;
-    const bGrade = yAtk ? gradeLock(yAtk.lockedAt, T, qte) : null;
-    const r = resolveExchange({ symbol: atk.symbol, grade: aGrade }, { symbol: yAtk?.symbol ?? null, grade: bGrade });
+    const aGrade = gradePick(atk.pickedAt, T, qte);
+    const bGrade = gradePick(yAtk.pickedAt, T, qte);
+    const r = resolveExchange({ symbol: atk.symbol, grade: aGrade }, { symbol: yAtk.symbol, grade: bGrade });
 
     const ev: ExchangeEvent = {
       type: 'exchange',
       at: this.now,
       attackerId: x.id,
       defenderId: y.id,
-      duel,
+      duel: true,
       attackerSymbol: atk.symbol,
-      defenderSymbol: yAtk?.symbol ?? null,
+      defenderSymbol: yAtk.symbol,
       attackerGrade: aGrade,
       defenderGrade: bGrade,
       kind: r.kind,
@@ -525,19 +494,19 @@ export class GameSimulation {
     };
     this.emit(ev);
 
-    // O ataque de X sempre termina aqui; o de Y só se for duelo (defensor que vence mantém a ação).
-    const recovery = r.kind === 'fumble' || r.kind === 'both-fumble' ? timings.whiffMs : timings.afterResolveMs;
+    const recovery = r.kind === 'both-fumble' ? timings.whiffMs : timings.afterResolveMs;
     this.consume(x, recovery);
-    if (duel) this.consume(y, recovery);
+    this.consume(y, recovery);
 
     switch (r.kind) {
+      case 'caught':
       case 'defenseless':
       case 'win': {
         const winner = r.winner === 'a' ? x : y;
         const loser = winner === x ? y : x;
         ev.winnerId = winner.id;
         if (r.strong) winner.focus = Math.min(this.config.player.maxFocus, winner.focus + this.config.perfectFocusBonus);
-        const fin = r.finisher ? (winner === x ? atk.symbol : yAtk!.symbol) : null;
+        const fin = r.finisher ? (winner === x ? atk.symbol : yAtk.symbol) : null;
         if (fin) {
           // Golpe final do símbolo: Pedra prende, Tesoura corta e deixa lento, Papel arremessa longe.
           const f = this.config.finisher[fin];
@@ -550,8 +519,8 @@ export class GameSimulation {
             if (fin === 'scissors') loser.slowUntil = this.now + this.config.finisher.scissors.stunMs + this.config.finisher.scissors.slowMs;
           }
         } else {
-          // Venceu no símbolo mas falhou o QTE: golpe simples (rasteira).
-          const stun = r.softened ? timings.softenedHitstunMs : r.punished ? timings.punishedHitstunMs : timings.hitstunMs;
+          // Golpe simples (rasteira): venceu botando cedo, o outro não botou, ou o outro foi pego roubando.
+          const stun = r.softened ? timings.softenedHitstunMs : r.punished || r.kind === 'caught' ? timings.punishedHitstunMs : timings.hitstunMs;
           if (this.hit(loser, winner, knockback.normal, stun)) ev.protectedId = loser.id;
           else ev.damagedId = loser.id;
         }
@@ -560,15 +529,18 @@ export class GameSimulation {
       case 'tie-stagger': {
         const s = r.staggered === 'a' ? x : y;
         ev.staggeredId = s.id;
-        this.consume(s, 0);
         s.stunUntil = Math.max(s.stunUntil, this.now + timings.staggerMs);
         this.pushApart(x, y, knockback.clank);
         break;
       }
+      case 'both-caught':
+        // O Zé viu os dois roubando: anula e os dois cambaleiam.
+        for (const s of [x, y]) s.stunUntil = Math.max(s.stunUntil, this.now + timings.staggerMs);
+        this.pushApart(x, y, knockback.clank);
+        break;
       case 'clank':
         this.pushApart(x, y, knockback.clank);
         break;
-      case 'fumble':
       case 'both-fumble':
         break;
     }
@@ -608,12 +580,12 @@ export class GameSimulation {
     this.emit({ type: 'whiff', at: this.now, playerIds: players.map((p) => p.id), targetId: target.id, reason });
   }
 
-  /** Encerra a ação de p (desfazendo o duelo do parceiro, se houver) e aplica recuperação. */
+  /** Encerra o duelo de p (o adversário também sai dele) e aplica recuperação. */
   private consume(p: Player, recoveryMs: number): void {
     const atk = p.attack;
-    if (atk?.clashWith) {
-      const partner = this.byId.get(atk.clashWith);
-      if (partner?.attack?.clashWith === p.id) partner.attack.clashWith = null;
+    if (atk) {
+      const partner = this.byId.get(atk.targetId);
+      if (partner?.attack?.targetId === p.id) partner.attack = null;
     }
     p.attack = null;
     if (recoveryMs > 0) p.busyUntil = Math.max(p.busyUntil, this.now + recoveryMs);
@@ -854,11 +826,11 @@ export class GameSimulation {
 
   // ------------------------------------------------------------------ visão
 
-  /** Estado filtrado: só o próprio jogador vê o próprio símbolo. */
-  snapshotFor(viewerId: string | null): Snapshot {
+  /** Estado de cada jogador. O símbolo é público assim que botado (malandragem: quem bota por último vê o do outro). */
+  // (O parâmetro fica para a rede: hoje nada é escondido de ninguém.)
+  snapshotFor(_viewerId: string | null): Snapshot {
     const now = this.now;
     const players: PlayerView[] = this.players.map((p) => {
-      const self = p.id === viewerId;
       return {
         id: p.id,
         name: p.name,
@@ -874,17 +846,17 @@ export class GameSimulation {
         focus: p.focus,
         alive: p.alive,
         holding: !!p.attack,
-        locked: p.attack?.lockedAt != null,
-        symbol: self && p.attack ? p.attack.symbol : null,
+        locked: p.attack?.symbol != null,
+        symbol: p.attack?.symbol ?? null,
+        pickedAt: p.attack?.pickedAt ?? null,
         targetId: p.attack?.targetId ?? null,
         impactAt: p.attack?.impactAt ?? null,
-        clashWith: p.attack?.clashWith ?? null,
+        challenger: !!p.attack?.challenger,
         stunned: now < p.stunUntil,
         busy: now < p.busyUntil,
         graceUntil: p.graceUntil,
         dashReadyAt: p.dashReadyAt,
         drinkingUntil: now < p.drinkingUntil ? p.drinkingUntil : 0,
-        swapsLeft: self && p.attack ? this.config.costs.maxSwaps - p.attack.swaps : null,
         slowed: now < p.slowUntil,
         shielded: p.shield,
         openingUntil: now < p.openingUntil ? p.openingUntil : 0,

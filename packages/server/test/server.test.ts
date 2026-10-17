@@ -114,19 +114,20 @@ describe('partida pela rede', () => {
     return r;
   }
 
-  it('snapshots chegam filtrados: ninguém vê o símbolo do outro', async () => {
+  it('o desafio não revela nada; o símbolo aparece para o outro assim que é botado', async () => {
     const { a, b, ra, rb } = await started();
     const snaps: Snapshot[] = [];
     b.on('snap', (s) => snaps.push(s));
-    // Coloca os dois perto e A ataca B.
+    // Coloca os dois perto e A desafia B.
     const room = server.rooms.get(ra.code)!;
     room.sim!.debugPlace(ra.playerId, 800, 600);
     room.sim!.debugPlace(rb.playerId, 900, 600);
-    a.emit('input', { type: 'symbol', symbol: 'scissors', targetId: rb.playerId });
+    a.emit('input', { type: 'challenge', targetId: rb.playerId });
     await until(() => snaps.some((s) => s.players.find((p) => p.id === ra.playerId)?.holding));
     const seen = snaps.find((s) => s.players.find((p) => p.id === ra.playerId)?.holding)!;
     expect(seen.players.find((p) => p.id === ra.playerId)!.symbol).toBeNull();
-    expect(JSON.stringify(seen)).not.toContain('scissors');
+    a.emit('input', { type: 'symbol', symbol: 'scissors' });
+    await until(() => snaps.some((s) => s.players.find((p) => p.id === ra.playerId)?.symbol === 'scissors'));
   });
 
   it('movimento enviado pelo cliente muda a posição no servidor', async () => {
@@ -163,8 +164,8 @@ describe('partida pela rede', () => {
     room.sim!.debugPlace(ra.playerId, 800, 600);
     room.sim!.debugPlace(rb.playerId, 900, 600);
     const end = once(a, 'match:end');
-    a.emit('input', { type: 'symbol', symbol: 'rock', targetId: rb.playerId });
-    a.emit('input', { type: 'commit' });
+    a.emit('input', { type: 'challenge', targetId: rb.playerId });
+    a.emit('input', { type: 'symbol', symbol: 'rock' });
     expect(await end).toBe(ra.playerId);
     await until(() => room.phase === 'lobby');
   });

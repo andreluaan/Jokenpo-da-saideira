@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, beats, gradeLock, resolveExchange } from '../src';
+import { DEFAULT_CONFIG, beats, gradePick, qteEnd, resolveExchange, type Grade, type Rps } from '../src';
 
 const qte = DEFAULT_CONFIG.qte;
 
@@ -13,85 +13,63 @@ describe('relação clássica', () => {
   });
 });
 
-describe('nota do QTE', () => {
+describe('barra do Jo-Ken-Pô (malandragem)', () => {
   const T = 10_000;
-  it('perfeito dentro de ±perfectMs', () => {
-    expect(gradeLock(T, T, qte)).toBe('perfect');
-    expect(gradeLock(T - qte.perfectMs, T, qte)).toBe('perfect');
-    expect(gradeLock(T + qte.perfectMs, T, qte)).toBe('perfect');
+  it('antes do verde = CEDO; no verde = PERFEITO', () => {
+    expect(gradePick(T - qte.greenBeforeMs - 1, T, qte)).toBe('good');
+    expect(gradePick(T - 1000, T, qte)).toBe('good');
+    expect(gradePick(T - qte.greenBeforeMs, T, qte)).toBe('perfect');
+    expect(gradePick(T, T, qte)).toBe('perfect');
+    expect(gradePick(T + qte.greenAfterMs, T, qte)).toBe('perfect');
   });
-  it('bom quando confirma cedo ou fora do centro da janela', () => {
-    expect(gradeLock(T - 3000, T, qte)).toBe('good');
-    expect(gradeLock(T - qte.perfectMs - 1, T, qte)).toBe('good');
-    expect(gradeLock(T + qte.lateMs, T, qte)).toBe('good');
-  });
-  it('falha quando não confirma ou confirma tarde demais', () => {
-    expect(gradeLock(null, T, qte)).toBe('fail');
-    expect(gradeLock(T + qte.lateMs + 1, T, qte)).toBe('fail');
+
+  it('depois do verde = ROUBOU; sem apertar = NADA', () => {
+    expect(gradePick(T + qte.greenAfterMs + 1, T, qte)).toBe('caught');
+    expect(gradePick(qteEnd(T, qte), T, qte)).toBe('caught');
+    expect(gradePick(null, T, qte)).toBe('fail');
   });
 });
 
-describe('resolução da troca', () => {
-  it('alvo sem mão perde, a menos que o atacante falhe', () => {
-    expect(resolveExchange({ symbol: 'rock', grade: 'good' }, { symbol: null, grade: null })).toMatchObject({
-      kind: 'defenseless',
-      winner: 'a',
-    });
-    expect(resolveExchange({ symbol: 'rock', grade: 'fail' }, { symbol: null, grade: null }).kind).toBe('fumble');
+const side = (symbol: Rps | null, grade: Grade) => ({ symbol, grade });
+
+describe('resolução do duelo', () => {
+  it('quem rouba perde e apanha, mesmo com o símbolo que ganharia', () => {
+    const r = resolveExchange(side('rock', 'caught'), side('scissors', 'perfect'));
+    expect(r).toMatchObject({ kind: 'caught', winner: 'b', finisher: false });
+    expect(resolveExchange(side('paper', 'good'), side('scissors', 'caught')).winner).toBe('a');
+    // Roubou contra quem nem botou: ainda é pego.
+    expect(resolveExchange(side(null, 'fail'), side('rock', 'caught')).winner).toBe('a');
   });
 
-  it('QTE perfeito NUNCA reverte desvantagem de símbolo', () => {
-    const r = resolveExchange({ symbol: 'scissors', grade: 'perfect' }, { symbol: 'rock', grade: 'good' });
-    expect(r.kind).toBe('win');
-    expect(r.winner).toBe('b');
-    expect(r.softened).toBe(true);
+  it('os dois roubaram: o Zé anula', () => {
+    expect(resolveExchange(side('rock', 'caught'), side('paper', 'caught'))).toMatchObject({ kind: 'both-caught', winner: null });
   });
 
-  it('vencedor por símbolo que falha o QTE ainda vence, mas sem golpe final', () => {
-    const r = resolveExchange({ symbol: 'paper', grade: 'fail' }, { symbol: 'rock', grade: 'good' });
-    expect(r).toMatchObject({ kind: 'win', winner: 'a', finisher: false });
+  it('quem não bota nada apanha; golpe final só se o outro botou no verde', () => {
+    expect(resolveExchange(side('rock', 'perfect'), side(null, 'fail'))).toMatchObject({ kind: 'defenseless', winner: 'a', finisher: true });
+    expect(resolveExchange(side(null, 'fail'), side('rock', 'good'))).toMatchObject({ kind: 'defenseless', winner: 'b', finisher: false });
+    expect(resolveExchange(side(null, 'fail'), side(null, 'fail')).kind).toBe('both-fumble');
   });
 
-  it('vencedor que acerta o QTE (Bom ou Perfeito) faz o golpe final', () => {
-    expect(resolveExchange({ symbol: 'paper', grade: 'good' }, { symbol: 'rock', grade: 'good' }).finisher).toBe(true);
-    expect(resolveExchange({ symbol: 'paper', grade: 'perfect' }, { symbol: 'rock', grade: 'fail' }).finisher).toBe(true);
+  it('os dois botaram: o símbolo decide; verde = golpe final, cedo = golpe simples', () => {
+    expect(resolveExchange(side('rock', 'perfect'), side('scissors', 'good'))).toMatchObject({ kind: 'win', winner: 'a', finisher: true, strong: true });
+    expect(resolveExchange(side('rock', 'good'), side('scissors', 'perfect'))).toMatchObject({ kind: 'win', winner: 'a', finisher: false, softened: true });
+    // O verde NUNCA vira um símbolo perdedor.
+    expect(resolveExchange(side('scissors', 'perfect'), side('rock', 'good')).winner).toBe('b');
   });
 
-
-  it('perdedor que falha continua perdendo, com punição maior', () => {
-    const r = resolveExchange({ symbol: 'paper', grade: 'good' }, { symbol: 'rock', grade: 'fail' });
-    expect(r).toMatchObject({ kind: 'win', winner: 'a', punished: true });
+  it('empate: mesma nota = choque; quem botou cedo cambaleia diante do verde', () => {
+    expect(resolveExchange(side('rock', 'perfect'), side('rock', 'perfect')).kind).toBe('clank');
+    expect(resolveExchange(side('rock', 'good'), side('rock', 'good')).kind).toBe('clank');
+    expect(resolveExchange(side('rock', 'good'), side('rock', 'perfect'))).toMatchObject({ kind: 'tie-stagger', staggered: 'a' });
   });
 
-  it('vencedor perfeito ganha empurrão forte', () => {
-    expect(resolveExchange({ symbol: 'rock', grade: 'perfect' }, { symbol: 'scissors', grade: 'good' }).strong).toBe(true);
-  });
-
-  it('empate: choque, ou cambaleio para o lado com execução pior', () => {
-    expect(resolveExchange({ symbol: 'rock', grade: 'good' }, { symbol: 'rock', grade: 'good' }).kind).toBe('clank');
-    expect(resolveExchange({ symbol: 'rock', grade: 'perfect' }, { symbol: 'rock', grade: 'perfect' }).kind).toBe('clank');
-    expect(resolveExchange({ symbol: 'rock', grade: 'perfect' }, { symbol: 'rock', grade: 'good' })).toMatchObject({
-      kind: 'tie-stagger',
-      staggered: 'b',
-    });
-    expect(resolveExchange({ symbol: 'rock', grade: 'fail' }, { symbol: 'rock', grade: 'perfect' })).toMatchObject({
-      kind: 'tie-stagger',
-      staggered: 'a',
-    });
-  });
-
-  it('ambos falham: nada acontece', () => {
-    expect(resolveExchange({ symbol: 'rock', grade: 'fail' }, { symbol: 'paper', grade: 'fail' }).kind).toBe('both-fumble');
-  });
-
-  it('todas as 9 combinações com execução igual seguem a tabela clássica', () => {
-    const syms = ['rock', 'paper', 'scissors'] as const;
-    for (const a of syms) {
-      for (const b of syms) {
-        const r = resolveExchange({ symbol: a, grade: 'good' }, { symbol: b, grade: 'good' });
-        if (a === b) expect(r.kind).toBe('clank');
-        else expect(r.winner).toBe(beats(a, b) ? 'a' : 'b');
+  it('todas as 9 combinações com a mesma nota seguem a tabela clássica', () => {
+    const all: Rps[] = ['rock', 'paper', 'scissors'];
+    for (const a of all)
+      for (const b of all) {
+        const r = resolveExchange(side(a, 'perfect'), side(b, 'perfect'));
+        expect(r.winner).toBe(a === b ? null : beats(a, b) ? 'a' : 'b');
       }
-    }
   });
 });

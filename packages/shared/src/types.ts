@@ -5,18 +5,22 @@ export const RPS_LIST: readonly Rps[] = ['rock', 'paper', 'scissors'];
 export type CharacterId = 'fera' | 'principe' | 'panca' | 'sonolento';
 export const CHARACTER_IDS: readonly CharacterId[] = ['fera', 'principe', 'panca', 'sonolento'];
 
-export type Grade = 'perfect' | 'good' | 'fail';
+/**
+ * Nota do símbolo no Jo-Ken-Pô (v0.11, "malandragem"):
+ * `good` = botou cedo (antes do verde: o outro vê e pode virar) · `perfect` = no verde (PÔ!)
+ * · `caught` = no vermelho (pego roubando: apanha) · `fail` = não botou nada (apanha de quem botou).
+ */
+export type Grade = 'perfect' | 'good' | 'caught' | 'fail';
 export type Phase = 'countdown' | 'playing' | 'ended';
 
 // ---------- Entradas (intenções do cliente; nunca resultados) ----------
 
 export type PlayerInput =
   | { type: 'move'; x: number; y: number }
-  /** Sem mão: inicia ataque contra targetId. Com mão destravada: troca de símbolo. */
-  | { type: 'symbol'; symbol: Rps; targetId?: string }
-  /** Última Palavra: trava a mão. `at` = instante (tempo da simulação) em que o jogador apertou. */
-  | { type: 'commit'; at?: number }
-  | { type: 'cancel' }
+  /** Espaço: desafia `targetId` para um Jo-Ken-Pô (1 contra 1; os dois entram no duelo). */
+  | { type: 'challenge'; targetId: string }
+  /** Durante o duelo: bota o símbolo (uma vez só, aparece na hora para todos). `at` = instante em que apertou. */
+  | { type: 'symbol'; symbol: Rps; at?: number }
   | { type: 'dash'; x?: number; y?: number }
   /** Beber a cerveja da mesa mais próxima (recupera vida). */
   | { type: 'drink' };
@@ -37,20 +41,24 @@ export interface PlayerView {
   maxHp: number;
   focus: number;
   alive: boolean;
-  /** Tem um símbolo em mãos (ataque ativo). Público. */
+  /** Está num duelo (Jo-Ken-Pô). Público. */
   holding: boolean;
+  /** Já botou o símbolo neste duelo. */
   locked: boolean;
-  /** Só preenchido na visão do próprio jogador. */
+  /** Símbolo que botou (público: quem bota aparece na hora — é aí que o malandro lê). */
   symbol: Rps | null;
+  /** Instante em que botou (para a barra e para os NPCs). */
+  pickedAt: number | null;
+  /** Adversário do duelo. */
   targetId: string | null;
+  /** Instante do PÔ! (centro da faixa verde). */
   impactAt: number | null;
-  clashWith: string | null;
+  /** Quem chamou o duelo. */
+  challenger: boolean;
   stunned: boolean;
   busy: boolean;
   graceUntil: number;
   dashReadyAt: number;
-  /** Só preenchido na visão do próprio jogador. */
-  swapsLeft: number | null;
   /** > agora enquanto está bebendo (público). */
   drinkingUntil: number;
   /** Lento por golpe final de Tesoura (público). */
@@ -118,16 +126,18 @@ export interface Snapshot {
 
 // ---------- Eventos (feedback; todos públicos) ----------
 
-export type SignalKind = 'swap' | 'lock' | 'cancel';
-export type DenyReason = 'busy' | 'range' | 'target' | 'focus' | 'locked' | 'limit' | 'phase' | 'cooldown' | 'full' | 'empty';
+export type DenyReason = 'busy' | 'range' | 'target' | 'focus' | 'locked' | 'phase' | 'cooldown' | 'full' | 'empty' | 'engaged' | 'grace' | 'noduel';
 export type WhiffReason = 'range' | 'blocked' | 'gone';
 export type ExchangeKind =
   | 'defenseless'
   | 'win'
   | 'clank'
   | 'tie-stagger'
-  | 'fumble'
-  | 'both-fumble';
+  | 'both-fumble'
+  /** Um dos dois botou no vermelho: pego roubando, apanha. */
+  | 'caught'
+  /** Os dois roubaram: o Zé anula e os dois cambaleiam. */
+  | 'both-caught';
 
 export interface ExchangeEvent {
   type: 'exchange';
@@ -135,10 +145,11 @@ export interface ExchangeEvent {
   attackerId: string;
   defenderId: string;
   duel: boolean;
-  attackerSymbol: Rps;
+  /** null = não botou nada (ou o símbolo não valeu por ter roubado: veja a nota). */
+  attackerSymbol: Rps | null;
   defenderSymbol: Rps | null;
   attackerGrade: Grade;
-  defenderGrade: Grade | null;
+  defenderGrade: Grade;
   kind: ExchangeKind;
   winnerId: string | null;
   damagedId: string | null;
@@ -151,9 +162,9 @@ export interface ExchangeEvent {
 }
 
 export type GameEvent =
-  | { type: 'signal'; at: number; playerId: string; kind: SignalKind }
-  | { type: 'attackStart'; at: number; attackerId: string; targetId: string; impactAt: number }
   | { type: 'duel'; at: number; a: string; b: string; impactAt: number }
+  /** Alguém botou o símbolo (público; a nota já sai aqui: cedo/verde/vermelho). */
+  | { type: 'pick'; at: number; playerId: string; symbol: Rps; grade: Grade }
   | { type: 'denied'; at: number; playerId: string; reason: DenyReason }
   | { type: 'whiff'; at: number; playerIds: string[]; targetId: string; reason: WhiffReason }
   | ExchangeEvent

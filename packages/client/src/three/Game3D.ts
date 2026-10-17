@@ -4,7 +4,7 @@ import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { DENY_TEXT, WHIFF_TEXT, describeExchange } from '../ui/describe';
 import { S, toWorld } from './assets';
-import { buildArena3D, type ArenaHandles } from './arena3d';
+import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
 import { signTexture, softCircle } from './textures';
 
@@ -149,12 +149,14 @@ export class Game3D {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     const cfg = this.conn.config;
-    const halfW = cfg.arena.rx * S + 1.2;
-    const halfH = cfg.arena.ry * S + 1.4;
+    // Margem curta em volta da cerca: quanto mais perto, maiores os personagens na tela.
+    const halfW = cfg.arena.rx * S + 0.7;
+    const halfH = cfg.arena.ry * S + 1.0;
     const t = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-    const dist = Math.max(halfW / (t * this.camera.aspect), (halfH * 1.25) / t, 10);
-    this.scene.fog = new THREE.Fog(0xd08a6b, dist + 5, dist + 30);
-    const dir = new THREE.Vector3(0, 1, 0.78).normalize();
+    const dist = Math.max(halfW / (t * this.camera.aspect), (halfH * 1.15) / t, 10);
+    this.scene.fog = new THREE.Fog(SKY, dist + 5, dist + 30);
+    // Câmera um pouco mais deitada (~46°): vê mais do corpo e do rosto, menos do topo da cabeça.
+    const dir = new THREE.Vector3(0, 1, 0.95).normalize();
     this.camBase.copy(this.camTarget).addScaledVector(dir, dist);
     this.camera.position.copy(this.camBase);
     this.camera.lookAt(this.camTarget);

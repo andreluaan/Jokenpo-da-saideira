@@ -51,6 +51,10 @@ export interface ArenaHandles {
   update(dt: number, now: number): void;
 }
 
+/** Cor do chão de fora; a névoa e o fundo usam a mesma cor para o horizonte sumir sem emenda. */
+const GROUND = 0xbf7a60;
+export const SKY = GROUND;
+
 /** Monta todo o quintal do Bar do Zé. */
 export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles {
   const rng = makeRng(20261016);
@@ -61,7 +65,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   const glows: THREE.Mesh[] = [];
 
   // --- chão ---
-  const groundTex = speckleTexture(0xcf8466, [0xc77c60, 0xd8906f, 0xbf7559], 2200, 512, 3, 0.18, 2.4);
+  // Chão de fora um tom mais escuro e menos saturado que a arena: o olho vai direto para o ringue.
+  const groundTex = speckleTexture(GROUND, [0xb5735b, 0xc98a6f, 0xa86a52], 2200, 512, 3, 0.2, 2.4);
   groundTex.repeat.set(10, 10);
   const ground = mesh(new THREE.PlaneGeometry(70, 50), std(0xffffff, { map: groundTex, flatShading: false }));
   ground.rotation.x = -Math.PI / 2;
@@ -81,8 +86,9 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.add(flat(field, std(0xffffff, { map: fieldTex, flatShading: false }), 0.004));
 
   // Terra revirada, terra da arena e a borda branca.
-  scene.add(flat(ellipseShape(ax + 0.75, az + 0.7), std(0x9a6f62, { transparent: true, opacity: 0.55 }), 0.006));
-  const dirtTex = speckleTexture(0x8d6b6c, [0x7c5e62, 0x9a7a7c, 0x86666a], 2400, 512, 5, 0.22, 3);
+  scene.add(flat(ellipseShape(ax + 0.75, az + 0.7), std(0xa0705c, { transparent: true, opacity: 0.6 }), 0.006));
+  // Terra batida clara: personagens (com contorno escuro) se destacam bem sobre ela.
+  const dirtTex = speckleTexture(0xc89f83, [0xbb9073, 0xd4b097, 0xb2856a], 2400, 512, 5, 0.25, 3);
   dirtTex.repeat.set(0.35, 0.35);
   scene.add(flat(ellipseShape(ax + 0.16, az + 0.16), std(0xffffff, { map: dirtTex, flatShading: false }), 0.01));
   scene.add(flat(ellipseShape(ax + 0.2, az + 0.2, ax + 0.06, az + 0.06), std(0xf3ece8), 0.014));
@@ -240,9 +246,9 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.add(place('furniture/trashcan', 7.2, 3.4, { height: 0.55 }));
 
   // --- luz ---
-  const hemi = new THREE.HemisphereLight(0xffe7cc, 0x8a5a4a, 1.25);
+  const hemi = new THREE.HemisphereLight(0xfff0dd, 0x7a5a52, 1.15);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffd9a6, 2.4);
+  const sun = new THREE.DirectionalLight(0xffe2bc, 2.6);
   sun.position.set(-7, 13, 6);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -259,8 +265,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   const barLight = new THREE.PointLight(0xffb36b, 6, 7, 1.6);
   barLight.position.set(-7.5, 1.6, -4.2);
   scene.add(barLight);
-  scene.fog = new THREE.Fog(0xd08a6b, 22, 40);
-  scene.background = new THREE.Color(0xd08a6b);
+  scene.fog = new THREE.Fog(SKY, 22, 40);
+  scene.background = new THREE.Color(SKY);
 
   return {
     beerSpot,

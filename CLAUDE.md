@@ -9,7 +9,9 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 - **Etapa 1 (protótipo + NPCs): feita**, mais passes de arte: visual 3D (Three.js + modelos CC0 Kenney), personagens,
   Jo-Ken-Pô/rasteira, cerveja que cura, menu em lousa com quintal 3D (turma sentada → porteira → ringue).
 - **Etapa 2 (multiplayer real): feita** — servidor Node + Socket.IO autoritativo, salas por código, lobby, reconexão (ver `docs/tech/11-multiplayer.md`).
-- **Próxima:** voltar à **arte** (pedido do usuário) e depois Etapa 3 (testes/balanceamento). Pendências em `docs/tech/10-roadmap.md`.
+- **Em andamento: passe de arte.** Feito: luz/cor (arena clara × entorno escuro) e legibilidade (contorno, câmera, escala).
+  Fila combinada: detalhes dos personagens de perto → freezer/isopor → entorno vazio → log do HUD.
+- **Depois:** Etapa 3 (testes/balanceamento). Pendências em `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.
 
 ## Comandos

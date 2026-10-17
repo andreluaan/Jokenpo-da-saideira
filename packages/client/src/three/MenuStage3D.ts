@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CHARACTER_IDS, CHARACTER_INFO, DEFAULT_CONFIG, PLAYER_COLORS, type CharacterId, type PlayerView } from '@ppt/shared';
 import { S, toWorld } from './assets';
-import { buildArena3D, type ArenaHandles } from './arena3d';
+import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D } from './character3d';
 
 export interface MenuState {
@@ -176,7 +176,7 @@ export class MenuStage3D {
     this.camera.userData.base = this.camera.position.clone();
     this.camera.userData.target = target;
     this.camera.updateProjectionMatrix();
-    this.scene.fog = new THREE.Fog(0xd08a6b, dist + 5, dist + 30);
+    this.scene.fog = new THREE.Fog(SKY, dist + 5, dist + 30);
   }
 
   private pick(e: PointerEvent): void {

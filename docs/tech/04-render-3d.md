@@ -19,7 +19,8 @@ Nada aqui altera regras: tudo lê `conn.latest()` e eventos.
 `ACESFilmicToneMapping`, sombras `PCFSoftShadowMap` (sol 2048², câmera de sombra ±13×±10), hemisfério quente + sol baixo + point lights (bar, brasas). Névoa = distância da câmera +5 / +30 (recalculada no `resize`).
 
 ## Câmera
-Perspectiva fov 36, direção fixa `(0,1,0.78)`; distância calculada no `resize()` para caber a elipse (+margem). `shake` decai nos golpes.
+Perspectiva fov 36, direção fixa `(0,1,0.95)` (~46°, mostra mais corpo/rosto que topo de cabeça); distância calculada no `resize()` para caber a elipse com margem curta (+0,7 lateral) — mais perto = personagens maiores. `shake` decai nos golpes.
+Névoa e fundo usam `SKY` (exportado de `arena3d.ts`, mesma cor do chão de fora); CSS `#menu`/`#match` usam a mesma cor.
 Menu usa `setViewOffset(W,H,-side/2,…)` para centralizar a cena à direita da barra lateral.
 
 ## Quadro (`Game3D.frame`)

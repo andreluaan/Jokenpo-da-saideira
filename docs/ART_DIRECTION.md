@@ -42,7 +42,9 @@ Quatro frequentadores **originais**, inspirados em arquétipos de anime e cartoo
 **Regras:**
 - A cor do jogador fica no **anel do chão**. A roupa é fixa de cada personagem.
 - **Pose ao segurar símbolo:** punhos juntos e fechados na frente do corpo, igual para os três símbolos. Os adereços (garrafa, caneca) somem enquanto o personagem segura um símbolo.
-- Escala visual 1,3× o raio de colisão. A cabeça ocupa cerca de 40% da altura.
+- Escala visual um pouco maior que o raio de colisão (legibilidade vem antes). A cabeça ocupa cerca de 40% da altura.
+- **Contorno escuro** em volta de todo personagem: separa o boneco do chão e dos outros em qualquer luz.
+- **Hierarquia de valores:** a arena é a área mais clara da tela; o entorno é mais escuro e menos saturado.
 
 ### 3.1 Movimento "bêbado" (inspirado em Gang Beasts)
 - **Simulação (vale para todos, autoritativa):** movimento com inércia. Acelera em 800 px/s², desacelera em 650 px/s² (escorrega ao parar) e perde o embalo ao bater na cerca.
@@ -85,9 +87,10 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 
 | Uso | Cor |
 |---|---|
-| Chão externo · sombra · luz | `#d4876a` · `#b86e58` · `#e09a7c` |
+| Chão externo · manchas | `#bf7a60` · `#b5735b` / `#c98a6f` (mais escuro que a arena) |
 | Campo seco | `#e9b949` / `#d9a43a` |
-| Terra da arena · textura | `#8b6b70` · `#775a60` |
+| Terra da arena (clara) · manchas | `#c89f83` · `#bb9073` / `#d4b097` |
+| Contorno dos personagens | `#2b1d22` (~3 px) |
 | Borda da arena | `#f3ece8` |
 | Madeira escura · clara | `#8a4f45` · `#b36a55` |
 | Folhagem | `#d9553f` / `#e8823c` |

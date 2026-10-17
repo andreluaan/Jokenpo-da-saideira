@@ -5,7 +5,7 @@ import { recolorColormap } from './textures';
 import { WobbleRig } from '../art/rig';
 
 /** Escala do personagem (o modelo da Kenney tem ~0,67 de altura). */
-export const CHAR_SCALE = 1.45;
+export const CHAR_SCALE = 1.6;
 
 type Anim =
   | 'idle'
@@ -192,6 +192,85 @@ function makeMug(): THREE.Group {
   return g;
 }
 
+/** Contorno escuro ("casco invertido"): cópia do mesh só com as faces de trás, inchada na direção das normais. */
+const OUTLINE_COLOR = 0x2b1d22;
+/** Espessura proporcional à distância da câmera → largura quase constante na tela (~3 px na partida). */
+const OUTLINE_WIDTH = 0.004;
+let outlineMat: THREE.MeshBasicMaterial | null = null;
+
+function getOutlineMat(): THREE.MeshBasicMaterial {
+  if (outlineMat) return outlineMat;
+  const m = new THREE.MeshBasicMaterial({ color: OUTLINE_COLOR, side: THREE.BackSide });
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute vec3 olNormal;\nvoid main() {').replace(
+      '#include <project_vertex>',
+      `#include <project_vertex>
+      vec3 olN = olNormal;
+      #ifdef USE_SKINNING
+        olN = (skinMatrix * vec4(olN, 0.0)).xyz;
+      #endif
+      mvPosition.xyz += normalize(normalMatrix * olN) * ${OUTLINE_WIDTH.toFixed(5)} * -mvPosition.z;
+      gl_Position = projectionMatrix * mvPosition;`,
+    );
+  };
+  return (outlineMat = m);
+}
+
+/**
+ * Normais "suavizadas" (média por posição) para o contorno: os modelos low-poly têm quinas duras,
+ * e inchar pelas normais originais abriria buracos nas quinas.
+ */
+function ensureOutlineNormals(geo: THREE.BufferGeometry): void {
+  if (geo.getAttribute('olNormal')) return;
+  const pos = geo.getAttribute('position');
+  const nor = geo.getAttribute('normal');
+  if (!pos || !nor) return;
+  const sum = new Map<string, THREE.Vector3>();
+  const key = (i: number) => `${pos.getX(i).toFixed(4)},${pos.getY(i).toFixed(4)},${pos.getZ(i).toFixed(4)}`;
+  const n = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    const k = key(i);
+    const acc = sum.get(k) ?? sum.set(k, new THREE.Vector3()).get(k)!;
+    acc.add(n.fromBufferAttribute(nor, i));
+  }
+  const out = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const v = sum.get(key(i))!.clone().normalize();
+    out.set([v.x, v.y, v.z], i * 3);
+  }
+  geo.setAttribute('olNormal', new THREE.BufferAttribute(out, 3));
+}
+
+/** Põe contorno em todos os meshes opacos de `root` (corpo, cabeça, acessórios e adereços). */
+function addOutline(root: THREE.Object3D): void {
+  const meshes: THREE.Mesh[] = [];
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || m.userData.outline) return;
+    const mats = Array.isArray(m.material) ? m.material : [m.material];
+    if (mats.some((x) => x.transparent)) return;
+    meshes.push(m);
+  });
+  for (const m of meshes) {
+    ensureOutlineNormals(m.geometry);
+    let o: THREE.Mesh;
+    if ((m as THREE.SkinnedMesh).isSkinnedMesh) {
+      const sm = m as THREE.SkinnedMesh;
+      const so = new THREE.SkinnedMesh(sm.geometry, getOutlineMat());
+      so.bind(sm.skeleton, sm.bindMatrix);
+      so.bindMode = sm.bindMode;
+      o = so;
+    } else {
+      o = new THREE.Mesh(m.geometry, getOutlineMat());
+    }
+    // Filho sem transformação: mesma matriz de mundo do original.
+    o.userData.outline = true;
+    o.castShadow = false;
+    o.frustumCulled = m.frustumCulled;
+    m.add(o);
+  }
+}
+
 export interface CharacterState {
   view: PlayerView;
   now: number;
@@ -298,6 +377,7 @@ export class Character3D {
     this.drinkProp.scale.setScalar(1 / CHAR_SCALE);
     this.drinkProp.visible = false;
     this.handR.add(this.drinkProp);
+    addOutline(this.model);
 
     this.mixer = new THREE.AnimationMixer(this.model);
     for (const clip of src.animations) this.actions.set(clip.name, this.mixer.clipAction(clip));

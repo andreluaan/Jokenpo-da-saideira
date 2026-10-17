@@ -26,6 +26,12 @@ Corpo e cabeça recebem **texturas separadas** (assim o terno vira azul sem apag
 Estado: morto→`die` · `oneShot` (golpe/chute) · sentado→`sit` · bebendo→`holding-right` (+braço à boca procedural) · andando→`walk`/`sprint` (timeScale pela velocidade) · senão `idle`.
 Ossos ajustados **depois** do mixer, partindo da rotação de repouso (`rest`) para não acumular: cabeça/braços seguem o rig; `pump` levanta os dois braços.
 
+## Legibilidade: tamanho e contorno
+- `CHAR_SCALE = 1.6` (era 1,45): maior que o círculo de colisão de propósito, para ler bem na câmera da partida.
+- **Contorno escuro** (`addOutline`, cor `#2b1d22`): cada mesh opaco ganha um filho "casco invertido" (só faces de trás, `MeshBasicMaterial` compartilhado) inchado no shader pelas normais. Espessura ∝ distância da câmera → ~3 px em qualquer enquadramento (partida, menu, retratos).
+- Usa normais **suavizadas** (atributo `olNormal`, média por posição, guardado na geometria compartilhada) para não abrir buracos nas quinas low-poly. Em `SkinnedMesh` o contorno é outro `SkinnedMesh` ligado ao mesmo esqueleto e a normal é deformada com `skinMatrix`.
+- Materiais transparentes (alça da caneca) ficam sem contorno. Para mudar espessura: `OUTLINE_WIDTH`.
+
 ## Ragdoll de molas (`art/rig.ts` — `WobbleRig`)
 Molas pouco amortecidas: `tilt` (balanço de bêbado + inclinação pela velocidade), cabeça, mãos, `squash`. `hit()` arremessa, `sweep()` tomba ~1,5 rad por 650 ms, `drunk()` aumenta o balanço (após beber), `knockOut()`.
 No 3D o tombo é **limitado a ±1,45 rad** (senão atravessa o chão) e a direção vem de `tiltDir` (impacto), voltando ao balanço lateral.

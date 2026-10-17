@@ -1,8 +1,8 @@
-import { GRADE_LABEL, RPS_ICON, RPS_LABEL, type ExchangeEvent, type Grade, type Rps, type WhiffReason } from '@ppt/shared';
+import { GRADE_LABEL, RPS_LABEL, type ExchangeEvent, type Grade, type Rps, type WhiffReason } from '@ppt/shared';
 
 export type NameOf = (id: string) => string;
 
-const sym = (s: Rps | null) => (s ? `${RPS_ICON[s]} ${RPS_LABEL[s]}` : 'nada');
+const sym = (s: Rps | null) => (s ? RPS_LABEL[s] : 'nada');
 const grade = (g: Grade) => GRADE_LABEL[g];
 
 /** Título curto (pop-up na arena) e frase explicativa (log). Objetivo: o jogador entender o porquê. */

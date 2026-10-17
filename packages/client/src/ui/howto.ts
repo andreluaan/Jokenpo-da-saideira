@@ -1,3 +1,5 @@
+import { withSymbolIcons } from './symbolIcons';
+
 /** Um passo do "Como jogar": imagem do jogo + título + frase curta + teclas. */
 interface Step {
   img: string;
@@ -30,7 +32,7 @@ const STEPS: Step[] = [
     img: 'howto/4-duelo.jpg',
     title: 'Bote no verde',
     body: 'A barra enche no JO… KEN… e chega no verde no PÔ! Aperte seu símbolo ali. Botou cedo? Todo mundo vê sua mão. Não botou nada? Apanha.',
-    keys: ['1 ✊', '2 ✋', '3 ✌️'],
+    keys: ['1 [rock]', '2 [paper]', '3 [scissors]'],
   },
   {
     img: 'howto/5-malandragem.jpg',
@@ -108,7 +110,7 @@ export class HowTo {
     this.$('#howto-step').textContent = `${k + 1} de ${STEPS.length}`;
     this.$('#howto-title').textContent = s.title;
     this.$('#howto-body').textContent = s.body;
-    this.$('#howto-keys').innerHTML = s.keys.map((key) => `<kbd>${key}</kbd>`).join('');
+    this.$('#howto-keys').innerHTML = s.keys.map((key) => `<kbd>${withSymbolIcons(key)}</kbd>`).join('');
     this.$<HTMLButtonElement>('#howto-prev').disabled = k === 0;
     this.$('#howto-next').textContent = k === STEPS.length - 1 ? '🍺 Bora jogar!' : 'Próximo ›';
     this.$('#howto-dots')

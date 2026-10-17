@@ -1,4 +1,5 @@
-import type { Rps, Snapshot } from '@ppt/shared';
+import { RPS_LABEL, type Rps, type Snapshot } from '@ppt/shared';
+import { symbolSvg } from './symbolIcons';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
@@ -31,7 +32,11 @@ export class Hud {
       el.addEventListener('mousedown', down);
       this.cleanups.push(() => el.removeEventListener('mousedown', down));
     };
-    for (const b of this.symButtons) bind(b, () => actions.symbol(b.dataset.sym as Rps));
+    for (const b of this.symButtons) {
+      const ico = b.querySelector('.ico');
+      if (ico) ico.innerHTML = symbolSvg(b.dataset.sym as Rps);
+      bind(b, () => actions.symbol(b.dataset.sym as Rps));
+    }
     for (const b of this.actButtons) {
       const act = b.dataset.act as keyof HudActions;
       bind(b, () => (actions[act] as () => void)());
@@ -107,7 +112,7 @@ export class Hud {
 }
 
 function labelOf(s: Rps): string {
-  return s === 'rock' ? '✊ Pedra' : s === 'paper' ? '✋ Papel' : '✌️ Tesoura';
+  return RPS_LABEL[s];
 }
 
 export function escapeHtml(s: string): string {

@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { RPS_ICON, qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
+import { qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { WHIFF_TEXT, describeExchange } from '../ui/describe';
+import { symbolPaths, symbolSvg } from '../ui/symbolIcons';
 import { S, toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
@@ -130,7 +131,7 @@ export class Game3D {
     // Barra curva estilo "shot meter": trilho (CEDO), fatia verde (PERFEITO), fatia vermelha (ROUBOU), enchimento,
     // marca de quando o adversário botou (o malandro olha isso) e rótulo.
     this.qte.innerHTML =
-      '<path class="edge"/><path class="track"/><path class="perf"/><path class="red"/><path class="fill"/><line class="tick"/><line class="opp"/><text class="oppsym"></text><text class="lbl"></text>';
+      '<path class="edge"/><path class="track"/><path class="perf"/><path class="red"/><path class="fill"/><line class="tick"/><line class="opp"/><g class="oppsym"></g><text class="lbl"></text>';
     this.overlay.appendChild(this.qte);
     this.center.className = 'center3d';
     this.timer.className = 'timer3d';
@@ -517,7 +518,7 @@ export class Game3D {
     a.tag.style.visibility = this.boteco.blackout && p.id !== this.conn.localPlayerId ? 'hidden' : '';
     a.tag.classList.toggle('dead', !p.alive);
     let hand = '';
-    if (p.alive && p.holding) hand = p.symbol ? RPS_ICON[p.symbol] : '❔';
+    if (p.alive && p.holding) hand = p.symbol ?? '?';
     else if (p.alive && p.drinkingUntil > now) hand = '🍺';
     // Status público: 🧊 escudo de gelo do freezer.
     const st = p.alive && p.shielded ? '🧊' : '';
@@ -527,7 +528,10 @@ export class Game3D {
       (a.tag.querySelector('.st') as HTMLElement).textContent = st;
       (a.tag.querySelector('.hp') as HTMLElement).innerHTML = '❤'.repeat(p.hp) + `<span>${'❤'.repeat(Math.max(0, p.maxHp - p.hp))}</span>`;
       (a.tag.querySelector('.fb i') as HTMLElement).style.width = `${Math.round((p.focus / this.conn.config.player.maxFocus) * 100)}%`;
-      (a.tag.querySelector('.hand') as HTMLElement).textContent = hand;
+      const handEl = a.tag.querySelector('.hand') as HTMLElement;
+      // Símbolo botado = ícone desenhado (pedra, papel, tesoura); ainda não botou = "?".
+      if (hand === 'rock' || hand === 'paper' || hand === 'scissors') handEl.innerHTML = symbolSvg(hand);
+      else handEl.textContent = hand;
     }
     // Preparação do ataque: anel de tempo no próprio crachá.
     const handEl = a.tag.querySelector('.hand') as HTMLElement;
@@ -870,7 +874,7 @@ export class Game3D {
     lbl.setAttribute('y', String(ly - 12));
     // Quando o adversário botou: risquinho na barra + o símbolo dele (é isso que o malandro espera para ver).
     const oppLine = svg.querySelector('.opp') as SVGLineElement;
-    const oppSym = svg.querySelector('.oppsym') as SVGTextElement;
+    const oppSym = svg.querySelector('.oppsym') as SVGGElement;
     if (opp?.symbol && opp.pickedAt !== null) {
       const [ox, oy] = pt(u(opp.pickedAt)).split(' ').map(Number);
       oppLine.setAttribute('x1', String(ox * 0.8));
@@ -878,9 +882,12 @@ export class Game3D {
       oppLine.setAttribute('x2', String(ox * 1.2));
       oppLine.setAttribute('y2', String(oy * 1.2));
       oppLine.style.stroke = hex(opp.color);
-      oppSym.setAttribute('x', String(ox * 1.2 + 4));
-      oppSym.setAttribute('y', String(oy * 1.2 + 8));
-      oppSym.textContent = RPS_ICON[opp.symbol];
+      // Ícone do símbolo dele, pequeno, logo depois do risquinho (desenho 64×64 reduzido).
+      oppSym.setAttribute('transform', `translate(${(ox * 1.2 + 2).toFixed(1)} ${(oy * 1.2 - 11).toFixed(1)}) scale(0.36)`);
+      if (oppSym.dataset.sym !== opp.symbol) {
+        oppSym.dataset.sym = opp.symbol;
+        oppSym.innerHTML = symbolPaths(opp.symbol);
+      }
       oppLine.style.display = oppSym.style.display = '';
     } else oppLine.style.display = oppSym.style.display = 'none';
 

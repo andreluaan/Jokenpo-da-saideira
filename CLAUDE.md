@@ -8,24 +8,11 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 **Leia primeiro o arquivo da área que vai mexer em [`docs/tech/`](docs/tech/README.md)** — não releia o código todo.
 
 ## Estado atual (atualize a cada etapa)
-- **Etapa 1 (protótipo + NPCs): feita**, mais passes de arte: visual 3D (Three.js + modelos CC0 Kenney), personagens,
-  Jo-Ken-Pô/rasteira, cerveja que cura, menu em lousa com quintal 3D (turma sentada → porteira → ringue).
-- **Etapa 2 (multiplayer real): feita** — servidor Node + Socket.IO autoritativo, salas por código, lobby, reconexão (ver `docs/tech/11-multiplayer.md`).
-- **Em andamento: passe de arte.** Feito: luz/cor (arena clara × entorno escuro) e legibilidade (contorno, câmera, escala).
-  Fila combinada: detalhes dos personagens de perto → freezer/isopor → entorno vazio → log do HUD.
-- **v0.9 (out/2026): feito** — Bar do Zé maior com varanda coberta (Zé e fregueses dentro), recuado da arena;
-  cercadinho "SÓ QUEM JOGA" na mesa dos jogadores (só cachorros chegam perto); personagens voltaram à escala 1,45.
-- **v0.8 (out/2026): feito** — quintal verde e aconchegante (grama, estradinha até o Bar do Zé, bar com varanda/toldo), torcida
-  espalhada em mesas e rodinhas tomando cerveja (menos gente colada na cerca); menu acompanha.
-- **v0.7 (out/2026): feito** — nome **Jokenpô da Saideira**; cachaça/amendoim removidos; layout estratégico da arena;
-  quintal cheio (torcida, mesas, 3 cachorros, garçom no balcão, picape com paredão) também no menu; eventos mais longos.
-- **Boteco vivo (v0.6, out/2026): feito** — churrasqueira quente, engradado que quebra, poças,
-  freezer (escudo), 1 evento por rodada (Saideira dupla / Queda de luz / Zé grita) com garçom, torcida, cachorro, animações.
-  Investida curta/cara; finta removida. Ver `docs/DESIGN.md` §9 e `docs/tech/04`. Próximo: usuário testar; sons depois.
-- **Gameplay (out/2026):** vitória de símbolo sempre vale; acertar o QTE = **golpe final** do símbolo (Pedra/Tesoura/Papel,
-  ver `docs/DESIGN.md` §5.8). Duelo menos poluído (Jo-Ken-Pô na barra do QTE). "Mão cansada" e histórico público foram
-  testados e **rejeitados** pelo usuário. Usuário vai avaliar jogando antes do próximo passo.
-- **Depois:** Etapa 3 (testes/balanceamento). Pendências em `docs/tech/10-roadmap.md`.
+- **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Estamos num longo **passe de arte/gameplay** (v0.5 → v0.9):
+  golpes finais por símbolo, boteco vivo (churrasqueira, engradado, poças, freezer/escudo, 1 evento por rodada + garçom),
+  quintal verde com estradinha, Bar do Zé com varanda e gente dentro, torcida, cachorros, picape com paredão, menu igual.
+  **Histórico e o que o usuário aprovou/recusou: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)** — leia antes de propor ideias.
+- **Próximo:** o usuário vai jogar e avaliar. Depois: sons (ganchos prontos), Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.
 
 ## Comandos

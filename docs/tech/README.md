@@ -17,4 +17,6 @@ Regra: ao mexer num setor, atualize o arquivo dele no mesmo commit (curto e obje
 | 10 | [Roadmap](10-roadmap.md) | Etapas, pendências, próximos passos |
 | 11 | [Multiplayer](11-multiplayer.md) | Servidor, salas, protocolo, relógio, reconexão |
 
+Histórico de versões e decisões do usuário (aprovado/recusado): [`../CHANGELOG.md`](../CHANGELOG.md).
+
 Stack: TypeScript 5.9 · Vite 7 · Three.js 0.186 · Socket.IO 4.8 · tsx · Vitest 5 · Node 24 · npm workspaces.

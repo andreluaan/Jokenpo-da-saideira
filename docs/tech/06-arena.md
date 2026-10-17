@@ -26,7 +26,7 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - `PATIOS` (9 mesas vermelhas) e `HANGOUTS` (rodinhas em pé) definidos no topo do arquivo.
 
 ## Entorno (v0.7)
-Horta removida. 7 mesas vermelhas (`buildPatio` devolve as cadeiras → `fanSeats`), lousa da saideira nos fundos (-1,-7.6), picape com paredão em `truck` (5.4,-7.6), garçom do balcão em `barWaiter`. A mesa de fora com 4 banquinhos (`seats`) fica **livre** para os jogadores no menu.
+Horta removida. Mesas vermelhas em `PATIOS` (hoje 9; `buildPatio` devolve as cadeiras → `fanSeats`), picape com paredão em `truck` (5.4,-7.6). A mesa de fora com 4 banquinhos (`seats`, dentro do cercadinho "SÓ QUEM JOGA") fica **livre** para os jogadores no menu. (Lousa e bar mudaram de lugar na v0.8/v0.9 — ver seções acima.)
 Layout dos obstáculos da arena: ver `shared/config.ts` (comentado) e 02-simulação.
 
 ## Desempenho: decoração juntada (`merge.ts`)

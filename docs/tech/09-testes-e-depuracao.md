@@ -1,8 +1,8 @@
 # 09 — Testes e depuração
 
 ## Testes automáticos
-`npm test` (Vitest, `packages/shared/test`): `rules.test.ts` (tabela RPS/QTE), `simulation.test.ts` (ataque, duelo, blefe, multi-jogador, informação oculta, fim, arena, cerveja), `bot.test.ts` (partida 4 NPCs termina, determinismo). Hoje: **46 testes**.
-`packages/server/test/server.test.ts`: rede real (servidor numa porta livre + `socket.io-client`). Total hoje: **56 testes**.
+`npm test` (Vitest, `packages/shared/test`): `rules.test.ts` (tabela RPS/QTE), `simulation.test.ts` (ataque, duelo, blefe, multi-jogador, informação oculta, fim, arena, cerveja), `bot.test.ts` (partida 4 NPCs termina, determinismo), `boteco.test.ts` (churrasqueira, engradado, freezer, poça, eventos, garçom).
+`packages/server/test/server.test.ts`: rede real (servidor numa porta livre + `socket.io-client`). Total hoje: **66 testes**.
 Helpers de teste: `newSim(n)` posiciona A(780,520) B(880,520) C(880,420) D(1300,900); `advanceTo(sim, t)`.
 
 ## Estatística bot × bot (balanceamento)
@@ -19,6 +19,14 @@ OUT="$TEMP/ppt_stats.txt" npx vitest run packages/shared/test/_stats.test.ts > /
   2. **Capturas do canvas:** `node tools/shotserver.mjs` (porta 5199) e, na página, `fetch('http://127.0.0.1:5199/shot?name=x', {method:'POST', body: renderer.domElement.toDataURL('image/jpeg')})` logo após `renderer.render(...)`. Arquivo vai para `tools/shots/` (fora do Git) e pode ser aberto como imagem.
   3. Close-up: mover `camera` temporariamente para perto do ponto, renderizar, capturar e restaurar.
 - Erros antigos no console: depois de recarregamentos (HMR) ficam mensagens velhas — compare o carimbo `?t=` antes de concluir que é bug atual.
+
+## Dicas que funcionaram (sessões de arte v0.5–v0.9)
+- Antes de capturar: `resize_window` 1280×800 no painel e `__ppt3d.resize()`; o painel pequeno gera canvas minúsculo.
+- Simulação local roda em `setInterval`: para avançar use `await new Promise(r=>setTimeout(r,16))` entre `frame()`s (espera ocupada trava a simulação).
+- Forçar cenas: `__ppt.bots.length = 0` (NPCs parados), `__ppt.sim.debugSet/debugPlace/debugStartEvent/debugSpawnItem`, métodos privados acessíveis no console (ex.: `sim.bumpInto`, `sim.addPuddle`).
+- Câmera de close: mover `camera.position`/`lookAt`, renderizar, `toDataURL` → `tools/shotserver.mjs`, restaurar. No menu, `camera.clearViewOffset()` antes e restaurar o `view` depois.
+- Elementos HTML (faixas de evento, HUD) só aparecem em `computer screenshot`, não no canvas.
+- `renderer.info.render.calls` = desenhos por quadro (meta: < ~1.200).
 
 ## Checklist antes de commitar
 `npm run typecheck` · `npm test` · `npm run build` · olhar no navegador (ou captura) a área mexida.

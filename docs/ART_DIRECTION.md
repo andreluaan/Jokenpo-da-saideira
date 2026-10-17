@@ -69,13 +69,13 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 
 | Elemento | Onde | Sólido? | Requisito de leitura |
 |---|---|---|---|
-| **Mesa de plástico amarela** com cadeiras, marca fictícia **"GELADA"** | Centro | Sim (círculo r 70) | É a mesa da cerveja: long neck brilhando quando há cerveja, relógio âmbar enquanto o garçom não traz |
-| Engradados de garrafa (amarelo + verde) | 2 diagonais | Sim | Tampinhas visíveis |
-| Isopor com gelo e latinhas | 2 diagonais | Sim | Branco, tampa encostada |
-| Freezer horizontal "GELADA" | Topo e base | Sim | Branco com faixa vermelha, vidro com latas |
-| Churrasqueira de tambor com espetinhos | Laterais | Sim (círculo r 34) | Brasa laranja e fumaça subindo (animada) |
-| Cerca + varal de luzes | Borda | Limite da arena | Metade de trás atrás dos jogadores, metade da frente na frente |
-| Bar do Zé, campo seco, árvores, mesas vermelhas, horta, lousa | Fora da arena | Decoração | — |
+| **Mesa de plástico amarela** com cadeiras, marca fictícia **"GELADA"** | Centro | Sim (círculo r 70) | Mesa da cerveja (cura): long neck brilhando quando há cerveja |
+| Engradados de garrafa (amarelo + verde) | Colados na mesa, em diagonal | Sim | Cobertura de quem disputa a cerveja; quebram e viram poça |
+| Churrasqueira de tambor com espetinhos | Meios-campos, em diagonal | Sim (círculo r 34) | Brasa e faíscas; quem é arremessado nela queima |
+| Freezer horizontal "GELADA" | Encostados na cerca (cantos opostos) | Sim | Abrir (E) dá escudo de gelo; tampa de vidro abre |
+| Isopor com gelo e latinhas | Pontas esquerda/direita, em pé, na cerca | Sim | Esconderijo |
+| Cerca + varal de luzes | Borda | Limite da arena | — |
+| Entorno (v0.9) | Fora | Decoração | Grama verde, estradinha até o Bar do Zé (com varanda e gente), mesas vermelhas com torcida, rodinhas, cachorros, picape com paredão, cercadinho "SÓ QUEM JOGA" |
 
 > Marcas reais (Skol, Heineken etc.) **não** são usadas: a mesa amarela clássica de boteco leva a marca fictícia "GELADA".
 

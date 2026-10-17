@@ -224,11 +224,14 @@ export class MenuStage3D {
       const sp = cfg.spawns[slot];
       const dest = toWorld(cfg, sp.x, sp.y);
       a.destKey = `spawn:${slot}`;
-      a.route = this.inArena(a.pos) ? [dest] : [gate.outside.clone(), gate.inside.clone(), dest];
+      // Do banco: contorna a mesa, passa pela entradinha do cercadinho e pela porteira da arena.
+      const out = a.seated ? (seats[a.seat].path ?? []).map((p) => p.clone()) : [];
+      a.route = this.inArena(a.pos) ? [dest] : [...out, gate.outside.clone(), gate.inside.clone(), dest];
     } else {
       const dest = seats[a.seat].pos.clone().setY(0);
       a.destKey = `seat:${a.seat}`;
-      a.route = this.inArena(a.pos) ? [gate.inside.clone(), gate.outside.clone(), dest] : [dest];
+      const back = [...(seats[a.seat].path ?? [])].reverse().map((p) => p.clone());
+      a.route = this.inArena(a.pos) ? [gate.inside.clone(), gate.outside.clone(), ...back, dest] : [...back, dest];
     }
     // Quem está sentado leva um instante para levantar; saem um de cada vez.
     a.departAt = a.seated ? now + STAND_MS + order * STAGGER_MS : now;

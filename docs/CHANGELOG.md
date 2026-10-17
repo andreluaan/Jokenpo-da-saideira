@@ -17,6 +17,10 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.12.1 — transição de câmera
+- Pedido: não o copo de cerveja, e sim **a câmera do menu indo suavemente até o enquadramento do começo da partida**. Feito (ida e volta). Copo de cerveja removido.
+- Card do personagem logo embaixo da lousa e crescendo com a tela.
+
 ## v0.12 — ícones de verdade e transição
 - Símbolos viraram **desenhos cartunescos** (uma pedra, uma folha de papel, uma tesoura) no lugar dos emojis de mão: barra de ações, crachá, marca do adversário na barra e Como jogar.
 - Menu: câmera um pouco mais afastada; **card do personagem embaixo da lousa** (deitado, mesma largura).

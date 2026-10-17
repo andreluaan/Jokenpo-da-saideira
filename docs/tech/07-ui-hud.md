@@ -30,8 +30,12 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 ## Ícones dos símbolos (v0.12)
 `ui/symbolIcons.ts`: pedra, papel e tesoura **desenhados em SVG** (cartunescos, contorno escuro) no lugar dos emojis de mão. `symbolSvg(s)` para HTML (barra de ações, crachá), `symbolPaths(s)` para dentro de outro SVG (marca do adversário na barra), `withSymbolIcons(texto)` troca `[rock]`/`[paper]`/`[scissors]` (teclas do Como jogar). O log usa só o nome. A revelação 3D continua com as **mãos** dos personagens (`signTexture`).
 
-## Transição menu ↔ partida (v0.12)
-`transition(run)` em `main.ts`: `.wipe` (copo de cerveja com espuma e bolhas) sobe em 480 ms, a troca de tela roda escondida, e depois de 2 quadros a cerveja baixa revelando a cena. Usada em Disputar, Jogar de novo, Menu/Sair e no início de partida online (reconexão na mesma partida não tem transição).
+## Transição menu ↔ partida (v0.12.1: voo de câmera)
+- **Ida** (`flyToMatch` em `main.ts`): a coluna do menu sai pela esquerda (`#menu.leaving`) e `MenuStage3D.flyToMatch()` leva a câmera do quintal até o **enquadramento do começo da partida** (posição, alvo, lente e deslocamento da coluna, com easing); só então a partida é montada, com a câmera no mesmo lugar.
+- **Volta** (`backToMenu`): `menuStage.show({ fromMatch: true })` começa no enquadramento da partida e voa até o menu; os nomes do menu reaparecem aos poucos.
+- O enquadramento vem de `three/matchCamera.ts` (`matchCameraPose`), o mesmo usado pelo `Game3D` — mudou a câmera da partida, o voo acompanha.
+- Garantia: o voo termina por tempo (`ms + 300`) mesmo com a aba em segundo plano (o navegador pausa os quadros).
+- Jogar de novo (treino) vai direto, sem voo. O copo de cerveja da v0.12 foi descartado (não era o que o usuário queria).
 
 ## Estilo
 Variáveis em `:root` (`--chalkboard`, `--wood`, `--accent` âmbar, `--chalk` = Caveat Brush). Fontes locais via `@fontsource` (Fredoka, Caveat Brush). Abaixo de 760 px o menu vai para baixo e o log some.

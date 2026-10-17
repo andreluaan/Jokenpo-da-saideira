@@ -4,6 +4,20 @@ import { S, toWorld } from './assets';
 import { BAR, BAR_EXTENT, buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D } from './character3d';
 import { Ambient3D } from './ambient3d';
+import { MATCH_FOV, matchCameraPose } from './matchCamera';
+
+/** Lente da câmera do menu. */
+const MENU_FOV = 34;
+
+interface CamPose {
+  pos: THREE.Vector3;
+  target: THREE.Vector3;
+  fov: number;
+  /** Deslocamento da imagem para a direita da coluna do menu (px). */
+  side: number;
+}
+
+const easeInOut = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 
 export interface MenuState {
   /** Quem joga, na ordem das largadas (largada 1 = primeiro). */
@@ -54,6 +68,12 @@ export class MenuStage3D {
   private ro: ResizeObserver | null = null;
   private clock = new THREE.Clock();
   private t0 = performance.now();
+  /** Deslocamento atual da imagem por causa da coluna do menu (px). */
+  private side = 0;
+  /** Voo de câmera entre o menu e o enquadramento da partida (ida ou volta). */
+  private flight: { from: CamPose; to: () => CamPose; start: number; ms: number; done: () => void } | null = null;
+  /** Parada no enquadramento da partida esperando a troca de tela (sem a câmera "respirando"). */
+  private parked = false;
 
   constructor(
     private readonly parent: HTMLElement,
@@ -62,11 +82,13 @@ export class MenuStage3D {
     private readonly onPick: (c: CharacterId) => void,
   ) {}
 
-  show(): void {
+  show(opts: { fromMatch?: boolean } = {}): void {
     if (this.renderer) return;
+    this.parked = false;
+    this.flight = null;
     const cfg = DEFAULT_CONFIG;
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(34, 1, 0.1, 120);
+    this.camera = new THREE.PerspectiveCamera(MENU_FOV, 1, 0.1, 120);
     const r = new THREE.WebGLRenderer({ antialias: true });
     r.setPixelRatio(Math.min(2, window.devicePixelRatio));
     r.shadowMap.enabled = true;
@@ -113,7 +135,60 @@ export class MenuStage3D {
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(this.parent);
     this.resize();
+    // Voltando da partida: a câmera sai do enquadramento do duelo e volta voando para o menu.
+    if (opts.fromMatch) this.startFlight(this.matchPose(), () => this.menuPose(), 1300);
     r.setAnimationLoop(() => this.frame());
+  }
+
+  /** Voa do menu até o enquadramento da partida; resolve quando chega (a partida assume dali sem emenda). */
+  flyToMatch(ms = 1400): Promise<void> {
+    if (!this.renderer) return Promise.resolve();
+    const from: CamPose = { pos: this.camera.position.clone(), target: (this.camera.userData.target as THREE.Vector3).clone(), fov: this.camera.fov, side: this.side };
+    return new Promise((resolve) => {
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        this.flight = null;
+        this.parked = true;
+        if (this.renderer) this.applyPose(this.matchPose());
+        resolve();
+      };
+      this.startFlight(from, () => this.matchPose(), ms, finish);
+      // Garantia: com a aba em segundo plano o navegador pausa os quadros; a partida não pode ficar esperando.
+      setTimeout(finish, ms + 300);
+    });
+  }
+
+  private startFlight(from: CamPose, to: () => CamPose, ms: number, done: () => void = () => {}): void {
+    this.flight = { from, to, start: performance.now(), ms, done };
+  }
+
+  /** Pose do menu (sem o balanço): calculada no resize. */
+  private menuPose(): CamPose {
+    return { pos: (this.camera.userData.base as THREE.Vector3).clone(), target: (this.camera.userData.target as THREE.Vector3).clone(), fov: MENU_FOV, side: this.side };
+  }
+
+  /** Mesmo enquadramento que a partida usa (matchCamera.ts), sem a coluna do menu. */
+  private matchPose(): CamPose {
+    const p = matchCameraPose(DEFAULT_CONFIG, this.parent.clientWidth / Math.max(1, this.parent.clientHeight));
+    return { pos: p.position, target: p.target, fov: MATCH_FOV, side: 0 };
+  }
+
+  /** Aplica uma pose de câmera (posição, alvo, lente e deslocamento da coluna). */
+  private applyPose(c: CamPose): void {
+    const W = Math.max(1, this.parent.clientWidth);
+    const H = Math.max(1, this.parent.clientHeight);
+    this.camera.fov = c.fov;
+    this.camera.setViewOffset(W, H, -c.side / 2, 0, W, H);
+    this.camera.position.copy(c.pos);
+    this.camera.lookAt(c.target);
+    this.camera.updateProjectionMatrix();
+    const d = c.pos.distanceTo(c.target);
+    if (this.scene.fog instanceof THREE.Fog) {
+      this.scene.fog.near = d + 5;
+      this.scene.fog.far = d + 30;
+    }
   }
 
   hide(): void {
@@ -165,6 +240,8 @@ export class MenuStage3D {
     const H = Math.max(1, this.parent.clientHeight);
     this.renderer.setSize(W, H);
     const side = W > 760 ? this.sidebar.getBoundingClientRect().width + 14 : 0;
+    this.side = side;
+    this.camera.fov = MENU_FOV;
     const freeW = W - side;
     // Desloca a imagem para a direita do menu lateral (a cena fica centrada na área livre).
     this.camera.aspect = W / H;
@@ -293,11 +370,31 @@ export class MenuStage3D {
       a.label.classList.toggle('bench', a.slot < 0);
     }
     this.arena.update(dt, now);
-    // Câmera respirando devagar.
+    // Câmera: voando (menu ↔ partida), parada no enquadramento do duelo, ou respirando devagar no menu.
     const base = this.camera.userData.base as THREE.Vector3 | undefined;
-    if (base) {
+    if (this.flight) {
+      const f = this.flight;
+      const k = Math.min(1, (now - f.start) / f.ms);
+      const e = easeInOut(k);
+      const to = f.to();
+      this.applyPose({
+        pos: f.from.pos.clone().lerp(to.pos, e),
+        target: f.from.target.clone().lerp(to.target, e),
+        fov: f.from.fov + (to.fov - f.from.fov) * e,
+        side: f.from.side + (to.side - f.from.side) * e,
+      });
+      // Os nomes do menu somem indo para a partida e voltam na volta.
+      this.overlay.style.opacity = String(to.side === 0 ? 1 - e : e);
+      if (k >= 1) {
+        this.flight = null;
+        if (to.side !== 0) this.t0 = now;
+        f.done();
+      }
+    } else if (this.parked) {
+      this.applyPose(this.matchPose());
+    } else if (base) {
       const k = (now - this.t0) / 1000;
-      this.camera.position.set(base.x + Math.sin(k * 0.25) * 0.4, base.y, base.z + Math.cos(k * 0.2) * 0.25);
+      this.camera.position.set(base.x + Math.sin(k * 0.25) * 0.4, base.y, base.z + Math.sin(k * 0.2) * 0.25);
       this.camera.lookAt(this.camera.userData.target as THREE.Vector3);
     }
     this.renderer.render(this.scene, this.camera);

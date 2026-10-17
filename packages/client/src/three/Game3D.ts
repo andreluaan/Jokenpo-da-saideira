@@ -4,7 +4,7 @@ import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { WHIFF_TEXT, describeExchange } from '../ui/describe';
 import { symbolPaths, symbolSvg } from '../ui/symbolIcons';
-import { S, toWorld } from './assets';
+import { toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
 import { signTexture, softCircle } from './textures';
@@ -12,6 +12,7 @@ import { finisherModels, startFinisher, type Fx } from './finishers';
 import { Boteco3D } from './boteco3d';
 import { BarEventFx } from '../ui/barEventFx';
 import { Ambient3D } from './ambient3d';
+import { MATCH_FOV, MATCH_TARGET, matchCameraPose } from './matchCamera';
 
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
 /** Batidas do Jo-Ken-Pô: o "PÔ!" cai exatamente no impacto (QTE perfeito). */
@@ -44,7 +45,7 @@ const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 export class Game3D {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(36, 1, 0.1, 120);
+  private readonly camera = new THREE.PerspectiveCamera(MATCH_FOV, 1, 0.1, 120);
   private readonly overlay = document.createElement('div');
   private readonly arena: ArenaHandles;
   private readonly actors = new Map<string, Actor>();
@@ -75,7 +76,7 @@ export class Game3D {
   private readonly timer = document.createElement('div');
   private readonly beerHint = document.createElement('div');
   private readonly camBase = new THREE.Vector3();
-  private readonly camTarget = new THREE.Vector3(0, 0, 0.55);
+  private readonly camTarget = MATCH_TARGET.clone();
   private softTex = softCircle();
   private lastPhase = '';
 
@@ -176,16 +177,9 @@ export class Game3D {
     const h = Math.max(1, this.parent.clientHeight);
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
-    const cfg = this.conn.config;
-    // Margem curta em volta da cerca: quanto mais perto, maiores os personagens na tela.
-    const halfW = cfg.arena.rx * S + 0.7;
-    const halfH = cfg.arena.ry * S + 1.0;
-    const t = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-    const dist = Math.max(halfW / (t * this.camera.aspect), (halfH * 1.15) / t, 10);
-    this.scene.fog = new THREE.Fog(SKY, dist + 5, dist + 30);
-    // Câmera um pouco mais deitada (~46°): vê mais do corpo e do rosto, menos do topo da cabeça.
-    const dir = new THREE.Vector3(0, 1, 0.95).normalize();
-    this.camBase.copy(this.camTarget).addScaledVector(dir, dist);
+    const pose = matchCameraPose(this.conn.config, this.camera.aspect);
+    this.scene.fog = new THREE.Fog(SKY, pose.dist + 5, pose.dist + 30);
+    this.camBase.copy(pose.position);
     this.camera.position.copy(this.camBase);
     this.camera.lookAt(this.camTarget);
     this.camera.updateProjectionMatrix();

@@ -375,18 +375,6 @@ kbd {
   .plaque, .menu-card .btn.primary, .menu-card .btn.primary::after, .cs-portrait { animation: none !important; }
 }
 
-/* ---------- transição entre menu e partida: copo enchendo e esvaziando ---------- */
-.wipe { position: fixed; inset: 0; z-index: 100; pointer-events: none; display: grid; place-items: center; overflow: hidden;
-  background: linear-gradient(#ffcf4a, #e89a1c 70%, #c97a12); clip-path: inset(100% 0 0 0); transition: clip-path .48s cubic-bezier(.6, 0, .35, 1); }
-.wipe.in { clip-path: inset(-40px 0 0 0); pointer-events: all; }
-.wipe-foam { position: absolute; left: -5%; right: -5%; top: -6px; height: 48px;
-  background: radial-gradient(circle at 20px 26px, #fff 22px, transparent 23px) 0 0 / 46px 48px repeat-x, #fff;
-  border-bottom: 4px solid #f3e6c8; mask: linear-gradient(#000 70%, transparent); }
-.wipe-bubbles { position: absolute; inset: 0;
-  background: radial-gradient(circle, #fff9 0 3px, transparent 4px) 0 0 / 70px 90px, radial-gradient(circle, #fff6 0 2px, transparent 3px) 30px 40px / 55px 70px;
-  animation: wipe-bubbles 1.2s linear infinite; }
-@keyframes wipe-bubbles { to { background-position: 0 -90px, 30px -30px; } }
-.wipe-text { position: relative; font-family: var(--chalk); font-size: clamp(36px, 7vw, 72px); color: #fff4e6; -webkit-text-stroke: 8px #2b1d22; paint-order: stroke fill;
-  text-shadow: 0 6px 0 #2b1d22; opacity: 0; transform: scale(.8) rotate(-3deg); transition: opacity .2s .2s, transform .35s .2s cubic-bezier(.2, 1.6, .4, 1); }
-.wipe.in .wipe-text { opacity: 1; transform: rotate(-3deg); }
-@media (prefers-reduced-motion: reduce) { .wipe, .wipe-text { transition-duration: .01s; } .wipe-bubbles { animation: none; } }
+/* ---------- indo para a partida: a coluna do menu sai pela esquerda enquanto a câmera voa ---------- */
+#menu.leaving .menu-col { transform: translateX(calc(-100% - 40px)); opacity: 0; transition: transform .55s cubic-bezier(.5, 0, .75, 0), opacity .55s; }
+#menu.leaving .menu-col * { pointer-events: none; }

@@ -98,7 +98,8 @@ function ensureOnline(): OnlineClient {
   online = new OnlineClient({
     lobby: (s) => renderLobby(s),
     // Reconectou na mesma partida: segue sem transição; partida nova: copo enche e esvazia.
-    matchStart: (m) => (onlineMatch && conn?.localPlayerId === m.playerId && game ? startOnlineMatch(m) : transition(() => startOnlineMatch(m))),
+    // Reconectou na mesma partida: segue direto; partida nova: a câmera do menu voa até o enquadramento da partida.
+    matchStart: (m) => (onlineMatch && conn?.localPlayerId === m.playerId && game ? startOnlineMatch(m) : flyToMatch(() => startOnlineMatch(m))),
     matchEnd: () => undefined,
     connection: (st) => {
       if (st === 'online') setStatus(online?.lobbyState ? '' : 'Conectado. Abra uma mesa ou entre com o código de um amigo.');
@@ -199,50 +200,35 @@ function setStatus(text: string, err = false): void {
 $('#start-training').addEventListener('click', () => {
   save('ppt.nick', myName());
   const settings = { name: myName(), bots: Number(botCount.value), difficulty: difficulty.value as BotDifficulty, character: charSelect.value };
-  transition(() => startMatch(settings));
+  flyToMatch(() => startMatch(settings));
 });
 $('#play-again').addEventListener('click', () => {
-  if (onlineMatch) transition(backToMenu);
-  else if (lastSettings) transition(() => startMatch(lastSettings!));
+  if (onlineMatch) backToMenu();
+  else if (lastSettings) startMatch(lastSettings);
 });
 $('#to-menu').addEventListener('click', () => {
   if (onlineMatch) online?.leave();
-  transition(backToMenu);
+  backToMenu();
 });
 $('#leave').addEventListener('click', () => {
   if (onlineMatch) online?.leave();
-  transition(backToMenu);
+  backToMenu();
 });
 
 /**
- * Troca de tela suave: um copo de cerveja enche a tela (com espuma e bolhas), a troca acontece
- * escondida atrás dele (montar o 3D da partida leva um instante) e depois a cerveja baixa revelando a arena.
+ * Do menu para a partida sem corte: a coluna do menu sai pela esquerda e a câmera do quintal voa
+ * até o enquadramento do começo da partida; só então a partida assume, com a câmera no mesmo lugar.
  */
-const wipe = document.createElement('div');
-wipe.className = 'wipe';
-wipe.innerHTML = '<div class="wipe-foam"></div><div class="wipe-bubbles"></div><span class="wipe-text">Bora pro quintal!</span>';
-document.body.appendChild(wipe);
-let wiping = false;
-const FILL_MS = 480;
-function transition(run: () => void): void {
-  if (wiping) return run();
-  wiping = true;
-  wipe.classList.add('in');
-  setTimeout(() => {
-    try {
-      run();
-    } finally {
-      // Dois quadros para o primeiro desenho da cena nova sair antes de revelar (com folga se a aba estiver em segundo plano).
-      const reveal = () => {
-        wipe.classList.remove('in');
-        setTimeout(() => (wiping = false), FILL_MS + 120);
-      };
-      let done = false;
-      const once = () => !done && ((done = true), reveal());
-      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(once, 120)));
-      setTimeout(once, 700);
-    }
-  }, FILL_MS);
+let flying = false;
+function flyToMatch(run: () => void): void {
+  if (flying || menu.classList.contains('hidden')) return run();
+  flying = true;
+  menu.classList.add('leaving');
+  menuStage.flyToMatch().then(() => {
+    flying = false;
+    menu.classList.remove('leaving');
+    run();
+  });
 }
 
 boot();
@@ -329,7 +315,8 @@ function backToMenu(): void {
   teardown();
   matchScreen.classList.add('hidden');
   menu.classList.remove('hidden');
-  menuStage.show();
+  // Volta voando: a câmera sai do enquadramento da partida e vai para o quintal do menu.
+  menuStage.show({ fromMatch: true });
   renderLobby(online?.lobbyState ?? null);
 }
 

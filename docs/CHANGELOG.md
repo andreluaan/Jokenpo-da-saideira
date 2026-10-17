@@ -20,7 +20,8 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 ## v0.13 — quintal arrumado
 - **Área dos jogadores** colada na porteira da arena e alinhada com a cerca: cercadinho retangular com **entradinha** (placa "SÓ QUEM JOGA" grande em cima) e **mesa comprida de 8 banquinhos** (já pensando em mais personagens). Os personagens saem da mesa contornando-a, passam pela entradinha e entram pela porteira.
 - **Placas mais visíveis**: lousa da SAIDEIRA maior e virada para a câmera; plaquinhas da cerca maiores.
-- **Mais árvores** fechando o quintal (anel em volta do mapa; o campo seco continua aberto).
+- **Mais árvores** espalhadas pelas áreas vazias do mapa todo (grama e campo seco, este com árvores de outono).
+- **Estradinha desviada**: passa por fora da área dos jogadores (a mesa ficava em cima dela) e chega no terreiro do bar por cima.
 - **Nomes na partida mais discretos**: sem caixinha, só o texto com contorno e um risquinho na cor do jogador.
 - Banco de ideias: QTE com as mãos de Jo-Ken-Pô no lugar da barra.
 

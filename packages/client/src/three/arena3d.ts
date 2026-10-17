@@ -91,19 +91,23 @@ const GROUND = 0x8fa452;
 export const SKY = 0xa9b97a;
 
 /** Estradinha de terra que chega no terreiro do Bar do Zé (pontos em x/z do mundo). */
+// v0.13: passa por fora da área dos jogadores (folga ~0,4 da beira) e chega no terreiro por cima dela.
 const ROAD: [number, number][] = [
   [-19, 6.6],
-  [-14.6, 4.7],
-  [-12.6, 2.0],
-  [-12.1, -1.0],
-  [-11.4, -3.6],
-  [-10.0, -5.0],
+  [-15.6, 4.6],
+  [-14.6, 1.4],
+  [-14.4, -1.8],
+  [-13.6, -4.5],
+  [-12.0, -5.6],
+  [-10.2, -5.45],
   [-8.4, -5.35],
 ];
 /** Bar do Zé (v0.9): maior, com varanda coberta, recuado da arena. Frente virada para +z. */
 export const BAR = { x: -7.6, z: -8.0 };
 /** Caixa do bar inteiro (casinha + varanda + telhado), relativa a BAR — usada para enquadrar a câmera do menu. */
 export const BAR_EXTENT = { halfW: 2.7, back: 2.5, front: 2.6, top: 3.3 };
+/** Lousa da SAIDEIRA (placa de beira de estrada), à vista da câmera do menu e da partida. */
+const SAIDEIRA_BOARD = { x: -9.9, z: 6.8 };
 /** Mesas vermelhas em volta (x, z, guarda-sol). */
 const PATIOS: [number, number, boolean][] = [
   [9.2, 4.9, true],
@@ -226,10 +230,10 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   const gn = gate.outside.clone().sub(gate.inside).setY(0).normalize();
   const gmid = gate.outside.clone().addScaledVector(gn, -1.0);
   const halfL = 2.25;
-  const halfD = 1.3;
+  const halfD = 1.2;
   // O cercadinho desce um pouco (para longe da varanda do bar); a entradinha continua de frente para a porteira.
   const gt = new THREE.Vector3(-gn.z, 0, gn.x);
-  const shift = 1.35;
+  const shift = 1.6;
   const pa: PlayersArea = {
     c: gmid.clone().addScaledVector(gn, 1.0 + 0.55 + halfD).addScaledVector(gt, -shift),
     t: gt,
@@ -281,6 +285,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   buildPlayersArea(scene, pa);
   const roadDist = (x: number, z: number) => Math.min(...roadPts.map((p) => Math.hypot(p.x - x, p.z - z)));
   // Árvores: verdes misturadas com as de outono (aconchego sem perder a paleta quente).
+  const treeSpots: [number, number][] = [];
   for (const [x, z, h, kind] of [
     [8.6, -5.4, 2.6, 'tree_oak'],
     [11.6, -4.2, 2.2, 'tree_fat_fall'],
@@ -297,7 +302,9 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     [-4.4, -6.0, 2.3, 'tree_palmShort'],
     [-10.8, -6.9, 1.8, 'tree_palmShort'],
   ] as const) {
+    if (roadDist(x, z) < 1.7) continue; // (a estrada mudou na v0.13: árvore em cima dela fica de fora)
     scene.add(place(`nature/${kind}`, x, z, { height: h, rot: rng() * 6 }));
+    treeSpots.push([x, z]);
   }
   // Milharal no campo.
   for (let i = 0; i < 26; i++) {
@@ -320,7 +327,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   board.add(face);
   board.add(mesh(new THREE.BoxGeometry(0.08, 1.4, 0.08), std(0x6a3f37), -0.75, 0.7, -0.12));
   board.add(mesh(new THREE.BoxGeometry(0.08, 1.4, 0.08), std(0x6a3f37), 0.75, 0.7, -0.12));
-  board.position.set(-13.2, 0, 4.2);
+  board.position.set(SAIDEIRA_BOARD.x, 0, SAIDEIRA_BOARD.z);
   board.rotation.y = 0.25;
   scene.add(board);
 
@@ -334,6 +341,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     if (PATIOS.some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.25 + pad)) return false;
     if (HANGOUTS.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 1.1 + pad)) return false;
     if (Math.hypot(x - 5.4, z + 7.6) < 2 + pad) return false; // picape
+    if (Math.hypot(x - SAIDEIRA_BOARD.x, z - SAIDEIRA_BOARD.z) < 1.3 + pad) return false; // lousa da saideira
     return true;
   };
   roadPts.forEach((p, i) => {
@@ -368,16 +376,26 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     const [kind, h] = scatter[Math.floor(rng() * scatter.length)];
     scene.add(place(kind, x, z, { height: h * (0.8 + rng() * 0.5), rot: rng() * 6 }));
   }
-  // Mais árvores fechando o quintal: um anel em volta do mapa (v0.13), sem cair na estrada, no bar ou nas mesas.
-  const ringKinds = ['tree_oak', 'tree_fat', 'tree_default', 'tree_detailed', 'tree_oak_fall', 'tree_fat_fall', 'tree_default_fall', 'tree_detailed_fall'];
-  for (let i = 0; i < 46; i++) {
-    const a = (i / 46) * Math.PI * 2 + (rng() - 0.5) * 0.12;
-    const k = 1 + rng() * 0.22;
-    const x = Math.cos(a) * 15.5 * k;
-    const z = Math.sin(a) * 10.2 * k;
-    if (!free(x, z, 0.4)) continue;
-    if (x > 5 && z < -1) continue; // o campo seco com o milharal fica aberto
-    scene.add(place(`nature/${ringKinds[Math.floor(rng() * ringKinds.length)]}`, x, z, { height: 1.9 + rng() * 0.9, rot: rng() * 6 }));
+  // Mais árvores compondo o cenário (v0.13): preenche as áreas vazias do mapa todo — grama e campo seco —
+  // numa grade com sorteio, respeitando estrada, bar, mesas, área dos jogadores e a arena (free), sem encostar uma na outra.
+  const green = ['tree_oak', 'tree_fat', 'tree_default', 'tree_detailed', 'tree_oak_fall', 'tree_default_fall'];
+  const dry = ['tree_fat_fall', 'tree_detailed_fall', 'tree_oak_fall', 'tree_default_fall'];
+  const inField = (x: number, z: number) => x > 5 && z < -1.5 + Math.max(0, x - 9) * 0.25;
+  for (let gx = -24; gx <= 24; gx += 2.3) {
+    for (let gz = -15; gz <= 14; gz += 2.3) {
+      const x = gx + (rng() - 0.5) * 1.8;
+      const z = gz + (rng() - 0.5) * 1.8;
+      if (!free(x, z, 0.5)) continue;
+      if (x > 7.2 && x < 14 && z > -7.3 && z < -4.6) continue; // milharal
+      if (treeSpots.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < 2.1)) continue;
+      const field = inField(x, z);
+      // Campo seco: poucas e de outono. Na frente da câmera (perto de quem olha) menos, para não tampar a arena.
+      const front = z > 6.5 && Math.abs(x) < 11;
+      if (rng() > (field ? 0.32 : front ? 0.3 : 0.62)) continue;
+      const list = field ? dry : green;
+      scene.add(place(`nature/${list[Math.floor(rng() * list.length)]}`, x, z, { height: (front ? 1.5 : 1.8) + rng() * 1.0, rot: rng() * 6 }));
+      treeSpots.push([x, z]);
+    }
   }
   scene.add(place('nature/log_stack', BAR.x - 3.3, BAR.z + 0.4, { size: 1.0, rot: 0.4 }));
   scene.add(place('furniture/trashcan', 7.2, 3.4, { height: 0.55 }));

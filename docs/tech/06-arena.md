@@ -45,4 +45,4 @@ Resultado: partida 1.881 → ~840 desenhos por quadro; menu 1.672 → ~780. O qu
 
 ## Como mudar
 - Novo tipo de obstáculo: `PropKind` em `shared/config.ts` + entrada em `obstacles` + caso em `buildObstacle` (+ teste se mexer em posição).
-- Mover a porteira: `GATE_ANGLE`; a área dos jogadores acompanha a porteira sozinha (ajuste `halfL`/`halfD`/`shift` em `buildArena3D`). Árvores: lista fixa + **anel de árvores** em volta do mapa (v0.13, respeita `free()` e deixa o campo seco aberto).
+- Mover a porteira: `GATE_ANGLE`; a área dos jogadores acompanha a porteira sozinha (ajuste `halfL`/`halfD`/`shift` em `buildArena3D`). Árvores: lista fixa (pula as que caem perto da estrada) + **preenchimento das áreas vazias** do mapa todo numa grade com sorteio (v0.13: respeita `free()`, distância mínima entre árvores, poucas e de outono no campo seco, menos na frente da câmera, milharal livre). A **estradinha** (`ROAD`) passa por fora da área dos jogadores (folga ~0,4 m) e chega no terreiro por cima dela; lousa da SAIDEIRA em `SAIDEIRA_BOARD` (à vista da câmera).

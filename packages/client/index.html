@@ -22,12 +22,7 @@
           <span class="plaque-top">Bar do Zé apresenta</span>
           <h1 class="logo">JOKENPÔ <span>da Saideira</span></h1>
         </div>
-        <p class="tagline">Só tem uma gelada no freezer. Quem ficar de pé por último leva. Leia, blefe e dê a última palavra.</p>
-
-        <div class="field">
-          <span class="chalk">Quem levanta da mesa? <em class="hint">(ou clique nele no quintal)</em></span>
-          <div id="char-cards"></div>
-        </div>
+        <p class="tagline">Uma gelada só. Quem ficar de pé leva.</p>
 
         <label class="field">
           <span class="chalk">Apelido</span>
@@ -35,8 +30,8 @@
         </label>
 
         <div class="tabs" role="tablist">
-          <button type="button" class="tab active" data-mode="training">Treino (NPCs)</button>
-          <button type="button" class="tab" data-mode="online">Online com a turma</button>
+          <button type="button" class="tab active" data-mode="training">🤖 Treino</button>
+          <button type="button" class="tab" data-mode="online">🍻 Online</button>
         </div>
 
         <!-- Treino local contra NPCs -->
@@ -45,9 +40,9 @@
             <label class="field">
               <span class="chalk">Adversários</span>
               <select id="bot-count">
-                <option value="1">1 NPC (duelo)</option>
+                <option value="1">1 NPC</option>
                 <option value="2">2 NPCs</option>
-                <option value="3" selected>3 NPCs (mesa cheia)</option>
+                <option value="3" selected>3 NPCs</option>
               </select>
             </label>
             <label class="field">
@@ -60,7 +55,6 @@
             </label>
           </div>
           <button id="start-training" class="btn primary">🍺 Disputar a gelada</button>
-          <p class="note">Treino no seu computador, contra NPCs.</p>
         </div>
 
         <!-- Online: salas com código -->
@@ -104,19 +98,30 @@
           <p id="online-status" class="note"></p>
         </div>
 
-        <details class="howto">
-          <summary>Como jogar</summary>
-          <ul>
-            <li><b>WASD</b> move. <b>Clique</b> em um adversário ou <b>Tab</b> para escolher o alvo.</li>
-            <li><b>1 / 2 / 3</b>: ✊ Pedra, ✋ Papel, ✌️ Tesoura. Sem símbolo, ataca; com símbolo, <b>troca</b> (custa foco).</li>
-            <li>Sendo atacado? Aperte um símbolo para <b>responder</b>: vira um duelo.</li>
-            <li>Os punhos batem no ritmo do <b>JO… KEN… PÔ!</b> Aperte <b>Espaço</b> no <b>PÔ!</b> para o PERFEITO. Cedo = BOM garantido; sem confirmar = FALHA.</li>
-            <li><b>X</b>/botão direito cancela, <b>Shift</b> investida curta (gasta metade do foco).</li>
-            <li>Quem perde toma uma <b>rasteira</b>. Machucado? Na <b>mesa amarela</b>, aperte <b>E</b> para tomar uma gelada (+1 ❤). Se apanhar bebendo, derrama!</li>
-            <li>A vantagem do símbolo sempre vale mais que a execução.</li>
-          </ul>
-        </details>
+        <button id="howto-open" class="btn howto-btn" type="button">📖 Como jogar</button>
       </aside>
+
+      <!-- Personagem escolhido: card no canto (troca pelas setas ou clicando nele na mesa) -->
+      <aside id="char-spot" class="char-spot"></aside>
+
+      <!-- Como jogar: cards com imagem, um passo de cada vez -->
+      <div id="howto" class="howto-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="howto-title">
+        <div class="howto-card">
+          <button id="howto-close" class="howto-x" type="button" aria-label="Fechar">✕</button>
+          <div class="howto-pic"><img id="howto-img" alt="" /></div>
+          <div class="howto-text">
+            <span id="howto-step" class="howto-step"></span>
+            <h2 id="howto-title"></h2>
+            <p id="howto-body"></p>
+            <div id="howto-keys" class="howto-keys"></div>
+          </div>
+          <div class="howto-nav">
+            <button id="howto-prev" class="btn ghost" type="button">‹ Voltar</button>
+            <div id="howto-dots" class="howto-dots"></div>
+            <button id="howto-next" class="btn primary" type="button">Próximo ›</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Partida: 3D em tela cheia, HUD por cima -->

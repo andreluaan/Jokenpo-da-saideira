@@ -10,6 +10,7 @@ import { SocketConnection } from './net/socketConnection';
 import type { GameConnection } from './net/connection';
 import { CharacterSelect } from './ui/characterSelect';
 import { escapeHtml } from './ui/hud';
+import { HowTo } from './ui/howto';
 import { preloadAll } from './three/assets';
 import { Game3D } from './three/Game3D';
 import { MenuStage3D, type MenuState } from './three/MenuStage3D';
@@ -45,7 +46,7 @@ interface Settings {
 
 nickname.value = load('ppt.nick') ?? '';
 const savedChar = load('ppt.char') as CharacterId | null;
-const charSelect = new CharacterSelect($('#char-cards'), savedChar && CHARACTER_IDS.includes(savedChar) ? savedChar : 'fera', (c) => {
+const charSelect = new CharacterSelect($('#char-spot'), savedChar && CHARACTER_IDS.includes(savedChar) ? savedChar : 'fera', (c) => {
   save('ppt.char', c);
   if (mode === 'online' && online?.lobbyState) {
     const before = myLobbyChar() ?? c;
@@ -57,6 +58,7 @@ const charSelect = new CharacterSelect($('#char-cards'), savedChar && CHARACTER_
     });
   }
 });
+new HowTo($('#howto'), $('#howto-open'));
 const menuStage = new MenuStage3D($('#menu-bg'), $('#menu-side'), menuState, (c) => charSelect.select(c));
 
 const myName = () => nickname.value.trim().slice(0, 16) || 'Jogador';

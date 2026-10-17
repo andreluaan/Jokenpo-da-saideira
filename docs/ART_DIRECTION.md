@@ -36,7 +36,7 @@ Quatro frequentadores **originais**, inspirados em arquétipos de anime e cartoo
 |---|---|---|---|
 | **Fera Verde** | Cabelo tigelinha preto brilhante, sobrancelhonas, óculos escuros roxos, macacão verde, cinto vermelho, antebraços enfaixados, polainas laranja | Garrafa verde **sem rótulo** na mão | Energia de academia, "fogo da juventude" |
 | **Príncipe Marrento** | Cabelo espetado em chama com entradas em V, macacão azul, peitoral branco, ombreiras e faixa douradas, luvas e botas brancas | **Braços cruzados** | Arrogante, nunca paga a rodada |
-| **Seu Pança** | Careca com fiapos, barba por fazer, olhos grandes, barrigão de camisa branca, calça azul-clara. Pele natural, **não amarela** | Caneca de chope com espuma | Paizão bonachão |
+| **Seu Pança** | Careca com fiapos, barba por fazer, olhos grandes, barrigão de camisa branca, calça azul-clara, cinto/sapatos marrons. **Pele amarela de desenho** (decisão do usuário, out/2026 — ⚠ antes da publicação, rever: amarelo + careca + fiapos + camisa branca/calça azul fica muito perto de um personagem registrado) | Caneca de chope com espuma | Paizão bonachão |
 | **Sonolento** | Rabo de cavalo espetado, olhos meio fechados, colete tático verde com bolsos, faixa na coxa | Mão no bolso, "z" flutuando, **palito de dente** (sem cigarro) | Preguiçoso, mas estrategista |
 
 **Regras:**

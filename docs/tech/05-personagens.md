@@ -9,7 +9,7 @@ Cada personagem original = modelo base + **repintura da paleta** + **acessórios
 |---|---|---|---|
 | `fera` Fera Verde | male-a | r2c3/r2c11 verde, r2c5 laranja, r3c13 faixa, r3c11 pele | franja reta, sobrancelhonas, óculos `aid-sunglasses`, garrafa |
 | `principe` Príncipe Marrento | male-d | r3c1 azul, r2c9 dourado, r3c15 luvas brancas; cabeça r3c11→preto | 6 espetos (cones), entradas em V, ombreiras |
-| `panca` Seu Pança | male-b | r2c9 branco, r2c11 azul-claro | fiapos na careca, barriga, caneca |
+| `panca` Seu Pança | male-b | r2c9 branco, r2c11 azul-claro, r3c15 pele **amarela**, r3c11 cinto/sapatos marrons; cabeça r3c15 amarela, r3c11 barba castanha | fiapos na careca, barriga, caneca |
 | `sonolento` Sonolento | male-f | r2c3 oliva, r3c3/r3c15 escuro | rabo de cavalo (cones), faixa vermelha, pálpebras, palito |
 
 **Paleta Kenney** (`colormap.png` 512²): células 32×128 → `r{linha}c{coluna}` (linha 0–3 de cima, coluna 0–15). Linha 2: bege, verde, amarelo, laranja, vermelho, azul, azul-claro, roxo (2 colunas cada). Linha 3: escuro, cinza, ardósia, cinza-azulado, branco, pele salmão, marrom, pele clara.

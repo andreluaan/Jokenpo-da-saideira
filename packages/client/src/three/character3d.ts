@@ -96,8 +96,10 @@ const LOOKS: Record<CharacterId, Look> = {
   },
   panca: {
     base: 'character-male-b',
-    body: { r2c9: 0xfafafa, r2c11: 0x4fb3e8 },
-    head: {},
+    // Pele amarela de desenho animado (pedido do usuário) em r3c15; r3c11 na cabeça é a barba por fazer.
+    // No corpo, r3c11 = cinto e sapatos (marrom-escuro para não brigar com o amarelo).
+    body: { r2c9: 0xfafafa, r2c11: 0x4fb3e8, r3c15: 0xf5c62a, r3c11: 0x5e4334 },
+    head: { r3c15: 0xf5c62a, r3c11: 0xa98a64 },
     prop: 'mug',
     build: (c) => {
       // Fiapos penteados na careca e barrigão.

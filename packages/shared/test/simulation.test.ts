@@ -80,8 +80,9 @@ describe('ataque simples', () => {
 
   it('obstáculo entre os dois bloqueia o golpe', () => {
     const sim = newSim();
-    sim.debugPlace('A', 455, 600);
-    sim.debugPlace('B', 585, 600); // barril em (520, 600)
+    const g = cfg.obstacles.find((o) => o.prop === 'grill') as { x: number; y: number };
+    sim.debugPlace('A', g.x - 65, g.y);
+    sim.debugPlace('B', g.x + 65, g.y); // churrasqueira entre os dois
     sim.applyInput('A', { type: 'symbol', symbol: 'rock', targetId: 'B' });
     sim.applyInput('A', { type: 'commit' });
     const ev = advanceTo(sim, impactOf(sim, 'A') + LATE + 1);
@@ -331,12 +332,13 @@ describe('arena', () => {
     expect(((a.x - cx) / rx) ** 2 + ((a.y - cy) / ry) ** 2).toBeLessThanOrEqual(1);
   });
 
-  it('barril redondo bloqueia o movimento', () => {
+  it('churrasqueira redonda bloqueia o movimento', () => {
     const sim = newSim();
-    sim.debugPlace('A', 420, 600);
+    const g = cfg.obstacles.find((o) => o.prop === 'grill') as { x: number; y: number; r: number };
+    sim.debugPlace('A', g.x - 100, g.y);
     sim.applyInput('A', { type: 'move', x: 1, y: 0 });
     advanceTo(sim, sim.now + 300);
-    expect(sim.debugPlayer('A').x).toBeLessThanOrEqual(520 - 34 - cfg.player.radius + 0.01);
+    expect(sim.debugPlayer('A').x).toBeLessThanOrEqual(g.x - g.r - cfg.player.radius + 0.01);
   });
 });
 

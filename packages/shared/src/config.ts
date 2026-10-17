@@ -146,17 +146,20 @@ export interface GameConfig {
 export const DEFAULT_CONFIG: GameConfig = {
   // Quintal do Bar do Zé: elipse 1520 × 940 (≈ 22% mais área que o retângulo da v0.1).
   arena: { width: 1920, height: 1200, cx: 960, cy: 600, rx: 760, ry: 470 },
+  // Layout pensado pela função de cada peça (v0.7), simétrico por rotação de 180° (justo para os 4 cantos):
+  // mesa da cerveja no centro (prêmio); engradados colados nela (cobertura de quem disputa; quebram e viram poça);
+  // churrasqueiras nos meios-campos em diagonal (onde a briga acontece: dá para arremessar alguém na brasa);
+  // freezers encostados na cerca (abrir é arriscado, de costas e encurralado); isopores em pé nas pontas (esconderijo).
   obstacles: [
-    // Boteco brasileiro: mesa amarela no centro (é onde se bebe), engradados, isopores, freezers e churrasqueiras de tambor.
     { kind: 'circle', x: 960, y: 600, r: 70, prop: 'beerTable' },
-    { kind: 'rect', x: 640, y: 395, w: 96, h: 72, prop: 'crates' },
-    { kind: 'rect', x: 1184, y: 395, w: 96, h: 64, prop: 'cooler' },
-    { kind: 'rect', x: 640, y: 733, w: 96, h: 64, prop: 'cooler' },
-    { kind: 'rect', x: 1184, y: 733, w: 96, h: 72, prop: 'crates' },
-    { kind: 'rect', x: 900, y: 255, w: 120, h: 62, prop: 'freezer' },
-    { kind: 'rect', x: 900, y: 880, w: 120, h: 62, prop: 'freezer' },
-    { kind: 'circle', x: 520, y: 600, r: 34, prop: 'grill' },
-    { kind: 'circle', x: 1400, y: 600, r: 34, prop: 'grill' },
+    { kind: 'rect', x: 700, y: 640, w: 96, h: 72, prop: 'crates' },
+    { kind: 'rect', x: 1124, y: 488, w: 96, h: 72, prop: 'crates' },
+    { kind: 'circle', x: 560, y: 470, r: 34, prop: 'grill' },
+    { kind: 'circle', x: 1360, y: 730, r: 34, prop: 'grill' },
+    { kind: 'rect', x: 575, y: 205, w: 120, h: 62, prop: 'freezer' },
+    { kind: 'rect', x: 1225, y: 933, w: 120, h: 62, prop: 'freezer' },
+    { kind: 'rect', x: 226, y: 552, w: 64, h: 96, prop: 'cooler' },
+    { kind: 'rect', x: 1630, y: 552, w: 64, h: 96, prop: 'cooler' },
   ],
   spawns: [
     { x: 440, y: 400 },

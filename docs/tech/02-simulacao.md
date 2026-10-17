@@ -35,7 +35,7 @@ o mesmo `step(dt)` e as mesmas entradas. Regras de design em `docs/DESIGN.md` (s
 windup 1500 · QTE: lead 650 / perfect ±100 / late 220 · speed 200, accel 800, decel 650 · hitstun 700 · grace 1300 · dash 65px/170ms custo 50 cd 1400 · golpe final: graça 2000, pedra stun 1700, tesoura slow 2500 · partida 240 s · HP 3.
 
 ## Armadilhas
-- Mudou coordenada/raio de obstáculo? Testes usam posições fixas (barril/churrasqueira em (520,600) r34; mesa (960,600) r70) — ajuste `test/simulation.test.ts`.
+- Obstáculos (layout v0.7 em `config.ts`, com a lógica de cada peça comentada). Os testes buscam churrasqueira/freezer/engradado na config; só a mesa (960,600) r70 e as posições A(780,520)/B(880,520) são fixas — não ponha obstáculo nessa faixa. Garçom procura corredor livre (`startWaiter`).
 - `debugSet(hp)` não ressuscita (`alive`). Ações fora de `playing` → `denied: phase`.
 - Bots e cliente leem a mesma `PlayerView`; campo novo na view → atualize `fakeView/viewOf` em `three/portraits.ts` e `three/MenuStage3D.ts`.
 

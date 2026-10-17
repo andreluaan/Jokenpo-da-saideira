@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
-import { clamp, clampInArena, dist, distToObstacle, lineBlocked, normalize, obstacleCenter, pushOutOfObstacle } from './geometry';
+import { clamp, clampInArena, dist, distToObstacle, insideObstacle, lineBlocked, normalize, obstacleCenter, pushOutOfObstacle } from './geometry';
 import { makeRng } from './bot';
 import type { Obstacle } from './config';
 import { gradeLock, resolveExchange } from './rules';
@@ -702,8 +702,15 @@ export class GameSimulation {
   private startWaiter(beers: number): void {
     const { arena } = this.config;
     const side = this.rng() < 0.5 ? -1 : 1;
-    // Corredores livres entre a fileira do meio (mesa e churrasqueiras) e as de engradados/isopores.
-    const lane = (this.rng() < 0.5 ? -1 : 1) * (95 + this.rng() * 10);
+    // Procura um corredor horizontal livre de obstáculos (testa faixas a partir de um lado sorteado).
+    const top = this.rng() < 0.5 ? -1 : 1;
+    const lanes = [100, 160, 220, 280, 40].flatMap((d) => [top * d, -top * d]);
+    const clear = (lane: number) => {
+      const h = (arena.rx - 40) * Math.sqrt(Math.max(0.05, 1 - (lane / arena.ry) ** 2));
+      for (let x = arena.cx - h; x <= arena.cx + h; x += 20) if (insideObstacle(x, arena.cy + lane, this.config.waiter.radius + 6, this.active)) return false;
+      return true;
+    };
+    const lane = lanes.find(clear) ?? lanes[0];
     const half = (arena.rx - 30) * Math.sqrt(Math.max(0.05, 1 - (lane / arena.ry) ** 2));
     const x0 = arena.cx - side * half;
     const x1 = arena.cx + side * half;

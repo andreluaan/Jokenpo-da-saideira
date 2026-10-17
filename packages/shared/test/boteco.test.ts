@@ -33,9 +33,10 @@ const view = (sim: GameSimulation, id: string) => sim.snapshotFor(null).players.
 describe('arena interativa', () => {
   it('churrasqueira quente: quem é arremessado nela queima e fica atordoado', () => {
     const sim = newSim();
-    // Churrasqueira em (520,600) r34. B entre A e ela; o Papel arremessa B na brasa.
-    sim.debugPlace('A', 690, 600);
-    sim.debugPlace('B', 600, 600);
+    // B entre A e a churrasqueira; o Papel arremessa B na brasa.
+    const g = sim.config.obstacles.find((o) => o.prop === 'grill') as { x: number; y: number };
+    sim.debugPlace('A', g.x + 170, g.y);
+    sim.debugPlace('B', g.x + 80, g.y);
     const ev = finisher(sim, 'paper');
     advanceTo(sim, sim.now + 600, ev);
     expect(ev.some((e) => e.type === 'burn' && e.playerId === 'B')).toBe(true);
@@ -66,9 +67,10 @@ describe('arena interativa', () => {
 
   it('freezer aberto: escudo de gelo segura o próximo golpe inteiro', () => {
     const sim = newSim();
-    // Freezer de cima: retângulo (900,255) 120×62 → embaixo dele.
-    sim.debugPlace('B', 960, 350);
-    sim.debugPlace('A', 960, 440);
+    // Logo embaixo do primeiro freezer (encostado na cerca).
+    const f = sim.config.obstacles.find((o) => o.prop === 'freezer') as { x: number; y: number; w: number; h: number };
+    sim.debugPlace('B', f.x + f.w / 2, f.y + f.h + 30);
+    sim.debugPlace('A', f.x + f.w / 2, f.y + f.h + 120);
     sim.applyInput('B', { type: 'drink' });
     expect(view(sim, 'B').openingUntil).toBeGreaterThan(sim.now);
     advanceTo(sim, sim.now + sim.config.hazards.freezer.openMs + 20);

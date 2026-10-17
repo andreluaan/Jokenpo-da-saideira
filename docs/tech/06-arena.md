@@ -13,6 +13,11 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - **Entorno**: boteco (`buildShack`, telhado com nervuras, placa "BAR DO ZÉ", TV, rádio, banquetas, caixa de som), **mesa de fora com 4 banquinhos** (`buildOutdoorTable(-9.25,-1.3)` → `seats`), árvores de outono, milharal, horta, mesas vermelhas com guarda-sol (`buildPatio`), lousa "SAIDEIRA", grama/flores/pedras espalhadas (PRNG fixo), lenha, toco, lixeira.
 - **Luz** e névoa (ver 04).
 
+## Bar do Zé e área dos jogadores (v0.9)
+- **`buildBar(scene, BAR.x, BAR.z)`** (BAR = (-7,6, -8,0), ~4 m da cerca): casinha 5×2,2 com janela de garrafas + **varanda coberta** de 2,3 m. O telhado da varanda **sobe para a frente** (2,3 → 2,75) para a câmera (de cima e de frente, ~46°) enxergar dentro. Na varanda: balcão baixo (tampo a 0,61, na altura dos bonecos), banquetas, mesinha com 3 cadeiras, geladeira, caixa de som, lampiões, cordão de lâmpadas. Devolve `bartender` (o Zé/garçom) e `barSeats` (fregueses). Banqueta: y=0,30; cadeira da varanda: y=0,18.
+- **`buildPlayersArea`**: cercadinho de corda (raio 1,75) em volta da mesa onde os personagens jogáveis esperam (menu), com abertura virada para a porteira e a plaquinha "SÓ QUEM JOGA". `ArenaHandles.playersArea` → o Ambient não coloca figurante a menos de r+0,8 (cachorros podem).
+- **Armadilha vivida:** o laço da torcida na cerca passava de π e caía do outro lado (dentro da área dos jogadores) — agora para em π e ainda checa `nearPlayers`.
+
 ## Quintal verde e estradinha (v0.8)
 - **Chão**: `grassTexture()` (textures.ts) — grama verde quentinha (`GROUND = 0x8fa452`) com manchas, tufos riscados e florzinhas, repetível sem emenda (`wrapped`). Névoa/fundo `SKY = 0xa9b97a`; hemisfério com rebote verde. CSS `#menu/#match` na mesma cor.
 - **Estradinha** (`ROAD`, `buildRoad`): faixa seguindo uma Catmull-Rom com `roadTexture()` (trilhas de pneu, pedrinhas, mato nas beiradas), da borda esquerda até o **terreiro** de terra em frente ao bar; moitas acompanham as margens. Lousa da saideira na entrada da estrada.

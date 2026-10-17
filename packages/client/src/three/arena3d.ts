@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { makeRng, type GameConfig, type Obstacle } from '@ppt/shared';
 import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
+import { makeBottle } from './character3d';
 import { grassTexture, roadTexture, softCircle, speckleTexture, textTexture } from './textures';
 import { mergeStatic } from './merge';
 
@@ -54,6 +55,10 @@ export interface ArenaHandles {
   /** Onde fica a picape com paredão (traseira virada para a arena) e o garçom do balcão. */
   truck: { pos: THREE.Vector3; yaw: number };
   barWaiter: { pos: THREE.Vector3; yaw: number };
+  /** Lugares dentro do Bar do Zé (varanda): banquetas do balcão e cadeiras da mesinha. */
+  barSeats: Seat[];
+  /** Área reservada da mesa dos jogadores: torcida não chega perto (só os cachorros). */
+  playersArea: { center: THREE.Vector3; r: number };
   /** Pontos onde a turma em pé faz rodinha (conversando com a cerveja na mão). */
   hangouts: THREE.Vector3[];
   /** Grupo 3D de cada obstáculo (mesmo índice de config.obstacles; null quando não há grupo único). */
@@ -71,20 +76,24 @@ export const SKY = 0xa9b97a;
 const ROAD: [number, number][] = [
   [-19, 6.6],
   [-14.6, 4.7],
-  [-12.4, 2.3],
-  [-11.7, -0.6],
-  [-11.0, -2.6],
-  [-9.7, -3.4],
-  [-8.4, -3.5],
+  [-12.6, 2.0],
+  [-12.1, -1.0],
+  [-11.4, -3.6],
+  [-10.0, -5.0],
+  [-8.4, -5.35],
 ];
+/** Bar do Zé (v0.9): maior, com varanda coberta, recuado da arena. Frente virada para +z. */
+const BAR = { x: -7.6, z: -8.0 };
+/** Mesa onde os personagens jogáveis esperam a vez (menu) e a área reservada em volta. */
+const PLAYERS_TABLE = { x: -9.25, z: -1.3, r: 1.75 };
 /** Mesas vermelhas em volta (x, z, guarda-sol). */
 const PATIOS: [number, number, boolean][] = [
   [9.2, 4.9, true],
   [10.9, 1.5, false],
   [10.6, -2.4, true],
   [2.2, -7.6, true],
-  [-2.4, -7.7, false],
-  [-4.6, -7.1, true],
+  [-0.9, -7.6, false],
+  [-3.2, -6.7, true],
   [-9.6, 3.6, true],
   [-7.8, 5.7, false],
   [6.4, 6.3, true],
@@ -93,7 +102,7 @@ const HANGOUTS: [number, number][] = [
   [-3.6, 6.6],
   [3.3, -6.4],
   [11.5, -0.4],
-  [-11.0, -4.3],
+  [-3.4, -4.7],
 ];
 
 /** Monta todo o quintal do Bar do Zé. */
@@ -229,9 +238,10 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   // --- entorno: estradinha, Bar do Zé, árvores, mesas, plantas ---
   const roadPts = buildRoad(scene, ROAD);
   // Terreiro de terra batida na frente do bar, onde a estrada chega.
-  scene.add(flat(ellipseShape(2.1, 1.15), std(0xb8916a, { flatShading: false }), 0.007).translateX(-8.3).translateY(3.45));
-  buildShack(scene, -8.1, -5.1);
-  const seats = buildOutdoorTable(scene, -9.25, -1.3);
+  scene.add(flat(ellipseShape(2.9, 0.95), std(0xb8916a, { flatShading: false }), 0.007).translateX(BAR.x).translateY(-(BAR.z + 2.7)));
+  const bar = buildBar(scene, BAR.x, BAR.z);
+  const seats = buildOutdoorTable(scene, PLAYERS_TABLE.x, PLAYERS_TABLE.z);
+  buildPlayersArea(scene, PLAYERS_TABLE, cfg);
   const roadDist = (x: number, z: number) => Math.min(...roadPts.map((p) => Math.hypot(p.x - x, p.z - z)));
   // Árvores: verdes misturadas com as de outono (aconchego sem perder a paleta quente).
   for (const [x, z, h, kind] of [
@@ -239,15 +249,16 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     [11.6, -4.2, 2.2, 'tree_fat_fall'],
     [7.3, -7.9, 2.0, 'tree_default_fall'],
     [-13.4, 0.4, 2.4, 'tree_detailed'],
-    [-12.6, -4.8, 2.2, 'tree_oak_fall'],
+    [-12.9, -5.6, 2.2, 'tree_oak_fall'],
     [-1.4, -8.8, 2.1, 'tree_fat'],
     [12.1, 3.3, 2.3, 'tree_default'],
     [-11.2, 5.5, 2.1, 'tree_default_fall'],
     [13.6, -1.1, 2.2, 'tree_oak'],
     [-14.4, -2.4, 2.3, 'tree_fat'],
     [3.9, -9.2, 2.2, 'tree_detailed'],
-    [-6.6, -8.5, 2.0, 'tree_default'],
-    [-5.5, -5.4, 2.3, 'tree_palmShort'],
+    [-11.6, -8.6, 2.0, 'tree_default'],
+    [-4.4, -6.0, 2.3, 'tree_palmShort'],
+    [-10.8, -6.9, 1.8, 'tree_palmShort'],
   ] as const) {
     scene.add(place(`nature/${kind}`, x, z, { height: h, rot: rng() * 6 }));
   }
@@ -277,8 +288,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     const k = (x / (ax + 1.45 + pad)) ** 2 + (z / (az + 1.45 + pad)) ** 2;
     if (k < 1) return false; // arena + torcida na cerca
     if (roadDist(x, z) < 1.15 + pad) return false;
-    if (x < -6.2 && x > -10.4 && z < -2.3 && z > -6.2) return false; // bar e terreiro
-    if (Math.hypot(x + 9.25, z + 1.3) < 1.3 + pad) return false; // mesa de fora
+    if (x > BAR.x - 3.2 && x < BAR.x + 3.2 && z > BAR.z - 2.6 && z < BAR.z + 3.8) return false; // bar e terreiro
+    if (Math.hypot(x - PLAYERS_TABLE.x, z - PLAYERS_TABLE.z) < PLAYERS_TABLE.r + 0.5 + pad) return false; // área dos jogadores
     if (PATIOS.some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.25 + pad)) return false;
     if (HANGOUTS.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 1.1 + pad)) return false;
     if (Math.hypot(x - 5.4, z + 7.6) < 2 + pad) return false; // picape
@@ -316,7 +327,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     const [kind, h] = scatter[Math.floor(rng() * scatter.length)];
     scene.add(place(kind, x, z, { height: h * (0.8 + rng() * 0.5), rot: rng() * 6 }));
   }
-  scene.add(place('nature/log_stack', -6.0, -3.9, { size: 1.0, rot: 0.4 }));
+  scene.add(place('nature/log_stack', BAR.x - 3.3, BAR.z + 0.4, { size: 1.0, rot: 0.4 }));
   scene.add(place('furniture/trashcan', 7.2, 3.4, { height: 0.55 }));
 
   // --- luz ---
@@ -361,7 +372,9 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     // Nos fundos à direita (aparece no menu e na partida). Frente apontando para longe da arena →
     // caçamba e paredão virados para o ringue.
     truck: { pos: new THREE.Vector3(5.4, 0, -7.6), yaw: Math.atan2(7.6, 5.4) },
-    barWaiter: { pos: new THREE.Vector3(-7.0, 0.08, -3.95), yaw: 0.35 },
+    barWaiter: bar.bartender,
+    barSeats: bar.seats,
+    playersArea: { center: new THREE.Vector3(PLAYERS_TABLE.x, 0, PLAYERS_TABLE.z), r: PLAYERS_TABLE.r },
     hangouts: HANGOUTS.map(([x, z]) => new THREE.Vector3(x, 0, z)),
     props,
     setDim(k) {
@@ -556,98 +569,200 @@ function buildRoad(scene: THREE.Scene, pts: [number, number][]): THREE.Vector3[]
   return along;
 }
 
-function buildShack(scene: THREE.Scene, x: number, z: number): void {
+/**
+ * Bar do Zé (v0.9): casinha maior (cabe gente) com varanda coberta na frente. O telhado da varanda sobe
+ * para a frente — assim a câmera, que olha de cima e de frente, enxerga o balcão, o Zé e os fregueses.
+ * Coordenadas locais: frente em +z; a parede da frente da casinha fica em z=0 e a varanda vai até z=VD.
+ */
+function buildBar(scene: THREE.Scene, x: number, z: number): { bartender: { pos: THREE.Vector3; yaw: number }; seats: Seat[] } {
   const g = new THREE.Group();
-  const W = 3.4;
-  const H = 1.7;
-  const D = 1.6;
-  g.add(mesh(new THREE.BoxGeometry(W, H, D), std(0xf1dcc4), 0, H / 2, 0));
-  g.add(mesh(new THREE.BoxGeometry(W + 0.02, 0.35, D + 0.02), std(0xd9b08a), 0, 0.175, 0));
-  // Balcão com janela.
-  g.add(mesh(new THREE.BoxGeometry(1.6, 0.6, 0.02), std(0x2b1d22), 0.45, 1.05, D / 2 + 0.005));
-  g.add(mesh(new THREE.BoxGeometry(1.8, 0.07, 0.3), std(0xb36a55), 0.45, 0.74, D / 2 + 0.13));
-  g.add(mesh(new THREE.BoxGeometry(0.6, 1.15, 0.03), std(0x8a4f45), -1.05, 0.58, D / 2 + 0.01));
-  const tv = fit(instance('furniture/televisionVintage'), { height: 0.32 });
-  tv.position.set(0.9, 0.78, D / 2 + 0.1);
-  g.add(tv);
-  const radio = fit(instance('furniture/radio'), { height: 0.16 });
-  radio.position.set(0.05, 0.78, D / 2 + 0.12);
-  g.add(radio);
-  // Telhado de zinco vermelho.
-  const roof = mesh(new THREE.BoxGeometry(W + 0.5, 0.08, D + 0.9), std(0xd8443c, { metalness: 0.2, roughness: 0.6 }), 0, H + 0.12, 0.2);
-  roof.rotation.x = 0.12;
+  const W = 5.0;
+  const D = 2.2;
+  const H = 2.3;
+  const VD = 2.3;
+  const wall = std(0xf1dcc4);
+  const trim = std(0xd9b08a);
+  const wood = std(0x9a6a4a);
+  const darkWood = std(0x6a3f37);
+  // Casinha: paredes, rodapé, porta e janelona com prateleira de garrafas.
+  g.add(mesh(new THREE.BoxGeometry(W, H, D), wall, 0, H / 2, -D / 2));
+  g.add(mesh(new THREE.BoxGeometry(W + 0.02, 0.35, D + 0.02), trim, 0, 0.175, -D / 2));
+  g.add(mesh(new THREE.BoxGeometry(0.75, 1.5, 0.04), std(0x8a4f45), -1.75, 0.75, 0.01));
+  g.add(mesh(new THREE.BoxGeometry(2.6, 1.0, 0.03), std(0x2b1d22), 0.6, 1.25, 0.005));
+  const shelf = fit(instance('furniture/bookcaseOpenLow'), { height: 0.9 });
+  shelf.position.set(0.6, 0.78, 0.03);
+  g.add(shelf);
+  for (let k = 0; k < 9; k++) {
+    const b = makeBottle();
+    b.scale.setScalar(0.75);
+    b.position.set(-0.4 + k * 0.24, 1.25 + (k % 2) * 0.02, 0.1);
+    g.add(b);
+  }
+  // Telhado de zinco da casinha (cai para trás) e as nervuras.
+  const roof = mesh(new THREE.BoxGeometry(W + 0.4, 0.08, D + 0.5), std(0xd8443c, { metalness: 0.2, roughness: 0.6 }), 0, H + 0.18, -D / 2);
+  roof.rotation.x = 0.16;
   g.add(roof);
-  for (let k = -W / 2 - 0.2; k <= W / 2 + 0.2; k += 0.22) {
-    const rib = mesh(new THREE.BoxGeometry(0.03, 0.03, D + 0.9), std(0xb0342f), k, H + 0.18, 0.2);
-    rib.rotation.x = 0.12;
+  for (let k = -W / 2 - 0.1; k <= W / 2 + 0.1; k += 0.24) {
+    const rib = mesh(new THREE.BoxGeometry(0.03, 0.03, D + 0.5), std(0xb0342f), k, H + 0.24, -D / 2);
+    rib.rotation.x = 0.16;
     g.add(rib);
   }
-  // Placa.
+  // Varanda: piso de tábua, esteios e telhado que sobe para a frente.
+  g.add(mesh(new THREE.BoxGeometry(W + 0.4, 0.08, VD), wood, 0, 0.04, VD / 2));
+  for (let k = -W / 2; k <= W / 2 + 0.01; k += 0.3) g.add(mesh(new THREE.BoxGeometry(0.014, 0.012, VD), std(0x7a4f36), k, 0.085, VD / 2));
+  const front = 2.75;
+  for (const px of [-W / 2, 0, W / 2]) g.add(mesh(new THREE.BoxGeometry(0.1, front, 0.1), darkWood, px, front / 2, VD - 0.05));
+  const vRoof = mesh(new THREE.BoxGeometry(W + 0.4, 0.07, VD + 0.15), std(0xe07a3a, { roughness: 0.7 }), 0, (H + front) / 2 + 0.05, VD / 2);
+  vRoof.rotation.x = -Math.atan2(front - H, VD);
+  g.add(vRoof);
+  g.add(mesh(new THREE.BoxGeometry(W + 0.4, 0.12, 0.08), darkWood, 0, front + 0.04, VD - 0.02));
+  // Placa em cima da varanda.
   const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.8, 0.45),
+    new THREE.PlaneGeometry(2.4, 0.6),
     new THREE.MeshStandardMaterial({ map: textTexture('BAR DO ZÉ', { w: 512, h: 128, bg: 0xffc145, border: 0x2b1d22, color: '#2b1d22', size: 84 }) }),
   );
-  sign.position.set(0, H + 0.45, D / 2 + 0.55);
-  sign.rotation.x = -0.25;
+  sign.position.set(0, front + 0.45, VD - 0.02);
+  sign.rotation.x = -0.2;
   g.add(sign);
-  g.add(mesh(new THREE.BoxGeometry(0.05, 0.5, 0.05), std(0x6a3f37), -0.7, H + 0.22, D / 2 + 0.52));
-  g.add(mesh(new THREE.BoxGeometry(0.05, 0.5, 0.05), std(0x6a3f37), 0.7, H + 0.22, D / 2 + 0.52));
-  // Banquetas, caixa de som e engradados na porta.
-  for (const k of [-0.1, 0.45, 1.0]) {
-    const st = fit(instance('furniture/stoolBar'), { height: 0.5 });
-    st.position.set(k, 0.08, D / 2 + 0.55);
-    g.add(st);
+  g.add(mesh(new THREE.BoxGeometry(0.05, 0.45, 0.05), darkWood, -0.9, front + 0.22, VD - 0.05));
+  g.add(mesh(new THREE.BoxGeometry(0.05, 0.45, 0.05), darkWood, 0.9, front + 0.22, VD - 0.05));
+  // Lampiões e cordão de lâmpadas na beirada da varanda.
+  for (const lx of [-1.3, 1.3]) {
+    g.add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.3, 4), std(0x2b1d22), lx, front - 0.2, VD - 0.15));
+    g.add(mesh(new THREE.SphereGeometry(0.08, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffe2a0, emissive: 0xffc860, emissiveIntensity: 1.4 }), lx, front - 0.38, VD - 0.15));
   }
-  const speaker = fit(instance('furniture/speaker'), { height: 0.7 });
-  speaker.position.set(-1.55, 0.08, D / 2 + 0.35);
+  for (let k = 0; k < 11; k++) {
+    const bx = -W / 2 + (k / 10) * W;
+    const sag = Math.sin((k / 10) * Math.PI) * 0.12;
+    const col = [0xffd27a, 0xff6b5a, 0x7ee0a8, 0x9fd3ff][k % 4];
+    g.add(mesh(new THREE.SphereGeometry(0.04, 6, 4), new THREE.MeshBasicMaterial({ color: col }), bx, front - 0.08 - sag, VD + 0.02));
+  }
+  // Balcão de madeira na varanda (o Zé atrás, fregueses nas banquetas na frente).
+  const counterX = -1.1;
+  const counterZ = 1.45;
+  // Na altura dos bonecos baixinhos (o Zé aparece por cima do tampo).
+  g.add(mesh(new THREE.BoxGeometry(2.0, 0.5, 0.42), wood, counterX, 0.33, counterZ));
+  g.add(mesh(new THREE.BoxGeometry(2.1, 0.06, 0.52), std(0xb36a55), counterX, 0.61, counterZ));
+  for (const k of [-0.7, 0, 0.7]) {
+    const b = makeBottle();
+    b.scale.setScalar(0.8);
+    b.position.set(counterX + k + 0.15, 0.64, counterZ - 0.05);
+    g.add(b);
+  }
+  const radio = fit(instance('furniture/radio'), { height: 0.16 });
+  radio.position.set(counterX - 0.75, 0.64, counterZ + 0.05);
+  g.add(radio);
+  const seats: Seat[] = [];
+  for (const k of [-0.65, 0, 0.65]) {
+    const st = fit(instance('furniture/stoolBar'), { height: 0.42 });
+    st.position.set(counterX + k, 0.08, counterZ + 0.55);
+    g.add(st);
+    seats.push({ pos: new THREE.Vector3(counterX + k, 0.3, counterZ + 0.62), face: new THREE.Vector3(0, 0, -1) });
+  }
+  // Mesinha da varanda.
+  const tx = 1.35;
+  const tz = 1.25;
+  const tbl = fit(instance('furniture/tableRound'), { size: 0.8 });
+  tbl.position.set(tx, 0.08, tz);
+  g.add(tbl);
+  for (const a of [Math.PI * 0.15, Math.PI * 0.85, -Math.PI * 0.5]) {
+    const cx = tx + Math.cos(a) * 0.62;
+    const cz = tz + Math.sin(a) * 0.62;
+    const ch = fit(instance('furniture/chair'), { height: 0.55 });
+    ch.position.set(cx, 0.08, cz);
+    ch.rotation.y = -a - Math.PI / 2;
+    g.add(ch);
+    seats.push({ pos: new THREE.Vector3(tx + Math.cos(a) * 0.55, 0.18, tz + Math.sin(a) * 0.55), face: new THREE.Vector3(-Math.cos(a), 0, -Math.sin(a)) });
+  }
+  const fridge = fit(instance('furniture/kitchenFridgeLarge'), { height: 1.25 });
+  fridge.position.set(W / 2 - 0.4, 0.08, 0.35);
+  g.add(fridge);
+  // Caixa de som, vasos, arbustos e engradados.
+  const speaker = fit(instance('furniture/speaker'), { height: 0.8 });
+  speaker.position.set(-W / 2 + 0.3, 0.08, VD - 0.35);
   speaker.rotation.y = 0.4;
   g.add(speaker);
-  // Varandinha de tábua na frente (as banquetas ficam em cima).
-  g.add(mesh(new THREE.BoxGeometry(W + 0.5, 0.08, 1.35), std(0x9a6a4a), 0, 0.04, D / 2 + 0.66));
-  for (let k = -W / 2; k <= W / 2 + 0.01; k += 0.34) g.add(mesh(new THREE.BoxGeometry(0.015, 0.012, 1.35), std(0x7a4f36), k, 0.085, D / 2 + 0.66));
-  // Toldo listrado sobre o balcão.
-  const stripes = document.createElement('canvas');
-  stripes.width = 128;
-  stripes.height = 8;
-  const sx = stripes.getContext('2d')!;
-  for (let k = 0; k < 8; k++) {
-    sx.fillStyle = k % 2 ? '#fff4e6' : '#d8443c';
-    sx.fillRect(k * 16, 0, 16, 8);
-  }
-  const awningTex = new THREE.CanvasTexture(stripes);
-  awningTex.colorSpace = THREE.SRGBColorSpace;
-  const awning = mesh(new THREE.BoxGeometry(2.2, 0.03, 0.8), new THREE.MeshStandardMaterial({ map: awningTex, roughness: 0.8 }), 0.45, 1.5, D / 2 + 0.36);
-  awning.rotation.x = 0.38;
-  g.add(awning);
-  // Lampião aceso pendurado no beiral.
-  g.add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.25, 4), std(0x2b1d22), -0.55, 1.47, D / 2 + 0.55));
-  g.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffe2a0, emissive: 0xffc860, emissiveIntensity: 1.4 }), -0.55, 1.32, D / 2 + 0.55));
-  // Vasos, plantas e engradados empilhados do lado.
   for (const [px, pz] of [
-    [-W / 2 - 0.15, D / 2 + 1.2],
-    [W / 2 + 0.15, D / 2 + 1.2],
+    [-W / 2 - 0.35, VD + 0.2],
+    [W / 2 + 0.35, VD + 0.2],
   ]) {
-    const pot = fit(instance('nature/pot_small'), { height: 0.55 });
+    const pot = fit(instance('nature/pot_small'), { height: 0.6 });
     pot.position.set(px, 0, pz);
     g.add(pot);
   }
   for (const [px, pz, h] of [
-    [-W / 2 - 0.35, -0.2, 0.6],
-    [-W / 2 - 0.3, 0.55, 0.45],
-    [W / 2 + 0.45, -0.55, 0.55],
+    [-W / 2 - 0.45, -0.6, 0.7],
+    [-W / 2 - 0.4, -1.6, 0.55],
+    [W / 2 + 0.5, -1.4, 0.6],
   ]) {
     const b = fit(instance('nature/plant_bushDetailed'), { height: h });
     b.position.set(px, 0, pz);
     g.add(b);
   }
-  for (let k = 0; k < 3; k++) {
-    const crate = mesh(new THREE.BoxGeometry(0.42, 0.24, 0.32), std(k % 2 ? 0x4f9a5c : 0xf2b134), W / 2 + 0.32, 0.12 + k * 0.24, 0.35 + (k % 2) * 0.03);
-    crate.rotation.y = (k - 1) * 0.12;
+  for (let k = 0; k < 4; k++) {
+    const crate = mesh(new THREE.BoxGeometry(0.44, 0.24, 0.34), std(k % 2 ? 0x4f9a5c : 0xf2b134), W / 2 + 0.45 + (k > 1 ? 0.48 : 0), 0.12 + (k % 2) * 0.24, 0.4);
+    crate.rotation.y = (k - 1.5) * 0.1;
     g.add(crate);
   }
   g.position.set(x, 0, z);
   shadows(g);
   scene.add(g);
+  const world = (lx: number, ly: number, lz: number) => new THREE.Vector3(x + lx, ly, z + lz);
+  return {
+    bartender: { pos: world(counterX - 0.2, 0.08, counterZ - 0.55), yaw: 0 },
+    seats: seats.map((s) => ({ pos: world(s.pos.x, s.pos.y, s.pos.z), face: s.face })),
+  };
+}
+
+/**
+ * Área reservada da mesa dos jogadores: cercadinho de corda com uma abertura virada para a porteira
+ * e a plaquinha "SÓ QUEM JOGA". A torcida não chega perto (os cachorros podem).
+ */
+function buildPlayersArea(scene: THREE.Scene, t: { x: number; z: number; r: number }, cfg: GameConfig): void {
+  const post = std(0x6a3f37);
+  const rope = std(0xd9b77a);
+  // Direção da porteira (lado do bar na cerca da arena) para deixar a passagem aberta.
+  const gx = Math.cos(-2.75) * (cfg.arena.rx * S + 0.42);
+  const gz = Math.sin(-2.75) * (cfg.arena.ry * S + 0.42);
+  const gap = Math.atan2(gz - t.z, gx - t.x);
+  const angDist = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  const n = 16;
+  const pts: THREE.Vector3[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    pts.push(new THREE.Vector3(t.x + Math.cos(a) * t.r, 0, t.z + Math.sin(a) * t.r));
+  }
+  pts.forEach((p, i) => {
+    const q = pts[(i + 1) % n];
+    const mid = Math.atan2((p.z + q.z) / 2 - t.z, (p.x + q.x) / 2 - t.x);
+    const open = angDist(mid, gap) < 0.55;
+    if (!open || angDist(Math.atan2(p.z - t.z, p.x - t.x), gap) > 0.4) scene.add(mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.6, 6), post, p.x, 0.3, p.z));
+    if (open) return;
+    // Corda com uma barriguinha no meio.
+    for (const [a, b, ya, yb] of [
+      [p, p.clone().lerp(q, 0.5), 0.5, 0.44],
+      [p.clone().lerp(q, 0.5), q, 0.44, 0.5],
+    ] as const) {
+      const len = a.distanceTo(b);
+      const r = mesh(new THREE.CylinderGeometry(0.012, 0.012, len, 4), rope, (a.x + b.x) / 2, (ya + yb) / 2, (a.z + b.z) / 2);
+      r.rotation.order = 'YXZ';
+      r.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+      r.rotation.x = Math.PI / 2 - Math.atan2(yb - ya, len);
+      scene.add(r);
+    }
+  });
+  // Plaquinha.
+  const back = gap + Math.PI;
+  const sx = t.x + Math.cos(back + 0.5) * (t.r + 0.05);
+  const sz = t.z + Math.sin(back + 0.5) * (t.r + 0.05);
+  scene.add(mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), post, sx, 0.45, sz));
+  const plate = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.75, 0.3),
+    new THREE.MeshStandardMaterial({ map: textTexture('SÓ QUEM JOGA', { w: 512, h: 200, bg: 0xfff4e6, border: 0x2b1d22, color: '#2b1d22', size: 70 }), side: THREE.DoubleSide }),
+  );
+  plate.position.set(sx, 0.8, sz);
+  plate.rotation.y = Math.atan2(4 - sz, 6 - sx); // de frente para a câmera/arena
+  scene.add(plate);
 }
 
 /** Mesa de madeira com quatro banquinhos do lado de fora do bar (onde a turma espera a vez). */

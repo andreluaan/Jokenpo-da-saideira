@@ -3,7 +3,7 @@ import { makeRng, type GameConfig, type GameEvent } from '@ppt/shared';
 import { S, toWorld } from './assets';
 import type { ArenaHandles } from './arena3d';
 import { Extra3D } from './boteco3d';
-import { addOutline, makeBottle } from './character3d';
+import { addOutline } from './character3d';
 import { buildParedao, type Paredao } from './paredao3d';
 import { softCircle } from './textures';
 
@@ -106,7 +106,7 @@ interface Fan {
 
 /** Faixas de ângulo (na elipse da cerca) sem torcida em pé: porteira/mesa de fora/bar e o meio da frente (não tapar a câmera). */
 const NO_CROWD: [number, number][] = [
-  [-3.25, -2.2],
+  [-3.3, -1.9], // porteira, área dos jogadores e o lado do bar
   [1.25, 1.9],
 ];
 const inRanges = (a: number, rs: [number, number][]) => rs.some(([lo, hi]) => a >= lo && a <= hi);
@@ -137,14 +137,19 @@ export class Ambient3D {
     };
     const ax = cfg.arena.rx * S;
     const az = cfg.arena.ry * S;
+    // Área da mesa dos jogadores: figurante nenhum chega perto (só os cachorros).
+    const pa = arena.playersArea;
+    const nearPlayers = (x: number, z: number) => Math.hypot(x - pa.center.x, z - pa.center.z) < pa.r + 0.8;
 
     // Alguns na cerca, espaçados (nada de paredão de gente: dá sensação de aperto).
     const ring = 0.78;
     for (let i = 0, a = -Math.PI; a < Math.PI && i < 20; i++) {
       a += 0.38 + rng() * 0.42;
+      if (a >= Math.PI) break; // não dar a volta (cairia do outro lado, na área dos jogadores)
       if (inRanges(a, NO_CROWD)) continue;
       const x = Math.cos(a) * (ax + ring);
       const z = Math.sin(a) * (az + ring);
+      if (nearPlayers(x, z)) continue;
       const e = pickLook();
       e.root.position.set(x, 0, z);
       e.root.rotation.y = Math.atan2(-x, -z) + (rng() - 0.5) * 0.4;
@@ -173,6 +178,7 @@ export class Ambient3D {
       for (let k = 0; k < n; k++) {
         const a = a0 + (k / n) * Math.PI * 2 + (rng() - 0.5) * 0.4;
         const r = 0.55 + rng() * 0.15;
+        if (nearPlayers(h.x + Math.cos(a) * r, h.z + Math.sin(a) * r)) continue;
         const e = pickLook();
         e.root.position.set(h.x + Math.cos(a) * r, 0, h.z + Math.sin(a) * r);
         e.root.rotation.y = Math.atan2(h.x - e.root.position.x, h.z - e.root.position.z);
@@ -184,14 +190,23 @@ export class Ambient3D {
       }
     }
 
-    // Garçom no balcão do Bar do Zé (sai de lá para atravessar a arena nos eventos).
+    // Fregueses dentro do Bar do Zé: banquetas do balcão e a mesinha da varanda.
+    for (const seat of arena.barSeats) {
+      if (rng() < 0.2) continue;
+      const e = pickLook();
+      e.root.position.copy(seat.pos);
+      e.root.rotation.y = Math.atan2(seat.face.x, seat.face.z);
+      e.play('sit');
+      e.offset(rng() * 2);
+      e.holdBottle();
+      scene.add(e.root);
+      this.fans.push({ e, base: 'sit', cheerUntil: 0 });
+    }
+    // O Zé (garçom) atrás do balcão da varanda (sai de lá para atravessar a arena nos eventos).
     this.waiter = new Extra3D('character-male-e', { r2c5: 0x2b1d22 });
     this.waiter.root.position.copy(arena.barWaiter.pos);
     this.waiter.root.rotation.y = arena.barWaiter.yaw;
-    const bottle = makeBottle();
-    bottle.scale.setScalar(0.9);
-    bottle.position.set(0.3, 0.62, 0.15);
-    this.waiter.root.add(bottle);
+    this.waiter.holdBottle();
     this.waiter.play('idle');
     scene.add(this.waiter.root);
 
@@ -206,7 +221,7 @@ export class Ambient3D {
     for (const [fur, belly, ear, min, max, r, speed] of [
       [0xc98a4b, 0xf0d2a6, 0x8a5a33, -0.9, 1.0, 1.7, 1.1],
       [0x2b2630, 0x4a4450, 0x1a161d, 0.7, 2.1, 1.7, 0.9],
-      [0xf4efe6, 0xffffff, 0x8a5a33, -2.1, -1.3, 1.7, 1.3],
+      [0xf4efe6, 0xffffff, 0x8a5a33, -2.6, -1.3, 1.7, 1.3],
     ] as const) {
       const m = dogModel(fur, belly, ear);
       scene.add(m.root);

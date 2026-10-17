@@ -13,6 +13,8 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 - **Etapa 2 (multiplayer real): feita** — servidor Node + Socket.IO autoritativo, salas por código, lobby, reconexão (ver `docs/tech/11-multiplayer.md`).
 - **Em andamento: passe de arte.** Feito: luz/cor (arena clara × entorno escuro) e legibilidade (contorno, câmera, escala).
   Fila combinada: detalhes dos personagens de perto → freezer/isopor → entorno vazio → log do HUD.
+- **v0.9 (out/2026): feito** — Bar do Zé maior com varanda coberta (Zé e fregueses dentro), recuado da arena;
+  cercadinho "SÓ QUEM JOGA" na mesa dos jogadores (só cachorros chegam perto); personagens voltaram à escala 1,45.
 - **v0.8 (out/2026): feito** — quintal verde e aconchegante (grama, estradinha até o Bar do Zé, bar com varanda/toldo), torcida
   espalhada em mesas e rodinhas tomando cerveja (menos gente colada na cerca); menu acompanha.
 - **v0.7 (out/2026): feito** — nome **Jokenpô da Saideira**; cachaça/amendoim removidos; layout estratégico da arena;

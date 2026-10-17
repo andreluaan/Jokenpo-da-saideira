@@ -17,6 +17,12 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - `ui/describe.ts` — frases do log e títulos (`describeExchange`), textos de erro/recusa.
 - No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo próprio, nome, ❤, foco, anel de preparação em `conic-gradient`), pop-ups `.pop3d`, `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
 
+## Boteco (v0.6)
+- **E contextual**: dica `.beerhint3d` muda o texto ("[E] Beber uma gelada" / "[E] Abrir o freezer (escudo de gelo)"); o botão 🍺 da barra habilita nos dois casos (`canDrink`).
+- **Crachá**: linha `.st` com 🥃 (golpe final turbinado), 🥜 (amendoim), 🧊 (escudo). Some na queda de luz (exceto o seu).
+- **Eventos**: `ui/barEventFx.ts` (ver 04) — classes `.barfx.kind-*.stage-*` em `style.css`.
+- Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
+
 ## Estilo
 Variáveis em `:root` (`--chalkboard`, `--wood`, `--accent` âmbar, `--chalk` = Caveat Brush). Fontes locais via `@fontsource` (Fredoka, Caveat Brush). Abaixo de 760 px o menu vai para baixo e o log some.
 

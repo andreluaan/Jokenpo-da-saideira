@@ -172,6 +172,12 @@ export class Boteco3D {
   private waiter: { e: Extra3D; tray: THREE.Group; wobble: number } | null = null;
   private dim = 0;
   private readonly brokenSeen = new Set<number>();
+  /** Golão de cachaça logo depois de pegar (só visual): início/fim em tempo da simulação. */
+  private readonly swigs = new Map<string, { start: number; end: number; hic: boolean }>();
+  private readonly nextHic = new Map<string, number>();
+  private readonly nextSplash = new Map<string, number>();
+  private readonly lastPos = new Map<string, { x: number; y: number }>();
+  private seenItems = new Set<number>();
   private readonly t0 = performance.now();
 
   constructor(private readonly d: BotecoDeps) {}
@@ -187,8 +193,13 @@ export class Boteco3D {
     switch (e.type) {
       case 'pickup': {
         const c = d.character(e.playerId);
-        c?.trigger('interact-right', 420, d.simNow());
-        if (e.kind === 'cachaca') c?.drunk(d.simNow(), d.cfg.items.cachaca.buzzMs);
+        // Abaixa e pega do chão; a cachaça ainda desce num golão direto do gargalo.
+        if (e.kind !== 'beer') c?.trigger('pick-up', 450, d.simNow());
+        if (e.kind === 'cachaca') {
+          c?.drunk(d.simNow(), d.cfg.items.cachaca.buzzMs);
+          this.swigs.set(e.playerId, { start: e.at + 380, end: e.at + 1150, hic: false });
+          this.nextHic.set(e.playerId, e.at + 2600);
+        }
         const at = this.w(e.x, e.y, 0.3);
         d.puff(at, ITEM_GLOW[e.kind], 8);
         const mine = e.playerId === d.localId;
@@ -202,6 +213,8 @@ export class Boteco3D {
         d.popup(at.clone().setY(1.9), 'AI, QUENTE!', '#ff7a2f', 22, 1100);
         const c = d.character(e.playerId);
         c?.hit(at.x, at.z - 1, at.x, at.z, 1.3, d.simNow());
+        // Pulinho de dor.
+        c?.trigger('jump', 500, d.simNow());
         break;
       }
       case 'crate': {
@@ -221,6 +234,7 @@ export class Boteco3D {
       case 'shield': {
         const c = d.character(e.playerId);
         if (e.stage === 'start') c?.trigger('interact-right', d.cfg.hazards.freezer.openMs, d.simNow());
+        if (e.stage === 'ready') c?.trigger('emote-yes', 600, d.simNow());
         if (e.stage === 'broken') {
           const s = this.shields.get(e.playerId);
           const at = s ? s.position.clone() : new THREE.Vector3();
@@ -277,6 +291,7 @@ export class Boteco3D {
     this.updateCrates(dt);
     this.updateFreezers(snap, now, dt);
     this.updatePlayerFx(snap, t);
+    this.updateQuirks(snap, now);
     this.updateWaiter(snap, dt);
     this.updateDebris(dt);
     // Queda de luz: escurece suave na entrada e na saída.
@@ -286,12 +301,54 @@ export class Boteco3D {
     this.d.arena.setDim(this.dim);
   }
 
+  /** Progresso (0–1) do golão de cachaça para a animação de beber, ou -1. */
+  swig(id: string, now: number): number {
+    const s = this.swigs.get(id);
+    if (!s || now < s.start) return -1;
+    if (now > s.end) {
+      if (!s.hic) {
+        s.hic = true;
+        const c = this.d.character(id);
+        if (c) this.d.popup(c.root.position.clone().setY(2.1).add(new THREE.Vector3(0.35, 0, 0)), 'hic!', '#ffd27a', 22, 900);
+      }
+      return -1;
+    }
+    return (now - s.start) / (s.end - s.start);
+  }
+
+  /** Bêbado solta "hic!" de vez em quando; quem anda numa poça escorrega e respinga. */
+  private updateQuirks(snap: Snapshot, now: number): void {
+    for (const p of snap.players) {
+      if (!p.alive) continue;
+      const c = this.d.character(p.id);
+      if (!c) continue;
+      const pos = c.root.position;
+      if (p.buzzed && now >= (this.nextHic.get(p.id) ?? 0)) {
+        this.nextHic.set(p.id, now + 1800 + Math.random() * 1500);
+        this.d.popup(pos.clone().setY(2.05).add(new THREE.Vector3(0.3, 0, 0)), 'hic!', '#ffd27a', 16, 800);
+      }
+      const last = this.lastPos.get(p.id);
+      this.lastPos.set(p.id, { x: p.x, y: p.y });
+      const moving = !!last && Math.hypot(p.x - last.x, p.y - last.y) > 1.5;
+      const wet = snap.puddles.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < q.r);
+      if (wet && moving && now >= (this.nextSplash.get(p.id) ?? 0)) {
+        this.nextSplash.set(p.id, now + 420);
+        this.d.puff(pos.clone().setY(0.05), 0xe0a83a, 4);
+        // Escorregão: o corpo dá uma balançada (molas do rig).
+        c.hit(pos.x - (p.x - last!.x), pos.z - (p.y - last!.y), pos.x, pos.z, 0.5, this.d.simNow());
+      }
+    }
+  }
+
   get blackout(): boolean {
     return this.dim > 0.5;
   }
 
   private syncItems(snap: Snapshot, t: number): void {
     const alive = new Set(snap.items.map((i) => i.id));
+    // Cerveja nova enquanto o garçom passa = ele se abaixou para largar.
+    if (this.waiter && snap.items.some((i) => i.kind === 'beer' && !this.seenItems.has(i.id))) this.waiter.e.once('interact-right', 'walk');
+    this.seenItems = alive;
     for (const [id, it] of this.items) {
       if (alive.has(id)) continue;
       it.g.removeFromParent();

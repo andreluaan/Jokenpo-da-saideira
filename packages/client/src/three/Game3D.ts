@@ -56,6 +56,7 @@ export class Game3D {
   private reveals: Reveal[] = [];
   private dust: { s: THREE.Sprite; t: number; v: THREE.Vector3 }[] = [];
   private fxs: Fx[] = [];
+  private readonly drinkStart = new Map<string, number>();
   private readonly boteco: Boteco3D;
   private readonly barFx: BarEventFx;
   private readonly ambient: Ambient3D;
@@ -391,6 +392,8 @@ export class Game3D {
         }
         case 'drink': {
           const p = this.pos(e.playerId, 1.8);
+          // Guarda o início do gole: a animação usa a duração real (mesa ou cerveja do chão).
+          if (e.stage === 'start') this.drinkStart.set(e.playerId, e.at);
           if (e.stage === 'done') {
             if (p) this.popup(p, '+1 ❤', '#5ad19a', 32, 1400);
             setTimeout(() => {
@@ -477,7 +480,6 @@ export class Game3D {
     if (!snap) return;
     const now = this.conn.now();
     const me = this.me(snap);
-    const cfg = this.conn.config;
 
     const m = this.moveVec();
     if (m.x !== this.lastMove.x || m.y !== this.lastMove.y) {
@@ -521,7 +523,9 @@ export class Game3D {
           // No fim, quem ficou de pé por último leva a cerveja — e toma ali mesmo.
           drink:
             p.drinkingUntil > now
-              ? 1 - (p.drinkingUntil - now) / cfg.beer.drinkMs
+              ? this.drinkProgress(p.id, p.drinkingUntil, now)
+              : this.boteco.swig(p.id, now) >= 0
+                ? this.boteco.swig(p.id, now)
               : snap.phase === 'ended' && p.id === snap.winnerId && p.alive
                 ? (now % 2200) / 2200
                 : -1,
@@ -831,6 +835,11 @@ export class Game3D {
       if (d.t >= 1) d.s.removeFromParent();
       return d.t < 1;
     });
+  }
+
+  private drinkProgress(id: string, until: number, now: number): number {
+    const start = this.drinkStart.get(id) ?? until - this.conn.config.beer.drinkMs;
+    return Math.max(0, Math.min(1, (now - start) / Math.max(1, until - start)));
   }
 
   private updateBeer(snap: Snapshot, now: number, me: PlayerView | undefined): void {

@@ -22,6 +22,8 @@
 2. Etapa 3: testes entre computadores diferentes, medir latência real, balanceamento com partidas bot×bot e humanos.
 
 ## Problemas conhecidos / dívidas
+- Boteco v0.6: sons ainda não existem (as classes CSS dos eventos e os eventos `pickup/burn/crate/shield/waiterBump/barEvent` são os ganchos). Cachorro e torcida atravessam decoração às vezes. A cachaça usa o adereço de bebida do personagem (caneca do Pança) no golão.
+- Rede: `Infinity` vira `null` no JSON (cerveja/freezer "em uso"); o cliente trata `null` no freezer, a mesa de cerveja ainda não.
 - Online: sem predição do movimento local (atraso ~100 ms + RTT/2 ao andar); snapshots JSON completos (sem compressão).
 - Online: personagem de quem caiu fica parado na arena até voltar (pode ser eliminado).
 - Menu: personagens andam em linha reta dentro do ringue (podem atravessar obstáculos); mesa de fora pode ficar perto da borda da barra lateral em telas estreitas.

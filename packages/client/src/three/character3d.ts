@@ -17,6 +17,8 @@ type Anim =
   | 'holding-right'
   | 'emote-yes'
   | 'interact-right'
+  | 'pick-up'
+  | 'jump'
   | 'sit';
 
 interface Look {

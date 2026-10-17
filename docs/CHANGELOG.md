@@ -17,6 +17,11 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.12 — ícones de verdade e transição
+- Símbolos viraram **desenhos cartunescos** (uma pedra, uma folha de papel, uma tesoura) no lugar dos emojis de mão: barra de ações, crachá, marca do adversário na barra e Como jogar.
+- Menu: câmera um pouco mais afastada; **card do personagem embaixo da lousa** (deitado, mesma largura).
+- Ao começar/sair da partida, um **copo de cerveja enche a tela** ("Bora pro quintal!") e esvazia revelando a cena.
+
 ## v0.11.1 — menos texto na tela
 - **Sem pop-ups de texto** na partida (golpes, CEDO/PERFEITO, ROUBOU!, Protegido, +1 ❤, Au! Au!…): o resultado fica no log da direita e na cor do enchimento da barra (verde/amarelo/vermelho). A barra só fala JO… KEN… PÔ! e "VAI DAR ROUBO!".
 - Card do personagem do menu foi para **baixo, à esquerda**, colado na lousa.

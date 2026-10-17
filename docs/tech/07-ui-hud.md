@@ -10,7 +10,7 @@ Ganchos só em DEV: `window.__menu`, `__ppt` (conexão), `__ppt3d` (Game3D).
 
 ## Menu (cardápio de boteco) — v0.10: enxuto e animado
 - Lousa à esquerda **só com o essencial**: placa (balança), frase curta, apelido, abas 🤖 Treino / 🍻 Online, NPCs + dificuldade, botão "🍺 Disputar a gelada" (respira + brilho passando) e "📖 Como jogar". Altura acompanha o conteúdo.
-- **Personagem num card embaixo, à esquerda, colado na lousa** (`ui/characterSelect.ts`): retrato 3D, nome, frase, 2 "jeitões" (`VIBE`, só enfeite), setas ‹ › (pulam quem está ocupado na sala online), bolinhas e "ou clique nele na mesa". Ao trocar, o retrato dá um pulinho (`.swap`). `portraitOf()` devolve `url(...)` para a lista da sala.
+- **Coluna da esquerda** (variáveis `--side-w`, `--spot-h` em `:root`): lousa em cima (altura limitada para caber o card) e **card do personagem deitado embaixo dela** (`ui/characterSelect.ts`): retrato 3D, nome, frase, 2 "jeitões" (`VIBE`, só enfeite), setas ‹ › (pulam quem está ocupado na sala online), bolinhas e "ou clique nele na mesa". Ao trocar, o retrato dá um pulinho (`.swap`). `portraitOf()` devolve `url(...)` para a lista da sala.
 - **Como jogar** (`ui/howto.ts`): janela com 1 card por vez — foto do jogo, título, frase, teclas — Voltar/Próximo, bolinhas, ← → e Esc; o último vira "🍺 Bora jogar!". Fotos em `public/howto/*.jpg` (960×540), capturadas do próprio jogo (ver 09). Para trocar uma foto: recapturar e sobrescrever o arquivo com o mesmo nome.
 - **Câmera do menu** (`MenuStage3D.resize`): enquadra a arena e depois **se afasta até o Bar do Zé inteiro (telhado incluído) caber** na área livre à direita da lousa (`BAR`/`BAR_EXTENT` em `arena3d.ts`). Mudou o tamanho do bar → ajuste `BAR_EXTENT`.
 - Entrada animada (lousa desliza, card sobe); `prefers-reduced-motion` desliga as animações contínuas.
@@ -26,6 +26,12 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - **Crachá**: linha `.st` com 🧊 (escudo). Some na queda de luz (exceto o seu).
 - **Eventos**: `ui/barEventFx.ts` (ver 04) — classes `.barfx.kind-*.stage-*` em `style.css`.
 - Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
+
+## Ícones dos símbolos (v0.12)
+`ui/symbolIcons.ts`: pedra, papel e tesoura **desenhados em SVG** (cartunescos, contorno escuro) no lugar dos emojis de mão. `symbolSvg(s)` para HTML (barra de ações, crachá), `symbolPaths(s)` para dentro de outro SVG (marca do adversário na barra), `withSymbolIcons(texto)` troca `[rock]`/`[paper]`/`[scissors]` (teclas do Como jogar). O log usa só o nome. A revelação 3D continua com as **mãos** dos personagens (`signTexture`).
+
+## Transição menu ↔ partida (v0.12)
+`transition(run)` em `main.ts`: `.wipe` (copo de cerveja com espuma e bolhas) sobe em 480 ms, a troca de tela roda escondida, e depois de 2 quadros a cerveja baixa revelando a cena. Usada em Disputar, Jogar de novo, Menu/Sair e no início de partida online (reconexão na mesma partida não tem transição).
 
 ## Estilo
 Variáveis em `:root` (`--chalkboard`, `--wood`, `--accent` âmbar, `--chalk` = Caveat Brush). Fontes locais via `@fontsource` (Fredoka, Caveat Brush). Abaixo de 760 px o menu vai para baixo e o log some.

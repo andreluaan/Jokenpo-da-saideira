@@ -22,6 +22,8 @@ o mesmo `step(dt)` e as mesmas entradas. Regras de design em `docs/DESIGN.md` (s
 
 ## Pontos-chave
 - **Golpe final:** `resolveExchange` marca `finisher` quando o vencedor não falhou; `resolveAttack` aplica `config.finisher[símbolo]` (empurrão, atordoamento, `graceMs` único) e preenche `ExchangeEvent.finisher`. Tesoura seta `slowUntil` (view `slowed`; `integrate` multiplica a velocidade). Vencedor com Falha = golpe simples (não existe mais `wasted`).
+- **Boteco (v0.6, DESIGN §9):** `rng` próprio (seed no construtor). `planRound()` ao começar: agenda itens e sorteia o evento. `updateItems` (spawn em `freeSpot`, pegar = encostar), `bumpInto` (empurrão forte contra `grill` queima, contra `crates` tira hp → `broken` + poça), poças (`puddles`, escorrega no `integrate`), freezer (`drink` perto → `openFreezer` → `shield`), `updateBarEvent` + `updateWaiter` (corredor y≈cy±100, larga cervejas no evento do Zé). `active` = obstáculos sem os quebrados (linha de visão). Snapshot: `items`, `puddles`, `broken`, `freezers`, `barEvent`, `waiter`.
+- Testes de combate desligam `items`/`barEvents` na config; `test/boteco.test.ts` testa cada peça com `debugSpawnItem`/`debugStartEvent`.
 - **Duelo:** atacar quem já te ataca (com ≥ `responseCutoffMs` restantes) une os impactos (`clashWith`), T ≥ agora + `minResponseMs`.
 - **Uma mão só:** a mão atual do defensor vale contra qualquer atacante; defensor que vence (não-duelo) mantém a ação.
 - **Graça** após dano → no máximo 1 de dano por janela (ataques simultâneos viram `protectedId`).

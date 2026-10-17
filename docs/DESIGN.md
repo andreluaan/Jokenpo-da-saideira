@@ -174,3 +174,32 @@ Lado A = atacante (sempre tem símbolo). Lado B = alvo (com a mão atual dele, o
 
 - Os punhos de quem segura símbolo batem a cada [400 ms] e descem exatamente em T − 800 (**JO**), T − 400 (**KEN**) e T (**PÔ!**). Apertar Espaço no **PÔ!** = Perfeito.
 - A pose é idêntica para os três símbolos. Só na resolução os dois viram de frente e mostram o sinal com a mão. O perdedor toma uma **rasteira** (visual; o dano/empurrão continuam vindo da simulação).
+
+## 9. Boteco vivo (v0.6)
+
+### 9.1 Itens no chão
+O garçom joga um item a cada [11–17 s] (o primeiro aos [9 s]), no máximo [2] no chão. Pegar = passar por cima.
+| Item | Efeito |
+|---|---|
+| **Cachaça da casa** | Próximo golpe final **turbinado** (empurrão ×[1,5], atordoamento ×[1,4]). Mas fica bêbado [6 s]: acelera e freia pouco (escorrega). Público. |
+| **Amendoim** | [6 s] de investida de graça (sem foco) com recarga de [0,35 s]. |
+| **Cerveja do chão** (só no evento do Zé) | Gole rápido [1,3 s] parado e vulnerável: +1 ❤. Só pega se estiver machucado. |
+
+### 9.2 Arena interativa
+- **Churrasqueira quente:** quem é **arremessado** nela (empurrão forte) queima: atordoa [0,5 s] e é jogado para longe.
+- **Engradado que quebra:** aguenta [2] trombadas fortes; quebra, para de bloquear (movimento e linha de visão) e deixa uma **poça de cerveja** grande.
+- **Cerveja derramada:** levar golpe bebendo deixa poça. Poça = escorrega por [18 s].
+- **Freezer aberto:** E perto do freezer → [1,5 s] parado abrindo → **escudo de gelo** que segura 1 golpe inteiro. Golpe enquanto abre interrompe. Recarga [20 s] por freezer.
+- E perto da mesa com cerveja e machucado = beber; senão, perto do freezer = abrir.
+
+### 9.3 Eventos do bar (1 por rodada, sorteado)
+Começa entre [22 s] e [40 s] de luta, com aviso [3 s] antes. O **garçom** atravessa a arena junto com o evento: quem esbarra nele tropeça (atordoa [0,4 s] e é empurrado).
+| Evento | Duração | Efeito |
+|---|---|---|
+| **Saideira dupla!** | [10 s] | Golpe final tira **2 ❤** |
+| **Queda de luz** | [7 s] | Arena escura: só anéis e luzinhas; sem crachás/setas dos outros (blefe puro) |
+| **Zé grita: "Rodada por conta da casa!"** | [9 s] | O garçom larga [3] cervejas no chão pelo caminho |
+
+### 9.4 Ajustes v0.6
+- Investida: [65 px], [50 foco] (no máximo 2 por barra cheia), recarga [1,4 s].
+- **Finta removida.**

@@ -49,7 +49,7 @@ export class LocalConnection implements GameConnection {
       const character = others[i];
       setups.push({ id: `bot${i}`, name: CHARACTER_INFO[character].name, isBot: true, character });
     }
-    this.sim = new GameSimulation(setups, this.config);
+    this.sim = new GameSimulation(setups, this.config, (Math.random() * 2 ** 31) | 0);
     const seed = Math.floor(Math.random() * 1e9);
     this.bots = setups
       .slice(1)

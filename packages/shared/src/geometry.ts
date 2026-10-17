@@ -87,6 +87,19 @@ export function lineBlocked(x1: number, y1: number, x2: number, y2: number, obst
   return obstacles.some((o) => (o.kind === 'rect' ? segmentHitsRect(x1, y1, x2, y2, o) : segmentHitsCircle(x1, y1, x2, y2, o.x, o.y, o.r)));
 }
 
+/** Centro do obstáculo (retângulos guardam o canto superior esquerdo). */
+export function obstacleCenter(o: Obstacle): { x: number; y: number } {
+  return o.kind === 'circle' ? { x: o.x, y: o.y } : { x: o.x + o.w / 2, y: o.y + o.h / 2 };
+}
+
+/** Distância de um ponto até a borda do obstáculo (0 se dentro). */
+export function distToObstacle(x: number, y: number, o: Obstacle): number {
+  if (o.kind === 'circle') return Math.max(0, Math.hypot(x - o.x, y - o.y) - o.r);
+  const nx = clamp(x, o.x, o.x + o.w);
+  const ny = clamp(y, o.y, o.y + o.h);
+  return Math.hypot(x - nx, y - ny);
+}
+
 /** Ponto (com raio r) está dentro de algum obstáculo? */
 export function insideObstacle(x: number, y: number, r: number, obstacles: readonly Obstacle[]): boolean {
   return obstacles.some((o) => {

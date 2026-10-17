@@ -55,6 +55,45 @@ export interface PlayerView {
   drinkingUntil: number;
   /** Lento por golpe final de Tesoura (público). */
   slowed: boolean;
+  /** Tomou cachaça: cambaleando (público). */
+  buzzed: boolean;
+  /** Próximo golpe final turbinado pela cachaça (público). */
+  boosted: boolean;
+  /** Efeito do amendoim ativo (público). */
+  nuts: boolean;
+  /** Escudo de gelo do freezer (segura 1 golpe; público). */
+  shielded: boolean;
+  /** > agora enquanto abre o freezer (público). */
+  openingUntil: number;
+}
+
+export type ItemKind = 'cachaca' | 'amendoim' | 'beer';
+export interface ItemView {
+  id: number;
+  kind: ItemKind;
+  x: number;
+  y: number;
+}
+export interface PuddleView {
+  id: number;
+  x: number;
+  y: number;
+  r: number;
+  until: number;
+}
+export type BarEventKind = 'saideira' | 'blackout' | 'ze';
+export interface BarEventView {
+  kind: BarEventKind;
+  /** Aviso começa em announceAt; efeito entre startAt e endAt. */
+  announceAt: number;
+  startAt: number;
+  endAt: number;
+}
+export interface WaiterView {
+  x: number;
+  y: number;
+  faceX: number;
+  faceY: number;
 }
 
 export interface BeerView {
@@ -71,6 +110,15 @@ export interface Snapshot {
   winnerId: string | null;
   players: PlayerView[];
   beers: BeerView[];
+  items: ItemView[];
+  puddles: PuddleView[];
+  /** Índices (em config.obstacles) dos engradados quebrados: não bloqueiam mais. */
+  broken: number[];
+  /** Freezers: índice do obstáculo e quando dá para abrir de novo. */
+  freezers: { index: number; readyAt: number }[];
+  /** Evento do bar sorteado para a partida (null antes do aviso). */
+  barEvent: BarEventView | null;
+  waiter: WaiterView | null;
 }
 
 // ---------- Eventos (feedback; todos públicos) ----------
@@ -116,4 +164,10 @@ export type GameEvent =
   | ExchangeEvent
   | { type: 'eliminated'; at: number; playerId: string; byId: string | null }
   | { type: 'phase'; at: number; phase: Phase; winnerId: string | null }
-  | { type: 'drink'; at: number; playerId: string; stage: 'start' | 'done' | 'spilled'; hp: number };
+  | { type: 'drink'; at: number; playerId: string; stage: 'start' | 'done' | 'spilled'; hp: number }
+  | { type: 'pickup'; at: number; playerId: string; kind: ItemKind; x: number; y: number }
+  | { type: 'burn'; at: number; playerId: string; x: number; y: number }
+  | { type: 'crate'; at: number; index: number; broken: boolean }
+  | { type: 'shield'; at: number; playerId: string; stage: 'start' | 'ready' | 'broken' | 'interrupted' }
+  | { type: 'barEvent'; at: number; kind: BarEventKind; stage: 'announce' | 'start' | 'end' }
+  | { type: 'waiterBump'; at: number; playerId: string; x: number; y: number };

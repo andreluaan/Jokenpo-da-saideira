@@ -112,6 +112,42 @@ export interface GameConfig {
     /** Distância extra, além da borda da mesa, em que dá para alcançar a cerveja. */
     reach: number;
   };
+  /** Itens que o garçom joga no chão: pegar é só passar por cima. */
+  items: {
+    enabled: boolean;
+    firstMs: number;
+    everyMs: [number, number];
+    maxOnGround: number;
+    pickupRadius: number;
+    /** Cachaça da casa: próximo golpe final turbinado, mas fica bêbado (escorrega) por buzzMs. */
+    cachaca: { buzzMs: number; accelMul: number; decelMul: number; boostKnockback: number; boostStun: number };
+    /** Amendoim: investida de graça e com recarga curtinha por um tempo. */
+    amendoim: { ms: number; dashCooldownMs: number };
+    /** Gole rápido das cervejas que aparecem no chão (Zé grita). */
+    beerDrinkMs: number;
+  };
+  hazards: {
+    /** Empurrado contra a churrasqueira acima desta velocidade (px/ms): queima. */
+    grill: { minSpeed: number; stunMs: number; push: number; cooldownMs: number };
+    /** Engradado aguenta `hp` trombadas fortes e quebra (deixa poça de cerveja). */
+    crate: { hp: number; minSpeed: number; cooldownMs: number };
+    /** Poça de cerveja: escorrega (acelera e freia pouco). */
+    puddle: { r: number; ms: number; accelMul: number; decelMul: number };
+    /** Freezer: abrir leva openMs parado; dá um escudo que segura 1 golpe. */
+    freezer: { openMs: number; cooldownMs: number; reach: number };
+  };
+  /** Um evento do bar por partida, sorteado. */
+  barEvents: {
+    enabled: boolean;
+    /** O evento começa entre estes instantes (ms desde o início da luta). */
+    startMs: [number, number];
+    announceMs: number;
+    saideira: { ms: number; finisherDamage: number };
+    blackout: { ms: number };
+    ze: { ms: number; beers: number };
+  };
+  /** Garçom que atravessa a arena junto com o evento. */
+  waiter: { speed: number; radius: number; push: number; stunMs: number };
   match: { countdownMs: number; durationMs: number };
 }
 
@@ -200,6 +236,31 @@ export const DEFAULT_CONFIG: GameConfig = {
   },
   perfectFocusBonus: 15,
   beer: { drinkMs: 2200, heal: 1, respawnMs: 25_000, reach: 36 },
+  items: {
+    enabled: true,
+    firstMs: 9000,
+    everyMs: [11_000, 17_000],
+    maxOnGround: 2,
+    pickupRadius: 30,
+    cachaca: { buzzMs: 6000, accelMul: 0.5, decelMul: 0.4, boostKnockback: 1.5, boostStun: 1.4 },
+    amendoim: { ms: 6000, dashCooldownMs: 350 },
+    beerDrinkMs: 1300,
+  },
+  hazards: {
+    grill: { minSpeed: 0.45, stunMs: 500, push: 70, cooldownMs: 1500 },
+    crate: { hp: 2, minSpeed: 0.3, cooldownMs: 500 },
+    puddle: { r: 55, ms: 18_000, accelMul: 0.45, decelMul: 0.2 },
+    freezer: { openMs: 1500, cooldownMs: 20_000, reach: 40 },
+  },
+  barEvents: {
+    enabled: true,
+    startMs: [22_000, 40_000],
+    announceMs: 3000,
+    saideira: { ms: 10_000, finisherDamage: 2 },
+    blackout: { ms: 7000 },
+    ze: { ms: 9000, beers: 3 },
+  },
+  waiter: { speed: 150, radius: 24, push: 110, stunMs: 400 },
   match: { countdownMs: 3000, durationMs: 240_000 },
 };
 

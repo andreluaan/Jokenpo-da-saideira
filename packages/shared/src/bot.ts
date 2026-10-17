@@ -1,5 +1,6 @@
 import type { GameConfig } from './config';
-import { arenaDepth, dist, insideObstacle, lineBlocked, normalize } from './geometry';
+import { arenaDepth, dist, distToObstacle, insideObstacle, lineBlocked, normalize } from './geometry';
+import type { Obstacle } from './config';
 import { counterOf } from './rules';
 import { RPS_LIST, type GameEvent, type PlayerInput, type PlayerView, type Rps, type Snapshot } from './types';
 
@@ -88,6 +89,9 @@ export class BotBrain {
   private lastStep = 0;
   private wantsBeer = false;
   private beerDecisionAt = 0;
+  /** Obstáculos que ainda bloqueiam (engradados quebrados saem). */
+  private obstacles: readonly Obstacle[] = [];
+  private freezerWish = 0;
 
   constructor(
     readonly id: string,
@@ -115,6 +119,7 @@ export class BotBrain {
   }
 
   think(view: Snapshot): PlayerInput[] {
+    this.obstacles = view.broken.length ? this.config.obstacles.filter((_, i) => !view.broken.includes(i)) : this.config.obstacles;
     const now = view.now;
     const dt = Math.max(1, now - this.lastStep);
     this.lastStep = now;
@@ -250,7 +255,38 @@ export class BotBrain {
       return;
     }
 
-    // 3) Caça o adversário mais próximo (com preferência por quem tem menos vida).
+    // 3) Item no chão por perto e ninguém em cima? Vai pegar (cerveja do chão só se estiver machucado).
+    if (safe && me.openingUntil <= now) {
+      const item = view.items
+        .filter((i) => i.kind !== 'beer' || me.hp < me.maxHp)
+        .map((i) => ({ i, d: dist(me.x, me.y, i.x, i.y) }))
+        .filter((x) => x.d < 380)
+        .sort((a, b) => a.d - b.d)[0]?.i;
+      if (item) {
+        out.push(this.steer(me, item.x - me.x, item.y - me.y));
+        return;
+      }
+    }
+
+    // 4) Às vezes vai abrir o freezer para ganhar o escudo de gelo (se ninguém estiver perto).
+    if (me.openingUntil > now) {
+      out.push({ type: 'move', x: 0, y: 0 });
+      return;
+    }
+    if (now >= this.freezerWish) this.freezerWish = now + 4000 + this.rng() * 6000;
+    const fz = !me.shielded && safe ? view.freezers.find((f) => f.readyAt <= now) : undefined;
+    const fo = fz && cfg.obstacles[fz.index];
+    if (fo && this.freezerWish - now > 3500 && this.rng() < this.profile.beerGreed) {
+      const d = distToObstacle(me.x, me.y, fo);
+      if (d < 260) {
+        const c = fo.kind === 'rect' ? { x: fo.x + fo.w / 2, y: fo.y + fo.h / 2 } : fo;
+        if (d <= cfg.player.radius + cfg.hazards.freezer.reach - 8) out.push({ type: 'move', x: 0, y: 0 }, { type: 'drink' });
+        else out.push(this.steer(me, c.x - me.x, c.y - me.y));
+        return;
+      }
+    }
+
+    // 5) Caça o adversário mais próximo (com preferência por quem tem menos vida).
     const target = others
       .map((p) => ({ p, score: dist(me.x, me.y, p.x, p.y) + p.hp * 40 }))
       .sort((a, b) => a.score - b.score)[0]?.p;
@@ -269,7 +305,7 @@ export class BotBrain {
     const k = d > want + 20 ? 1 : d < want - 20 ? -0.7 : 0;
     out.push(this.steer(me, n.x * k - n.y * 0.55 * this.strafeDir, n.y * k + n.x * 0.55 * this.strafeDir));
 
-    const clear = !lineBlocked(me.x, me.y, target.x, target.y, cfg.obstacles);
+    const clear = !lineBlocked(me.x, me.y, target.x, target.y, this.obstacles);
     const ready = clear && !me.busy && !me.stunned && d <= cfg.attack.hitRange * 0.85;
     if (ready && this.rng() < (this.profile.aggression * dt) / 1000) {
       out.push({ type: 'symbol', symbol: this.choose(target.id, null), targetId: target.id });
@@ -280,7 +316,8 @@ export class BotBrain {
   private steer(me: PlayerView, x: number, y: number): PlayerInput {
     const dir = normalize(x, y);
     if (dir.x === 0 && dir.y === 0) return { type: 'move', x: 0, y: 0 };
-    const { obstacles, arena, player } = this.config;
+    const { arena, player } = this.config;
+    const obstacles = this.obstacles;
     const probe = player.radius + 30;
     const free = (a: number) => {
       const c = Math.cos(a);

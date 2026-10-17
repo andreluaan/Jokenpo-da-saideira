@@ -1,9 +1,14 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config';
-import { clamp, clampInArena, dist, lineBlocked, normalize, pushOutOfObstacle } from './geometry';
+import { clamp, clampInArena, dist, distToObstacle, insideObstacle, lineBlocked, normalize, obstacleCenter, pushOutOfObstacle } from './geometry';
+import { makeRng } from './bot';
+import type { Obstacle } from './config';
 import { gradeLock, resolveExchange } from './rules';
 import { CHARACTER_IDS } from './types';
 import type {
+  BarEventKind,
+  BarEventView,
   CharacterId,
+  ItemKind,
   DenyReason,
   ExchangeEvent,
   GameEvent,
@@ -67,6 +72,44 @@ interface Player {
   dashY: number;
   /** Lento até este instante (golpe final de Tesoura). */
   slowUntil: number;
+  /** Cachaça: bêbado até; próximo golpe final turbinado. */
+  buzzedUntil: number;
+  boosted: boolean;
+  /** Amendoim: investida de graça até. */
+  nutsUntil: number;
+  /** Escudo de gelo do freezer (segura 1 golpe). */
+  shield: boolean;
+  openingUntil: number;
+  openingFreezer: number;
+  burnReadyAt: number;
+  bumpReadyAt: number;
+}
+
+interface Item {
+  id: number;
+  kind: ItemKind;
+  x: number;
+  y: number;
+}
+
+interface Puddle {
+  id: number;
+  x: number;
+  y: number;
+  r: number;
+  until: number;
+}
+
+interface Waiter {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  /** Distância total do trajeto e quanto já andou. */
+  length: number;
+  walked: number;
+  /** Pontos do trajeto (0–1) onde larga cerveja (evento do Zé). */
+  drops: number[];
 }
 
 export type PlayerDebugState = Readonly<Player>;
@@ -87,8 +130,23 @@ export class GameSimulation {
   private events: GameEvent[] = [];
   /** Mesas de cerveja (índices em config.obstacles) e quando cada cerveja fica pronta. */
   private readonly stations: { index: number; readyAt: number }[];
+  private readonly freezers: { index: number; readyAt: number }[];
+  private readonly rng: () => number;
+  private items: Item[] = [];
+  private itemSeq = 0;
+  private nextItemAt = Number.POSITIVE_INFINITY;
+  private puddles: Puddle[] = [];
+  private puddleSeq = 0;
+  private readonly crateHp = new Map<number, number>();
+  private readonly crateHitAt = new Map<number, number>();
+  private readonly broken = new Set<number>();
+  /** Obstáculos que ainda bloqueiam (sem os engradados quebrados). */
+  private active: Obstacle[];
+  private barEvent: (BarEventView & { stage: 'planned' | 'announce' | 'active' | 'done' }) | null = null;
+  private waiter: Waiter | null = null;
 
-  constructor(setups: PlayerSetup[], config: GameConfig = DEFAULT_CONFIG) {
+  constructor(setups: PlayerSetup[], config: GameConfig = DEFAULT_CONFIG, seed = 1) {
+    this.rng = makeRng(seed);
     if (setups.length < 2 || setups.length > 4) throw new Error('A partida precisa de 2 a 4 jogadores');
     this.config = config;
     // Quem não escolheu personagem recebe um livre, na ordem padrão.
@@ -128,12 +186,23 @@ export class GameSimulation {
         dashX: 0,
         dashY: 0,
         slowUntil: 0,
+        buzzedUntil: 0,
+        boosted: false,
+        nutsUntil: 0,
+        shield: false,
+        openingUntil: 0,
+        openingFreezer: -1,
+        burnReadyAt: 0,
+        bumpReadyAt: 0,
       };
       this.players.push(p);
       this.byId.set(p.id, p);
     });
     this.phaseEndsAt = config.match.countdownMs;
     this.stations = config.obstacles.flatMap((o, index) => (o.prop === 'beerTable' ? [{ index, readyAt: 0 }] : []));
+    this.freezers = config.obstacles.flatMap((o, index) => (o.prop === 'freezer' ? [{ index, readyAt: 0 }] : []));
+    config.obstacles.forEach((o, i) => o.prop === 'crates' && this.crateHp.set(i, config.hazards.crate.hp));
+    this.active = [...config.obstacles];
   }
 
   get playerIds(): string[] {
@@ -239,19 +308,22 @@ export class GameSimulation {
     }
   }
 
-  /** Beber: fica parado e vulnerável; se completar, recupera vida. */
+  /**
+   * E (interagir): perto da mesa com cerveja e machucado → bebe (parado e vulnerável; se completar, recupera vida).
+   * Perto do freezer → abre (parado) e ganha um escudo de gelo que segura 1 golpe.
+   */
   private drink(p: Player): void {
     const now = this.now;
-    if (p.attack || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
-    if (p.hp >= this.config.player.maxHp) return this.deny(p, 'full');
+    if (p.attack || now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil || now < p.openingUntil) return this.deny(p, 'busy');
     const { reach } = this.config.beer;
-    const near = this.stations.find((s) => {
-      const o = this.config.obstacles[s.index];
-      const r = o.kind === 'circle' ? o.r : Math.max(o.w, o.h) / 2;
-      return dist(p.x, p.y, o.x, o.y) <= r + this.config.player.radius + reach;
-    });
-    if (!near) return this.deny(p, 'range');
-    if (now < near.readyAt) return this.deny(p, 'empty');
+    const R = this.config.player.radius;
+    const near = this.stations.find((s) => distToObstacle(p.x, p.y, this.config.obstacles[s.index]) <= R + reach);
+    if (!near || p.hp >= this.config.player.maxHp || now < near.readyAt) {
+      const fz = this.freezers.find((f) => distToObstacle(p.x, p.y, this.config.obstacles[f.index]) <= R + this.config.hazards.freezer.reach);
+      if (fz) return this.openFreezer(p, fz);
+      if (!near) return this.deny(p, 'range');
+      return this.deny(p, p.hp >= this.config.player.maxHp ? 'full' : 'empty');
+    }
     near.readyAt = Number.POSITIVE_INFINITY; // cerveja na mão de quem pegou
     p.drinkStation = this.stations.indexOf(near);
     p.drinkingUntil = now + this.config.beer.drinkMs;
@@ -263,6 +335,7 @@ export class GameSimulation {
   private spill(p: Player): void {
     if (p.drinkingUntil <= this.now) return;
     p.drinkingUntil = 0;
+    this.addPuddle(p.x, p.y);
     const s = this.stations[p.drinkStation];
     if (s) s.readyAt = this.now + this.config.beer.respawnMs;
     p.drinkStation = -1;
@@ -273,16 +346,17 @@ export class GameSimulation {
     const now = this.now;
     if (p.attack) return this.deny(p, 'busy');
     if (now < p.stunUntil || now < p.dashUntil || now < p.drinkingUntil) return this.deny(p, 'busy');
+    const nuts = now < p.nutsUntil;
     if (now < p.dashReadyAt) return this.deny(p, 'cooldown');
-    if (p.focus < this.config.costs.dash) return this.deny(p, 'focus');
+    if (!nuts && p.focus < this.config.costs.dash) return this.deny(p, 'focus');
     let dir = normalize(x ?? 0, y ?? 0);
     if (dir.x === 0 && dir.y === 0) dir = normalize(p.moveX, p.moveY);
     if (dir.x === 0 && dir.y === 0) dir = { x: p.faceX, y: p.faceY };
-    p.focus -= this.config.costs.dash;
+    if (!nuts) p.focus -= this.config.costs.dash;
     p.dashX = dir.x;
     p.dashY = dir.y;
     p.dashUntil = now + this.config.dash.durationMs;
-    p.dashReadyAt = now + this.config.dash.cooldownMs;
+    p.dashReadyAt = now + (nuts ? this.config.items.amendoim.dashCooldownMs : this.config.dash.cooldownMs);
   }
 
   // ------------------------------------------------------------------ passo
@@ -293,10 +367,16 @@ export class GameSimulation {
       this.phase = 'playing';
       this.phaseEndsAt = this.now + this.config.match.durationMs;
       this.emit({ type: 'phase', at: this.now, phase: 'playing', winnerId: null });
+      this.planRound();
     }
     if (this.phase === 'playing') {
       this.integrate(dtMs);
       this.finishDrinks();
+      this.finishOpenings();
+      this.updateItems();
+      this.updateBarEvent();
+      this.updateWaiter(dtMs);
+      this.puddles = this.puddles.filter((q) => q.until > this.now);
       this.resolveDue();
       this.checkEnd();
     }
@@ -316,16 +396,23 @@ export class GameSimulation {
         p.vy = p.dashY * v;
       } else {
         // Inércia: acelera até a velocidade desejada; ao soltar (ou atordoado) escorrega até parar.
-        const stunned = this.now < p.stunUntil || this.now < p.drinkingUntil;
+        const stunned = this.now < p.stunUntil || this.now < p.drinkingUntil || this.now < p.openingUntil;
         const slow = this.now < p.slowUntil ? this.config.finisher.scissors.slowMul : 1;
         const speed = stunned ? 0 : (player.speed / 1000) * slow * (p.attack ? player.holdingSpeedMul : 1);
+        // Bêbado de cachaça ou pisando em poça de cerveja: escorrega (acelera e freia pouco).
+        const { cachaca } = this.config.items;
+        const { puddle } = this.config.hazards;
+        const buzzed = this.now < p.buzzedUntil;
+        const wet = this.puddles.some((q) => dist(p.x, p.y, q.x, q.y) < q.r);
+        const accelMul = (buzzed ? cachaca.accelMul : 1) * (wet ? puddle.accelMul : 1);
+        const decelMul = (buzzed ? cachaca.decelMul : 1) * (wet ? puddle.decelMul : 1);
         const tx = p.moveX * speed;
         const ty = p.moveY * speed;
         const dvx = tx - p.vx;
         const dvy = ty - p.vy;
         const dv = Math.hypot(dvx, dvy);
         const speeding = tx * tx + ty * ty >= p.vx * p.vx + p.vy * p.vy;
-        const maxStep = ((speeding ? player.accel : player.decel) / 1e6) * dt;
+        const maxStep = ((speeding ? player.accel * accelMul : player.decel * decelMul) / 1e6) * dt;
         if (dv <= maxStep) {
           p.vx = tx;
           p.vy = ty;
@@ -341,11 +428,14 @@ export class GameSimulation {
       p.x += vx * dt;
       p.y += vy * dt;
 
-      for (const o of obstacles) {
+      const kbSpeed = Math.hypot(p.kbX, p.kbY);
+      obstacles.forEach((o, i) => {
+        if (this.broken.has(i)) return;
         const pos = pushOutOfObstacle(p.x, p.y, player.radius, o);
+        if (pos.x !== p.x || pos.y !== p.y) this.bumpInto(p, o, i, kbSpeed);
         p.x = pos.x;
         p.y = pos.y;
-      }
+      });
       const inside = clampInArena(p.x, p.y, player.radius, arena);
       if (inside.x !== p.x || inside.y !== p.y) {
         // Bateu na cerca: perde o embalo.
@@ -417,7 +507,7 @@ export class GameSimulation {
 
     if (!y.alive) return this.whiff([x], y, 'gone');
     if (dist(x.x, x.y, y.x, y.y) > this.config.attack.hitRange) return this.whiff(duel ? [x, y] : [x], y, 'range');
-    if (lineBlocked(x.x, x.y, y.x, y.y, this.config.obstacles)) {
+    if (lineBlocked(x.x, x.y, y.x, y.y, this.active)) {
       return this.whiff(duel ? [x, y] : [x], y, 'blocked');
     }
 
@@ -463,7 +553,14 @@ export class GameSimulation {
         if (fin) {
           // Golpe final do símbolo: Pedra prende, Tesoura corta e deixa lento, Papel arremessa longe.
           const f = this.config.finisher[fin];
-          if (this.hit(loser, winner, f.knockback, f.stunMs, this.config.finisher.graceMs)) ev.protectedId = loser.id;
+          // Cachaça turbina o próximo golpe final; na Saideira dupla o golpe final tira mais vida.
+          const boost = winner.boosted;
+          winner.boosted = false;
+          const { cachaca } = this.config.items;
+          const kb = f.knockback * (boost ? cachaca.boostKnockback : 1);
+          const stun = f.stunMs * (boost ? cachaca.boostStun : 1);
+          const dmg = this.eventActive('saideira') ? this.config.barEvents.saideira.finisherDamage : this.config.attack.damage;
+          if (this.hit(loser, winner, kb, stun, this.config.finisher.graceMs, dmg)) ev.protectedId = loser.id;
           else {
             ev.damagedId = loser.id;
             ev.finisher = fin;
@@ -495,13 +592,21 @@ export class GameSimulation {
   }
 
   /** Aplica um golpe vencedor. Retorna true se o alvo estava protegido (graça). */
-  private hit(loser: Player, winner: Player, pushDist: number, stunMs: number, graceMs = this.config.timings.graceMs): boolean {
+  private hit(loser: Player, winner: Player, pushDist: number, stunMs: number, graceMs = this.config.timings.graceMs, damage = this.config.attack.damage): boolean {
     if (this.now < loser.graceUntil) {
       this.push(loser, winner.x, winner.y, this.config.knockback.protectedPush);
       return true;
     }
+    if (loser.shield) {
+      // Escudo de gelo do freezer segura este golpe inteiro.
+      loser.shield = false;
+      this.push(loser, winner.x, winner.y, this.config.knockback.softened);
+      this.emit({ type: 'shield', at: this.now, playerId: loser.id, stage: 'broken' });
+      return true;
+    }
     this.spill(loser);
-    loser.hp = Math.max(0, loser.hp - this.config.attack.damage);
+    this.interruptOpening(loser);
+    loser.hp = Math.max(0, loser.hp - damage);
     this.consume(loser, 0);
     loser.stunUntil = this.now + stunMs;
     loser.graceUntil = this.now + graceMs;
@@ -572,6 +677,224 @@ export class GameSimulation {
     this.events.push(e);
   }
 
+  // ------------------------------------------------------------------ boteco: itens, arena e eventos
+
+  /** Sorteia o evento da rodada e agenda o primeiro item (ao começar a luta). */
+  private planRound(): void {
+    const { items, barEvents } = this.config;
+    if (items.enabled) this.nextItemAt = this.now + items.firstMs;
+    if (!barEvents.enabled) return;
+    const kinds: BarEventKind[] = ['saideira', 'blackout', 'ze'];
+    const kind = kinds[Math.floor(this.rng() * kinds.length)];
+    const [a, b] = barEvents.startMs;
+    const startAt = this.now + a + this.rng() * (b - a);
+    const ms = kind === 'saideira' ? barEvents.saideira.ms : kind === 'blackout' ? barEvents.blackout.ms : barEvents.ze.ms;
+    this.barEvent = { kind, announceAt: startAt - barEvents.announceMs, startAt, endAt: startAt + ms, stage: 'planned' };
+  }
+
+  eventActive(kind: BarEventKind): boolean {
+    const e = this.barEvent;
+    return !!e && e.kind === kind && this.now >= e.startAt && this.now < e.endAt;
+  }
+
+  private updateBarEvent(): void {
+    const e = this.barEvent;
+    if (!e || e.stage === 'done') return;
+    if (e.stage === 'planned' && this.now >= e.announceAt) {
+      e.stage = 'announce';
+      this.emit({ type: 'barEvent', at: this.now, kind: e.kind, stage: 'announce' });
+    }
+    if (e.stage === 'announce' && this.now >= e.startAt) {
+      e.stage = 'active';
+      this.emit({ type: 'barEvent', at: this.now, kind: e.kind, stage: 'start' });
+      // O garçom atravessa a arena junto com o evento (no do Zé, ele vai largando as cervejas).
+      this.startWaiter(e.kind === 'ze' ? this.config.barEvents.ze.beers : 0);
+    }
+    if (e.stage === 'active' && this.now >= e.endAt) {
+      e.stage = 'done';
+      this.emit({ type: 'barEvent', at: this.now, kind: e.kind, stage: 'end' });
+    }
+  }
+
+  /** Garçom: entra por um lado da cerca e sai pelo outro, numa faixa que evita a mesa do meio. */
+  private startWaiter(beers: number): void {
+    const { arena } = this.config;
+    const side = this.rng() < 0.5 ? -1 : 1;
+    // Corredores livres entre a fileira do meio (mesa e churrasqueiras) e as de engradados/isopores.
+    const lane = (this.rng() < 0.5 ? -1 : 1) * (95 + this.rng() * 10);
+    const half = (arena.rx - 30) * Math.sqrt(Math.max(0.05, 1 - (lane / arena.ry) ** 2));
+    const x0 = arena.cx - side * half;
+    const x1 = arena.cx + side * half;
+    const drops = Array.from({ length: beers }, (_, i) => (i + 1) / (beers + 1));
+    this.waiter = { x: x0, y: arena.cy + lane, dx: side, dy: 0, length: Math.abs(x1 - x0), walked: 0, drops };
+  }
+
+  private updateWaiter(dt: number): void {
+    const w = this.waiter;
+    if (!w) return;
+    const { waiter, player } = this.config;
+    const step = (waiter.speed / 1000) * dt;
+    w.walked += step;
+    w.x += w.dx * step;
+    w.y += w.dy * step;
+    // Contorna obstáculos (sai do caminho e segue).
+    for (const o of this.active) {
+      const pos = pushOutOfObstacle(w.x, w.y, waiter.radius, o);
+      w.x = pos.x;
+      w.y = pos.y;
+    }
+    while (w.drops.length && w.walked / w.length >= w.drops[0]) {
+      w.drops.shift();
+      this.spawnItem('beer', w.x, w.y + (this.rng() - 0.5) * 60);
+    }
+    for (const p of this.players) {
+      if (!p.alive || this.now < p.bumpReadyAt) continue;
+      if (dist(p.x, p.y, w.x, w.y) < player.radius + waiter.radius) {
+        // Esbarrou no garçom: tropeça e é empurrado para longe da bandeja.
+        p.bumpReadyAt = this.now + 1000;
+        this.consume(p, 0);
+        this.interruptOpening(p);
+        p.stunUntil = Math.max(p.stunUntil, this.now + waiter.stunMs);
+        this.push(p, w.x, w.y, waiter.push);
+        this.emit({ type: 'waiterBump', at: this.now, playerId: p.id, x: p.x, y: p.y });
+      }
+    }
+    if (w.walked >= w.length) this.waiter = null;
+  }
+
+  private updateItems(): void {
+    const { items, player } = this.config;
+    if (items.enabled && this.now >= this.nextItemAt) {
+      const [a, b] = items.everyMs;
+      this.nextItemAt = this.now + a + this.rng() * (b - a);
+      const loose = this.items.filter((i) => i.kind !== 'beer').length;
+      if (loose < items.maxOnGround) {
+        const spot = this.freeSpot();
+        if (spot) this.spawnItem(this.rng() < 0.5 ? 'cachaca' : 'amendoim', spot.x, spot.y);
+      }
+    }
+    for (const p of this.players) {
+      if (!p.alive || this.now < p.stunUntil) continue;
+      const it = this.items.find((i) => dist(p.x, p.y, i.x, i.y) < player.radius + items.pickupRadius);
+      if (!it) continue;
+      if (it.kind === 'beer') {
+        // Cerveja do chão: gole rápido (parado e vulnerável), só se precisar de vida e estiver de mãos livres.
+        if (p.hp >= player.maxHp || p.attack || this.now < p.drinkingUntil || this.now < p.openingUntil) continue;
+        p.drinkingUntil = this.now + items.beerDrinkMs;
+        p.drinkStation = -1;
+        p.vx = p.vy = 0;
+        this.emit({ type: 'drink', at: this.now, playerId: p.id, stage: 'start', hp: p.hp });
+      } else if (it.kind === 'cachaca') {
+        p.buzzedUntil = this.now + items.cachaca.buzzMs;
+        p.boosted = true;
+      } else {
+        p.nutsUntil = this.now + items.amendoim.ms;
+        p.dashReadyAt = Math.min(p.dashReadyAt, this.now);
+      }
+      this.items = this.items.filter((i) => i !== it);
+      this.emit({ type: 'pickup', at: this.now, playerId: p.id, kind: it.kind, x: it.x, y: it.y });
+    }
+  }
+
+  private spawnItem(kind: ItemKind, x: number, y: number): void {
+    const { player, arena } = this.config;
+    let pos = clampInArena(x, y, player.radius + 10, arena);
+    for (const o of this.active) pos = pushOutOfObstacle(pos.x, pos.y, 30, o);
+    this.items.push({ id: ++this.itemSeq, kind, x: pos.x, y: pos.y });
+  }
+
+  /** Lugar livre na arena (longe de obstáculos e de jogadores). */
+  private freeSpot(): { x: number; y: number } | null {
+    const { arena } = this.config;
+    for (let t = 0; t < 30; t++) {
+      const a = this.rng() * Math.PI * 2;
+      const k = Math.sqrt(this.rng()) * 0.8;
+      const x = arena.cx + Math.cos(a) * arena.rx * k;
+      const y = arena.cy + Math.sin(a) * arena.ry * k;
+      if (insideObstacle(x, y, 45, this.active)) continue;
+      if (this.players.some((p) => p.alive && dist(p.x, p.y, x, y) < 120)) continue;
+      return { x, y };
+    }
+    return null;
+  }
+
+  private addPuddle(x: number, y: number, r = this.config.hazards.puddle.r): void {
+    this.puddles.push({ id: ++this.puddleSeq, x, y, r, until: this.now + this.config.hazards.puddle.ms });
+  }
+
+  /** Jogador encostou num obstáculo: se veio empurrado com força, a churrasqueira queima e o engradado racha. */
+  private bumpInto(p: Player, o: Obstacle, index: number, kbSpeed: number): void {
+    const { grill, crate } = this.config.hazards;
+    if (o.prop === 'grill' && kbSpeed > grill.minSpeed && this.now >= p.burnReadyAt) {
+      p.burnReadyAt = this.now + grill.cooldownMs;
+      this.consume(p, 0);
+      this.interruptOpening(p);
+      p.stunUntil = Math.max(p.stunUntil, this.now + grill.stunMs);
+      const c = obstacleCenter(o);
+      this.push(p, c.x, c.y, grill.push);
+      this.emit({ type: 'burn', at: this.now, playerId: p.id, x: p.x, y: p.y });
+    } else if (o.prop === 'crates' && kbSpeed > crate.minSpeed && this.now >= (this.crateHitAt.get(index) ?? -Infinity) + crate.cooldownMs) {
+      this.crateHitAt.set(index, this.now);
+      const hp = (this.crateHp.get(index) ?? crate.hp) - 1;
+      this.crateHp.set(index, hp);
+      if (hp <= 0) {
+        this.broken.add(index);
+        this.active = this.config.obstacles.filter((_, i) => !this.broken.has(i));
+        const c = obstacleCenter(o);
+        // As garrafas quebram e a cerveja escorre pelo chão.
+        this.addPuddle(c.x, c.y, this.config.hazards.puddle.r * 1.4);
+      }
+      this.emit({ type: 'crate', at: this.now, index, broken: hp <= 0 });
+    }
+  }
+
+  private openFreezer(p: Player, fz: { index: number; readyAt: number }): void {
+    if (p.shield) return this.deny(p, 'full');
+    if (this.now < fz.readyAt) return this.deny(p, 'empty');
+    p.openingUntil = this.now + this.config.hazards.freezer.openMs;
+    p.openingFreezer = this.freezers.indexOf(fz);
+    fz.readyAt = Number.POSITIVE_INFINITY;
+    p.vx = p.vy = 0;
+    this.emit({ type: 'shield', at: this.now, playerId: p.id, stage: 'start' });
+  }
+
+  private finishOpenings(): void {
+    for (const p of this.players) {
+      if (!p.alive || p.openingUntil === 0 || this.now < p.openingUntil) continue;
+      p.openingUntil = 0;
+      p.shield = true;
+      const fz = this.freezers[p.openingFreezer];
+      if (fz) fz.readyAt = this.now + this.config.hazards.freezer.cooldownMs;
+      p.openingFreezer = -1;
+      this.emit({ type: 'shield', at: this.now, playerId: p.id, stage: 'ready' });
+    }
+  }
+
+  /** Levou golpe abrindo o freezer: larga a porta (sem escudo) e o freezer volta a ficar disponível logo. */
+  private interruptOpening(p: Player): void {
+    if (p.openingUntil <= this.now) return;
+    p.openingUntil = 0;
+    const fz = this.freezers[p.openingFreezer];
+    if (fz) fz.readyAt = this.now + 2000;
+    p.openingFreezer = -1;
+    this.emit({ type: 'shield', at: this.now, playerId: p.id, stage: 'interrupted' });
+  }
+
+  /** Obstáculos que ainda bloqueiam (para NPCs e testes). */
+  get activeObstacles(): readonly Obstacle[] {
+    return this.active;
+  }
+
+  debugSpawnItem(kind: ItemKind, x: number, y: number): void {
+    this.items.push({ id: ++this.itemSeq, kind, x, y });
+  }
+
+  debugStartEvent(kind: BarEventKind): void {
+    const { barEvents } = this.config;
+    const ms = kind === 'saideira' ? barEvents.saideira.ms : kind === 'blackout' ? barEvents.blackout.ms : barEvents.ze.ms;
+    this.barEvent = { kind, announceAt: this.now, startAt: this.now, endAt: this.now + ms, stage: 'planned' };
+  }
+
   // ------------------------------------------------------------------ visão
 
   /** Estado filtrado: só o próprio jogador vê o próprio símbolo. */
@@ -606,13 +929,32 @@ export class GameSimulation {
         drinkingUntil: now < p.drinkingUntil ? p.drinkingUntil : 0,
         swapsLeft: self && p.attack ? this.config.costs.maxSwaps - p.attack.swaps : null,
         slowed: now < p.slowUntil,
+        buzzed: now < p.buzzedUntil,
+        boosted: p.boosted,
+        nuts: now < p.nutsUntil,
+        shielded: p.shield,
+        openingUntil: now < p.openingUntil ? p.openingUntil : 0,
       };
     });
     const beers = this.stations.map((s) => {
       const o = this.config.obstacles[s.index];
       return { x: o.x, y: o.y, readyAt: s.readyAt };
     });
-    return { now, phase: this.phase, phaseEndsAt: this.phaseEndsAt, winnerId: this.winnerId, players, beers };
+    const ev = this.barEvent;
+    return {
+      now,
+      phase: this.phase,
+      phaseEndsAt: this.phaseEndsAt,
+      winnerId: this.winnerId,
+      players,
+      beers,
+      items: this.items.map((i) => ({ ...i })),
+      puddles: this.puddles.map((q) => ({ ...q })),
+      broken: [...this.broken],
+      freezers: this.freezers.map((f) => ({ ...f })),
+      barEvent: ev && ev.stage !== 'planned' ? { kind: ev.kind, announceAt: ev.announceAt, startAt: ev.startAt, endAt: ev.endAt } : null,
+      waiter: this.waiter ? { x: this.waiter.x, y: this.waiter.y, faceX: this.waiter.dx, faceY: this.waiter.dy } : null,
+    };
   }
 
   // ------------------------------------------------------------------ apoio a testes

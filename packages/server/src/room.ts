@@ -211,7 +211,7 @@ export class Room {
       setups.push({ id: bid, name: CHARACTER_INFO[character].name, character, isBot: true });
       this.brains.push(new BotBrain(bid, BOT_PROFILES[this.difficulty], this.config, seed + i));
     }
-    this.sim = new GameSimulation(setups, this.config);
+    this.sim = new GameSimulation(setups, this.config, (Math.random() * 2 ** 31) | 0);
     this.phase = 'match';
     for (const p of this.players) {
       p.peer?.emit('match:start', { config: this.config, playerId: p.id, snapshot: this.sim.snapshotFor(p.id) });

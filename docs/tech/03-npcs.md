@@ -11,10 +11,11 @@ eventos públicos, devolve `PlayerInput[]`. Roda onde a simulação roda (navega
 ## Comportamento
 - **Com mão:** planeja o instante da trava para o próximo impacto relevante (próprio ou de quem o ataca): cedo (chance) ou T + ruído gaussiano; reage a sinais ↻ com troca; mantém o alvo ao alcance.
 - **Sem mão:** se atacado, após tempo de reação responde (duelo), investe para longe ou foge; se machucado e ninguém a < 300 px, vai à mesa beber; senão caça o mais próximo (com linha de visão) e ataca.
+- **Boteco:** com ninguém a < 300 px pega itens a < 380 px (cerveja do chão só machucado); às vezes abre o freezer; usa `view.broken` para linha de visão/desvio.
 - **Leitura:** memoriza símbolos revelados de cada oponente; prevê o mais usado recente e joga o que vence.
 - `steer()` desvia de obstáculos e da cerca testando direções giradas.
 - PRNG determinístico `makeRng(seed)` (testes reproduzíveis).
 
 ## Armadilhas
 - Bots não sabem o raio da mesa pela view: buscam o obstáculo `beerTable` na config pela posição da cerveja.
-- Estatísticas atuais (4 bots): partidas ~40–56 s, 0 empates por tempo, 0,3–0,7 bebidas/partida.
+- Estatísticas atuais (4 bots): partidas ~54 s, 0 empates por tempo; por partida ~1,9 itens, 0,3 escudos, 0,17 queimaduras, evento em 93%.

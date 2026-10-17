@@ -90,7 +90,7 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 | Chão externo · manchas | `#bf7a60` · `#b5735b` / `#c98a6f` (mais escuro que a arena) |
 | Campo seco | `#e9b949` / `#d9a43a` |
 | Terra da arena (clara) · manchas | `#c89f83` · `#bb9073` / `#d4b097` |
-| Contorno dos personagens | `#2b1d22` (~3 px) |
+| Contorno dos personagens | `#2b1d22` (fino, ~1,5 px de tela) |
 | Borda da arena | `#f3ece8` |
 | Madeira escura · clara | `#8a4f45` · `#b36a55` |
 | Folhagem | `#d9553f` / `#e8823c` |

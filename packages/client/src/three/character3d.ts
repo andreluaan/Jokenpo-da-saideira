@@ -194,26 +194,41 @@ function makeMug(): THREE.Group {
 
 /** Contorno escuro ("casco invertido"): cópia do mesh só com as faces de trás, inchada na direção das normais. */
 const OUTLINE_COLOR = 0x2b1d22;
-/** Espessura proporcional à distância da câmera → largura quase constante na tela (~3 px na partida). */
-const OUTLINE_WIDTH = 0.004;
+/**
+ * Espessura em pixels de tela (CSS): igual em qualquer monitor, resolução ou zoom de câmera.
+ * O deslocamento é feito depois da projeção, na direção da normal vista na tela.
+ */
+const OUTLINE_PX = 1.4;
+const outlineUniforms = { uOlRes: { value: new THREE.Vector2(1, 1) }, uOlPx: { value: OUTLINE_PX } };
+const drawSize = new THREE.Vector2();
 let outlineMat: THREE.MeshBasicMaterial | null = null;
 
 function getOutlineMat(): THREE.MeshBasicMaterial {
   if (outlineMat) return outlineMat;
   const m = new THREE.MeshBasicMaterial({ color: OUTLINE_COLOR, side: THREE.BackSide });
   m.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute vec3 olNormal;\nvoid main() {').replace(
-      '#include <project_vertex>',
-      `#include <project_vertex>
+    Object.assign(sh.uniforms, outlineUniforms);
+    sh.vertexShader = sh.vertexShader
+      .replace('void main() {', 'attribute vec3 olNormal;\nuniform vec2 uOlRes;\nuniform float uOlPx;\nvoid main() {')
+      .replace(
+        '#include <project_vertex>',
+        `#include <project_vertex>
       vec3 olN = olNormal;
       #ifdef USE_SKINNING
         olN = (skinMatrix * vec4(olN, 0.0)).xyz;
       #endif
-      mvPosition.xyz += normalize(normalMatrix * olN) * ${OUTLINE_WIDTH.toFixed(5)} * -mvPosition.z;
-      gl_Position = projectionMatrix * mvPosition;`,
-    );
+      vec2 olS = (projectionMatrix * vec4(normalize(normalMatrix * olN), 0.0)).xy * uOlRes;
+      if (dot(olS, olS) > 1e-8) gl_Position.xy += normalize(olS) * (2.0 * uOlPx / uOlRes) * gl_Position.w;`,
+      );
   };
   return (outlineMat = m);
+}
+
+/** Atualiza resolução e densidade de pixels do renderer que vai desenhar (menu, partida e retratos usam renderers diferentes). */
+function outlineBeforeRender(r: THREE.WebGLRenderer): void {
+  r.getDrawingBufferSize(drawSize);
+  outlineUniforms.uOlRes.value.copy(drawSize);
+  outlineUniforms.uOlPx.value = OUTLINE_PX * r.getPixelRatio();
 }
 
 /**
@@ -267,6 +282,7 @@ function addOutline(root: THREE.Object3D): void {
     o.userData.outline = true;
     o.castShadow = false;
     o.frustumCulled = m.frustumCulled;
+    o.onBeforeRender = outlineBeforeRender;
     m.add(o);
   }
 }

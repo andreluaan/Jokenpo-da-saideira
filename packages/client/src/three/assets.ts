@@ -18,7 +18,7 @@ const done = new Map<string, GLTF>();
 
 /** Modelos usados pelo jogo (pacotes CC0 da Kenney, ver public/models/CREDITS.md). */
 export const MODELS = {
-  chars: ['character-male-a', 'character-male-b', 'character-male-d', 'character-male-f', 'aid-sunglasses', 'character-male-c', 'character-male-e', 'character-female-a', 'character-female-c'],
+  chars: ['character-male-a', 'character-male-b', 'character-male-d', 'character-male-f', 'character-male-c', 'character-male-e', 'character-female-a', 'character-female-c'],
   food: ['mug', 'soda-bottle', 'glass', 'skewer', 'can', 'soda-can', 'barrel', 'fries', 'plate', 'bowl', 'plate-broken'],
   furniture: ['tableRound', 'chair', 'chairRounded', 'stoolBar', 'speaker', 'radio', 'televisionVintage', 'trashcan', 'kitchenBar', 'bench', 'plantSmall1', 'kitchenFridgeLarge', 'bookcaseOpenLow'],
   nature: [

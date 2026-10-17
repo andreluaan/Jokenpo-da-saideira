@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { CharacterId, PlayerView } from '@ppt/shared';
-import { gltf, instance, fit } from './assets';
+import { gltf, instance } from './assets';
 import { recolorColormap } from './textures';
 import { WobbleRig } from '../art/rig';
 
@@ -35,77 +35,142 @@ const BLACK = 0x1a1420;
 const mat = (color: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) =>
   new THREE.MeshStandardMaterial({ color, roughness: 0.75, flatShading: true, ...extra });
 
-function box(w: number, h: number, d: number, color: number, x: number, y: number, z: number, rot?: [number, number, number]): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+function place(m: THREE.Mesh, x: number, y: number, z: number, rot?: [number, number, number]): THREE.Mesh {
   m.position.set(x, y, z);
   if (rot) m.rotation.set(...rot);
   m.castShadow = true;
   return m;
 }
 
-function spike(r: number, h: number, color: number, x: number, y: number, z: number, rx: number, rz: number): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 4), mat(color));
-  m.position.set(x, y, z);
-  m.rotation.set(rx, Math.PI / 4, rz);
-  m.castShadow = true;
-  return m;
+function box(w: number, h: number, d: number, color: number, x: number, y: number, z: number, rot?: [number, number, number]): THREE.Mesh {
+  return place(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color)), x, y, z, rot);
 }
 
-/** Personagens originais, inspirados em arquétipos (sem copiar designs registrados). Coordenadas no espaço do osso da cabeça. */
+function spike(r: number, h: number, color: number, x: number, y: number, z: number, rx: number, rz: number): THREE.Mesh {
+  return place(new THREE.Mesh(new THREE.ConeGeometry(r, h, 4), mat(color)), x, y, z, [rx, Math.PI / 4, rz]);
+}
+
+/** Olho de desenho: disco branco virado para a frente com pupila preta (sem contorno, senão vira óculos). */
+function cartoonEye(r: number, x: number, y: number, z: number, pupil = 0.42, lookX = 0): THREE.Group {
+  const g = new THREE.Group();
+  // Discos chatos (sem borda lateral, que parecia aro de óculos).
+  const white = place(new THREE.Mesh(new THREE.CircleGeometry(r, 14), mat(0xffffff, { roughness: 0.4 })), 0, 0, 0);
+  const dot = place(new THREE.Mesh(new THREE.CircleGeometry(r * pupil, 10), mat(BLACK)), lookX * r, 0, 0.003);
+  white.userData.noOutline = dot.userData.noOutline = true;
+  g.add(white, dot);
+  g.position.set(x, y, z);
+  return g;
+}
+
+/** Calota (meia esfera achatada, poucas faces) — base de cabelos "capacete". */
+function dome(rx: number, ry: number, rz: number, color: number, y: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.Mesh {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), mat(color, extra));
+  m.scale.set(rx, ry, rz);
+  return place(m, 0, y, 0);
+}
+
+/** Personagens originais, inspirados em arquétipos (sem copiar designs registrados). Coordenadas canônicas da cabeça (CANON_HEAD). */
 const LOOKS: Record<CharacterId, Look> = {
   fera: {
     base: 'character-male-a',
     body: { r2c3: 0x3f9a3a, r2c11: 0x3f9a3a, r2c5: 0xf07a2a, r3c13: 0xf3ece8, r3c11: 0xf2c6a0 },
-    head: { r3c13: 0xf2c6a0 },
+    // r3c1 = cabelo do modelo base, r3c7/r3c9 = óculos dele: viram pele (a tigelinha nova mostra testa e sobrancelhas).
+    head: { r3c13: 0xf2c6a0, r3c1: 0xf2c6a0, r3c7: 0xf2c6a0, r3c9: 0xf2c6a0 },
     prop: 'bottle',
     build: (c) => {
       const h = c.headAnchor;
-      // Cabelo tigelinha brilhante.
-      // (o modelo de base já tem cabelo preto; aqui só a franja reta e as laterais da tigelinha)
-      h.add(box(0.42, 0.045, 0.025, BLACK, 0, 0.3, 0.176));
-      // Sobrancelhonas.
-      h.add(box(0.12, 0.035, 0.02, BLACK, 0.09, 0.2, 0.178));
-      h.add(box(0.12, 0.035, 0.02, BLACK, -0.09, 0.2, 0.178));
-      // Óculos escuros do pacote.
-      const glasses = fit(instance('chars/aid-sunglasses'), { scale: 1 });
-      glasses.position.set(0, 0.105, 0.095);
-      h.add(glasses);
+      const shiny = { roughness: 0.22, metalness: 0.15 };
+      // Tigelinha preta brilhante: calota + nuca/laterais + franja reta logo acima das sobrancelhas.
+      h.add(dome(0.248, 0.12, 0.19, 0x141018, 0.27, shiny));
+      const back = box(0.476, 0.15, 0.22, 0x141018, 0, 0.19, -0.075);
+      back.material = mat(0x141018, shiny);
+      h.add(back);
+      for (const sx of [1, -1]) h.add(box(0.03, 0.1, 0.18, 0x141018, sx * 0.236, 0.21, 0.07));
+      const bangs = box(0.476, 0.075, 0.05, 0x141018, 0, 0.27, 0.162);
+      bangs.material = mat(0x141018, shiny);
+      h.add(bangs);
+      // Brilho de desenho no cabelo.
+      const shine = box(0.14, 0.012, 0.045, 0xffffff, -0.07, 0.372, 0.04, [0.3, 0.3, 0]);
+      shine.material = mat(0xffffff, { emissive: 0x777777 });
+      shine.userData.noOutline = true;
+      h.add(shine);
+      // Sobrancelhonas grossas e olhos redondos arregalados.
+      h.add(box(0.12, 0.042, 0.03, BLACK, 0.088, 0.195, 0.176, [0, 0, -0.1]));
+      h.add(box(0.12, 0.042, 0.03, BLACK, -0.088, 0.195, 0.176, [0, 0, 0.1]));
+      h.add(cartoonEye(0.042, 0.085, 0.13, 0.174, 0.55), cartoonEye(0.042, -0.085, 0.13, 0.174, 0.55));
+      // Faixa vermelha na cintura.
+      const t = c.torsoBox;
+      const tc = t.getCenter(new THREE.Vector3());
+      c.torsoAnchor.add(box((t.max.x - t.min.x) * 0.9, 0.04, t.max.z - t.min.z + 0.01, 0xd8443c, tc.x, t.min.y + 0.035, tc.z));
     },
   },
   principe: {
     base: 'character-male-d',
-    body: { r3c1: 0x2e5fd1, r2c9: 0xe8b830, r3c15: 0xf7f5ef },
+    // Macacão azul (r3c1), sem gravata/camisa (r3c9/r2c9 → branco, ficam sob o peitoral), luvas brancas (r3c15).
+    body: { r3c1: 0x2753c4, r2c9: 0xf7f5ef, r3c9: 0xf7f5ef, r3c15: 0xf7f5ef },
     head: { r3c11: BLACK },
     build: (c) => {
       const h = c.headAnchor;
-      // Cabelo espetado em chama.
-      const spikes: [number, number, number, number][] = [
-        [-0.15, -0.02, 0.25, 0.35],
-        [0, -0.04, 0.32, 0],
-        [0.15, -0.02, 0.25, -0.35],
-        [-0.08, 0.08, 0.22, 0.2],
-        [0.08, 0.08, 0.22, -0.2],
-        [0, -0.13, 0.26, 0],
+      // Cabelão em chama, alto e para cima.
+      const flame: [number, number, number, number, number][] = [
+        // x, z, comprimento, inclinação p/ trás, inclinação lateral
+        [0, -0.02, 0.46, -0.12, 0],
+        [-0.1, -0.01, 0.38, -0.12, 0.28],
+        [0.1, -0.01, 0.38, -0.12, -0.28],
+        [-0.18, -0.02, 0.28, -0.1, 0.55],
+        [0.18, -0.02, 0.28, -0.1, -0.55],
+        [-0.06, 0.08, 0.3, 0.05, 0.12],
+        [0.06, 0.08, 0.3, 0.05, -0.12],
+        [-0.05, -0.12, 0.36, -0.35, 0.15],
+        [0.05, -0.12, 0.36, -0.35, -0.15],
       ];
-      for (const [x, z, len, rz] of spikes) h.add(spike(0.08, len, BLACK, x, 0.3 + len / 2, z, -0.35, rz));
-      // Entradas em V.
-      h.add(box(0.11, 0.11, 0.03, BLACK, 0, 0.29, 0.17, [0, 0, Math.PI / 4]));
-      // Ombreiras douradas.
+      for (const [x, z, len, rx, rz] of flame) h.add(spike(0.085, len, BLACK, x, 0.29 + len / 2.3, z, rx, rz));
+      h.add(dome(0.24, 0.07, 0.19, BLACK, 0.29));
+      // Entradas em V bem marcadas (bico descendo na testa).
+      h.add(spike(0.06, 0.12, BLACK, 0, 0.27, 0.165, Math.PI, 0));
+      for (const sx of [1, -1]) h.add(box(0.13, 0.08, 0.04, BLACK, sx * 0.16, 0.29, 0.155, [0, 0, sx * 0.5]));
+      // Cara de marrento: sobrancelhas em V.
+      h.add(box(0.11, 0.035, 0.03, BLACK, 0.08, 0.172, 0.178, [0, 0, 0.42]));
+      h.add(box(0.11, 0.035, 0.03, BLACK, -0.08, 0.172, 0.178, [0, 0, -0.42]));
+      // Armadura: peitoral e costas brancos, ombreiras douradas grandes.
       const t = c.torsoBox;
       const tc = t.getCenter(new THREE.Vector3());
-      for (const sx of [1, -1]) c.torsoAnchor.add(box(0.13, 0.05, 0.17, 0xe8b830, sx * t.max.x * 0.82, t.max.y - 0.015, tc.z));
+      const tw = t.max.x - t.min.x;
+      const th = t.max.y - t.min.y;
+      c.torsoAnchor.add(box(tw * 1.04, th * 0.5, 0.05, 0xf7f5ef, tc.x, t.max.y - th * 0.25, t.max.z + 0.005));
+      c.torsoAnchor.add(box(tw * 1.04, th * 0.5, 0.05, 0xf7f5ef, tc.x, t.max.y - th * 0.25, t.min.z - 0.005));
+      c.torsoAnchor.add(box(tw * 0.92, 0.045, t.max.z - t.min.z + 0.04, 0xe8b830, tc.x, t.max.y - th * 0.52, tc.z));
+      for (const sx of [1, -1]) {
+        c.torsoAnchor.add(box(0.16, 0.06, 0.21, 0xf7f5ef, sx * t.max.x * 0.95, t.max.y + 0.005, tc.z, [0, 0, sx * -0.25]));
+        c.torsoAnchor.add(box(0.07, 0.065, 0.215, 0xe8b830, sx * (t.max.x * 0.95 + 0.07), t.max.y - 0.015, tc.z, [0, 0, sx * -0.25]));
+      }
+      // Botas brancas.
+      for (const leg of ['leg-left', 'leg-right']) {
+        const { g, box: b } = c.boneAnchor(leg);
+        const bc = b.getCenter(new THREE.Vector3());
+        g.add(box(b.max.x - b.min.x + 0.03, (b.max.y - b.min.y) * 0.45, b.max.z - b.min.z + 0.03, 0xf7f5ef, bc.x, b.min.y + (b.max.y - b.min.y) * 0.22, bc.z));
+      }
     },
   },
   panca: {
     base: 'character-male-b',
-    // Pele amarela de desenho animado (pedido do usuário) em r3c15; r3c11 na cabeça é a barba por fazer.
+    // Pele amarela de desenho animado (pedido do usuário) em r3c15; r3c11 na cabeça é a barba por fazer (focinho bege).
     // No corpo, r3c11 = cinto e sapatos (marrom-escuro para não brigar com o amarelo).
     body: { r2c9: 0xfafafa, r2c11: 0x4fb3e8, r3c15: 0xf5c62a, r3c11: 0x5e4334 },
-    head: { r3c15: 0xf5c62a, r3c11: 0xa98a64 },
+    head: { r3c15: 0xf5c62a, r3c11: 0xcaa774, r3c13: 0xf5c62a },
     prop: 'mug',
     build: (c) => {
-      // Fiapos penteados na careca e barrigão.
-      for (const x of [-0.05, 0.05]) c.headAnchor.add(box(0.012, 0.008, 0.24, 0x3b2a25, x, 0.331, 0, [0, 0, 0.1]));
+      const h = c.headAnchor;
+      // Olhões redondos de desenho, quase encostados.
+      h.add(cartoonEye(0.062, 0.068, 0.175, 0.18, 0.3, 0.2), cartoonEye(0.062, -0.068, 0.175, 0.18, 0.3, -0.2));
+      // Dois fiapos em arco no alto da careca e o "M" de cabelo sobre as orelhas.
+      for (const x of [-0.04, 0.05]) {
+        const arc = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.009, 4, 10, Math.PI), mat(0x3b2a25));
+        h.add(place(arc, x, 0.33, 0.02, [0, 0.3, 0]));
+      }
+      for (const sx of [1, -1])
+        for (let k = 0; k < 3; k++) h.add(box(0.02, 0.05, 0.035, 0x3b2a25, sx * 0.232, 0.19 + (k % 2) * 0.02, -0.02 - k * 0.04, [0.5 * (k % 2 ? 1 : -1), 0, 0]));
+      // Barrigão de camisa branca.
       const t = c.torsoBox;
       const tc = t.getCenter(new THREE.Vector3());
       c.torsoAnchor.add(box((t.max.x - t.min.x) * 0.8, (t.max.y - t.min.y) * 0.55, 0.08, 0xf4f4f4, tc.x, tc.y - 0.01, t.max.z + 0.01));
@@ -113,24 +178,43 @@ const LOOKS: Record<CharacterId, Look> = {
   },
   sonolento: {
     base: 'character-male-f',
-    body: { r2c3: 0x6f8040, r3c3: 0x2c3328, r3c15: 0x2c3328 },
-    head: {},
+    body: { r2c3: 0x6f8040, r3c3: 0x2c3328, r3c15: 0x2c3328, r3c11: 0xe9b48c },
+    head: { r3c11: 0xe9b48c, r3c1: 0x16131c },
     build: (c) => {
       const h = c.headAnchor;
-      // Rabo de cavalo espetado no alto.
-      for (const [x, z, rx, rz] of [
-        [0, -0.06, -0.5, 0],
-        [-0.06, -0.04, -0.3, 0.5],
-        [0.06, -0.04, -0.3, -0.5],
-        [0, -0.1, -0.9, 0],
-      ] as const) {
-        h.add(spike(0.06, 0.24, BLACK, x, 0.42, z, rx, rz));
+      // Rabo de cavalo "abacaxi": tufo de espetos saindo do alto da nuca, preso com elástico.
+      const tuft: [number, number][] = [
+        [-0.25, 0],
+        [-0.45, 0.45],
+        [-0.45, -0.45],
+        [-0.75, 0.25],
+        [-0.75, -0.25],
+        [-1.0, 0],
+        [-0.1, 0.25],
+        [-0.1, -0.25],
+      ];
+      for (const [rx, rz] of tuft) h.add(spike(0.055, 0.26, 0x16131c, -rz * 0.12, 0.43 + rx * 0.04, -0.09 + rx * 0.08, rx, rz));
+      h.add(box(0.09, 0.05, 0.09, 0xd8443c, 0, 0.35, -0.08));
+      // Olhos de sono: pálpebra pesada sobre o olho e risquinho embaixo.
+      for (const sx of [1, -1]) {
+        const lid = box(0.1, 0.035, 0.012, 0xe9b48c, sx * 0.085, 0.152, 0.176);
+        lid.userData.noOutline = true;
+        h.add(lid, box(0.09, 0.012, 0.012, BLACK, sx * 0.085, 0.134, 0.178));
+        // Brinco pequeno.
+        h.add(place(new THREE.Mesh(new THREE.OctahedronGeometry(0.018), mat(0xd9dde3, { metalness: 0.7, roughness: 0.3 })), sx * 0.235, 0.08, 0.02));
       }
-      h.add(box(0.1, 0.05, 0.1, 0xd8443c, 0, 0.345, -0.06));
-      // Olhos meio fechados (pálpebras) e palito de dente.
-      h.add(box(0.1, 0.03, 0.015, 0xd9a887, 0.085, 0.135, 0.176));
-      h.add(box(0.1, 0.03, 0.015, 0xd9a887, -0.085, 0.135, 0.176));
+      // Palito de dente no canto da boca.
       h.add(box(0.012, 0.012, 0.14, 0xe8d9a0, 0.06, 0.06, 0.21, [0, 0.7, 0.2]));
+      // Colete tático: gola alta e bolsos no peito.
+      const t = c.torsoBox;
+      const tc = t.getCenter(new THREE.Vector3());
+      const tw = t.max.x - t.min.x;
+      const th = t.max.y - t.min.y;
+      c.torsoAnchor.add(box(tw * 0.78, 0.07, t.max.z - t.min.z + 0.02, 0x5d6d34, tc.x, t.max.y + 0.01, tc.z));
+      for (const sx of [1, -1]) {
+        c.torsoAnchor.add(box(tw * 0.3, th * 0.28, 0.04, 0x58682f, tc.x + sx * tw * 0.22, tc.y + th * 0.08, t.max.z + 0.01));
+        c.torsoAnchor.add(box(tw * 0.3, 0.02, 0.05, 0x46532a, tc.x + sx * tw * 0.22, tc.y + th * 0.22, t.max.z + 0.015));
+      }
     },
   },
 };
@@ -265,7 +349,7 @@ export function addOutline(root: THREE.Object3D): void {
   const meshes: THREE.Mesh[] = [];
   root.traverse((o) => {
     const m = o as THREE.Mesh;
-    if (!m.isMesh || m.userData.outline) return;
+    if (!m.isMesh || m.userData.outline || m.userData.noOutline) return;
     const mats = Array.isArray(m.material) ? m.material : [m.material];
     if (mats.some((x) => x.transparent)) return;
     meshes.push(m);
@@ -326,6 +410,8 @@ export class Character3D {
   readonly torsoBox: THREE.Box3;
   /** Grupo no espaço do modelo, preso depois ao tronco (ombreiras, barriga). */
   readonly torsoAnchor: THREE.Group;
+  /** Grupos extras no espaço do modelo, presos depois a outros ossos (ex.: botas nas pernas). */
+  private readonly boneAnchors: [THREE.Bone, THREE.Group][] = [];
   private readonly mixer: THREE.AnimationMixer;
   private readonly actions = new Map<string, THREE.AnimationAction>();
   private current: Anim | null = null;
@@ -381,6 +467,7 @@ export class Character3D {
     this.model.updateMatrixWorld(true);
     this.head.attach(this.headAnchor);
     this.torso.attach(this.torsoAnchor);
+    for (const [b, g] of this.boneAnchors) b.attach(g);
     this.head.traverse((o) => ((o as THREE.Mesh).castShadow = true));
 
     for (const b of [this.head, this.torso, this.armL, this.armR]) this.rest.set(b, b.rotation.clone());
@@ -402,6 +489,15 @@ export class Character3D {
     this.mixer = new THREE.AnimationMixer(this.model);
     for (const clip of src.animations) this.actions.set(clip.name, this.mixer.clipAction(clip));
     this.play('idle');
+  }
+
+  /** Grupo (espaço do modelo) que acompanha o osso `name`, e a caixa dos vértices desse osso. Só durante `build`. */
+  boneAnchor(name: string): { g: THREE.Group; box: THREE.Box3 } {
+    const b = this.model.getObjectByName(name) as THREE.Bone;
+    const g = new THREE.Group();
+    this.model.add(g);
+    this.boneAnchors.push([b, g]);
+    return { g, box: modelBox(this.model, 'body-mesh', b) };
   }
 
   private play(anim: Anim, fade = 0.18): void {

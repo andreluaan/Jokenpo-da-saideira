@@ -158,7 +158,7 @@ Cada um bota **uma vez** (não troca). O símbolo **aparece na hora para todos**
 ## 8. Jo-Ken-Pô (apresentação do QTE)
 
 - Os punhos dos dois duelistas batem a cada [400 ms] e descem exatamente em T − 800 (**JO**), T − 400 (**KEN**) e T (**PÔ!**). Apertar o símbolo no **PÔ!** (verde) = Perfeito.
-- **QTE com as mãos (v0.14):** ao lado do seu personagem (do lado oposto ao adversário), um punho de desenho sobe e desce e bate numa mesinha no JO, no KEN e no PÔ!. A cor do aro do punho e da mesinha é a faixa: **amarelo** = cedo, **verde** = PÔ! (perfeito), **vermelho** = roubou. As batidas JO / KEN / PÔ! acendem embaixo. Ao apertar, o punho vira o símbolo botado. O símbolo do adversário aparece ao lado assim que ele bota.
+- **QTE na mão do boneco (v0.15):** no duelo, cada duelista estende a mão esquerda aberta (palma para cima) e bate o punho direito nela no JO, no KEN e no PÔ! (gesto clássico do jokenpô). A **cor das mãos** é a faixa: **normal** (pele/luva) = cedo, **verde** = PÔ! (perfeito), **vermelho** = roubou (ou não botou). Ao botar, o punho vira o **gesto do símbolo** (pedra, papel, tesoura) — todo mundo vê: é aí que o malandro lê. Os dois duelistas têm o mesmo PÔ!, então ficam verdes juntos.
 - A pose é idêntica para os três símbolos. Só na resolução os dois viram de frente e mostram o sinal com a mão. O perdedor toma uma **rasteira** (visual; o dano/empurrão continuam vindo da simulação).
 
 ## 9. Boteco vivo (v0.6)

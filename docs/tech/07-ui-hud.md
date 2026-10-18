@@ -27,7 +27,7 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - **Eventos**: `ui/barEventFx.ts` (ver 04) — classes `.barfx.kind-*.stage-*` em `style.css`.
 - Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
 
-## QTE com as mãos (v0.14) — `ui/qteHands.ts`
+## QTE com as mãos (v0.14, substituído na v0.15 pela mão do boneco — ver 05-personagens)
 `QteHands` (dentro do `.overlay3d`): punho SVG num círculo com aro (`--zone`), mesinha embaixo, batidas JO/KEN/PÔ! e o símbolo do adversário (`.qh-opp`). `Game3D.updateQte` posiciona do lado oposto ao adversário (`.left`) e escala pelo zoom. Zona = `early`/`green`/`red` pela mesma regra do `gradePick` (ao apertar congela na nota; o punho vira o ícone do símbolo). O punho cai em T−800, T−400 e T (`BEAT_MS`, igual ao `pumpFor` dos personagens).
 
 ## Ícones dos símbolos (v0.12)

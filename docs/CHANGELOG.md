@@ -17,6 +17,9 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
+## v0.15 — QTE na mão do boneco (pilar do jogo)
+- Pedido: o QTE tem que ser **a mão do próprio boneco**, no gesto clássico (punho batendo na palma), mudando de cor: normal → verde → vermelho. Feito: palma aberta + punho batendo no JO… KEN… PÔ!, braços de desenho na cor de cada personagem, mãos grandinhas para ler de longe. Ao botar, a mão vira o gesto do símbolo (os outros veem). O widget de punho ao lado (v0.14) saiu.
+
 ## v0.14 — objetos da arena e QTE com as mãos
 - **Objetos da arena no estilo da referência** (cantos arredondados, sombreado suave): isopor azul aberto com gelo e latinhas, freezer com vidro, engradados de plástico, churrasqueira de tambor e mesa GELADA quadrada. Cada cópia sai um pouco diferente (tamanho e giro).
 - **QTE com as mãos** no lugar da barra: punho batendo na mesinha no JO… KEN… PÔ!; aro e mesinha amarelo (cedo), verde (PÔ!) e vermelho (roubou); o símbolo do adversário aparece ao lado. Fica do lado oposto ao adversário.

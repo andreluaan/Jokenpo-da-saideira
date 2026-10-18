@@ -31,13 +31,13 @@ const STEPS: Step[] = [
   {
     img: 'howto/4-duelo.jpg',
     title: 'Bote no verde',
-    body: 'O punho bate na mesinha no JO… KEN… e no PÔ! tudo fica verde: aperte seu símbolo ali. Botou cedo (amarelo)? Todo mundo vê sua mão. Não botou nada? Apanha.',
+    body: 'Seu boneco bate o punho na palma no JO… KEN… e no PÔ! a mão fica verde: aperte seu símbolo ali. Botou antes? Sua mão já mostra o gesto pra todo mundo. Não botou nada? Apanha.',
     keys: ['1 [rock]', '2 [paper]', '3 [scissors]'],
   },
   {
     img: 'howto/5-malandragem.jpg',
     title: 'Malandragem tem limite',
-    body: 'Viu a mão do outro (aparece do lado do punho)? Dá pra virar no último instante… mas se o aro ficar vermelho, é pego roubando e apanha.',
+    body: 'Viu o gesto na mão do outro? Dá pra virar no último instante… mas se a sua mão ficar vermelha, é pego roubando e apanha.',
     keys: [],
   },
   {

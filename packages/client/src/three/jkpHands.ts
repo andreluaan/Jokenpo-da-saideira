@@ -13,7 +13,7 @@ import { rbox } from './props3d';
 export type HandTint = 'normal' | 'green' | 'red';
 
 /** Mãos de desenho bem grandinhas: precisam ler de longe na câmera da partida e cobrir a mãozinha do boneco. */
-const HAND_SCALE = 1.75;
+const HAND_SCALE = 1.1;
 
 const GREEN = new THREE.Color(0x5ad19a);
 const RED = new THREE.Color(0xff5a5f);
@@ -24,13 +24,13 @@ const UP = new THREE.Vector3(0, 1, 0);
 const SH = new THREE.Vector3();
 const TMP = new THREE.Vector3();
 /** Onde o braço encosta em cada mão (pulso). */
-const PALM_WRIST = new THREE.Vector3(0.03, -0.035, -0.08);
-const FIST_WRIST = new THREE.Vector3(0, -0.01, -0.09);
+const PALM_WRIST = new THREE.Vector3(0.02, -0.02, -0.05);
+const FIST_WRIST = new THREE.Vector3(0, -0.01, -0.055);
 
 /** Onde a palma fica (e o punho bate), no espaço do modelo. */
-export const PALM_AT = new THREE.Vector3(0.06, 0.18, 0.3);
+export const PALM_AT = new THREE.Vector3(0.05, 0.19, 0.25);
 /** Centro do punho para uma altura `lift` (0 = encostado na palma). */
-export const FIST_AT = (lift: number) => new THREE.Vector3(PALM_AT.x - 0.025, PALM_AT.y + 0.125 + lift * 0.12, PALM_AT.z - 0.01);
+export const FIST_AT = (lift: number) => new THREE.Vector3(PALM_AT.x - 0.025, PALM_AT.y + 0.08 + lift * 0.1, PALM_AT.z - 0.005);
 
 export class JkpHands {
   readonly group = new THREE.Group();
@@ -100,7 +100,7 @@ export class JkpHands {
     }
     const sleeveMat = new THREE.MeshStandardMaterial({ color: sleeve, roughness: 0.6, flatShading: false });
     const arm = () => {
-      const a = new THREE.Mesh(new THREE.CapsuleGeometry(0.032, 1, 4, 10), sleeveMat);
+      const a = new THREE.Mesh(new THREE.CapsuleGeometry(0.026, 1, 4, 10), sleeveMat);
       a.castShadow = true;
       return a;
     };

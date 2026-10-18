@@ -3,8 +3,8 @@ import { type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, 
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { symbolSvg } from '../ui/symbolIcons';
-import { BEAT_MS, QteHands } from '../ui/qteHands';
-import { toWorld } from './assets';
+import { BEAT_MS, QteArc } from '../ui/qteArc';
+import { S, toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
 import { Character3D, makeBottle } from './character3d';
 import { signTexture, softCircle } from './textures';
@@ -66,7 +66,7 @@ export class Game3D {
   private readonly aims = new Map<string, THREE.Group>();
   private readonly selRing: THREE.Mesh;
   private readonly beer: THREE.Group;
-  private readonly qte: QteHands;
+  private readonly qte: QteArc;
   /** Instante (tempo do servidor) em que VOCÊ apertou a Última Palavra — para congelar a barra ali. */
   private localLock: number | null = null;
   private readonly center = document.createElement('div');
@@ -125,7 +125,7 @@ export class Game3D {
     this.scene.add(this.beer);
 
     // Jo-Ken-Pô num painel fixo na lateral da tela (fora do personagem).
-    this.qte = new QteHands(this.overlay);
+    this.qte = new QteArc(this.overlay);
     this.center.className = 'center3d';
     this.timer.className = 'timer3d';
     this.beerHint.className = 'beerhint3d';
@@ -468,7 +468,7 @@ export class Game3D {
     this.updateAims(snap, now, me);
     this.updateReveals(snap, now);
     this.updateBeer(snap, now, me);
-    this.updateQte(snap, now, me);
+    this.updateQte(now, me);
     this.updateDust(dt);
     this.updateFx();
     this.boteco.update(snap, now, dt);
@@ -791,22 +791,32 @@ export class Game3D {
     }
   }
 
-  /** Jo-Ken-Pô no painel fixo da lateral (ver ui/qteHands.ts). */
-  private updateQte(snap: Snapshot, now: number, me: PlayerView | undefined): void {
+  /** Jo-Ken-Pô: texto curvado logo abaixo da cerca da frente (ver ui/qteArc.ts). */
+  private updateQte(now: number, me: PlayerView | undefined): void {
     if (!me?.alive || !me.holding || me.impactAt === null) {
       this.localLock = null;
       this.qte.hide();
       return;
     }
-    // Painel fixo na lateral da tela (não fica em cima do personagem nem do duelo).
-    const opp = snap.players.find((p) => p.id === me.targetId);
+    // Caminho: um pedaço da elipse da arena, por fora da cerca da frente (lado da câmera), projetado na tela.
+    const { rx, ry } = this.conn.config.arena;
+    const ex = rx * S + 1.25;
+    const ez = ry * S + 1.25;
+    const arc: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 24; i++) {
+      const a = Math.PI / 2 + 0.75 - (i / 24) * 1.5;
+      arc.push(this.screen(new THREE.Vector3(Math.cos(a) * ex, 0, Math.sin(a) * ez)));
+    }
+    // Letra proporcional ao tamanho da arena na tela (1 unidade do chão ≈ quantos px aqui na frente).
+    const mid = this.screen(new THREE.Vector3(0, 0, ez));
+    const unit = Math.abs(this.screen(new THREE.Vector3(1, 0, ez)).x - mid.x);
     this.qte.update({
       now,
       impactAt: me.impactAt,
       pickedAt: this.localLock ?? me.pickedAt,
-      symbol: me.symbol,
-      opp: opp ? { name: opp.name, symbol: opp.symbol } : null,
       cfg: this.conn.config,
+      arc,
+      size: Math.max(22, Math.min(64, unit * 0.62)),
     });
   }
 

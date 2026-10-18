@@ -268,6 +268,7 @@ export function buildPlayersCorner(scene: THREE.Scene, pc: PlayersCorner): { sea
 
   // Luz quente do camarote (sem sombra: não custa desenho extra).
   const lamp = new THREE.PointLight(0xffc27a, 3.2, 5.5, 1.6);
+  lamp.name = 'camarote-lamp';
   lamp.position.set(0, 1.9, tz);
   g.add(lamp);
 

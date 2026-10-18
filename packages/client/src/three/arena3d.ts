@@ -4,6 +4,7 @@ import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
 import { makeBottle } from './character3d';
 import { grassTexture, roadTexture, softCircle, speckleTexture, textTexture } from './textures';
 import { mergeStatic } from './merge';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildBeerTable, buildCooler, buildCrates, buildFreezer, buildGrill } from './props3d';
 import { buildPlayersCorner, inPlayersCorner, type PlayersCorner } from './playersCorner3d';
 
@@ -17,6 +18,27 @@ function mesh(geo: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0)
   o.castShadow = true;
   o.receiveShadow = true;
   return o;
+}
+
+/**
+ * Degradê de luz no chão (v0.16): multiplica a cor dos vértices por um fator que cai de 1 (arena e arredores)
+ * até ~0,72 nas bordas do quintal. Dá profundidade sem desenho a mais (é só um atributo na geometria).
+ */
+function shadeGround(m: THREE.Mesh, ax: number, az: number): void {
+  m.updateMatrixWorld(true);
+  const g = m.geometry;
+  const pos = g.getAttribute('position');
+  const v = new THREE.Vector3();
+  const col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+    const e = Math.hypot(v.x / (ax + 3), v.z / (az + 3));
+    const t = Math.min(1, Math.max(0, (e - 0.7) / 1.4));
+    const k = 1 - 0.28 * t * t * (3 - 2 * t);
+    col.set([k, k * 0.985, k * 0.96], i * 3);
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  (m.material as THREE.MeshStandardMaterial).vertexColors = true;
 }
 
 /** Elipse (com ou sem furo) deitada no chão. */
@@ -129,7 +151,9 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   // Chão de fora um tom mais escuro e menos saturado que a arena: o olho vai direto para o ringue.
   const groundTex = grassTexture(GROUND);
   groundTex.repeat.set(12, 9);
-  const ground = mesh(new THREE.PlaneGeometry(70, 50), std(0xffffff, { map: groundTex, flatShading: false }));
+  // Subdividido para o degradê das bordas (cor nos vértices, ver `shadeGround`).
+  const ground = mesh(new THREE.PlaneGeometry(70, 50, 56, 40), std(0xffffff, { map: groundTex, flatShading: false }));
+  ground.userData.ground = true;
   ground.rotation.x = -Math.PI / 2;
   ground.castShadow = false;
   scene.add(ground);
@@ -144,7 +168,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   field.bezierCurveTo(8, 6.3, 6, 6.4, 4.5, 7.2);
   const fieldTex = speckleTexture(0xe9b949, [0xd9a43a, 0xf2cc6a, 0xdcab40], 2000, 512, 11, 0.3, 2.5);
   fieldTex.repeat.set(0.15, 0.15);
-  scene.add(flat(field, std(0xffffff, { map: fieldTex, flatShading: false }), 0.004));
+  scene.add(flat(field, std(0xffffff, { map: fieldTex, flatShading: false }), 0.004)).children.at(-1)!.userData.ground = true;
 
   // Terra revirada, terra da arena e a borda branca.
   scene.add(flat(ellipseShape(ax + 0.75, az + 0.7), std(0xa0705c, { transparent: true, opacity: 0.6 }), 0.006));
@@ -372,10 +396,11 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.add(place('furniture/trashcan', 7.2, 3.4, { height: 0.55 }));
 
   // --- luz ---
-  const hemi = new THREE.HemisphereLight(0xfff0dd, 0x6b7a44, 1.15);
+  const hemi = new THREE.HemisphereLight(0xfff0dd, 0x6b7a44, 0.95);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffe2bc, 2.6);
-  sun.position.set(-7, 13, 6);
+  const sun = new THREE.DirectionalLight(0xffdcb2, 2.9);
+  // Um pouco mais baixo (v0.16): sombras mais compridas dão volume ao quintal.
+  sun.position.set(-8, 11.5, 6.5);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   const sc = sun.shadow.camera;
@@ -393,6 +418,31 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.add(barLight);
   scene.fog = new THREE.Fog(SKY, 22, 40);
   scene.background = new THREE.Color(SKY);
+
+  // --- profundidade da luz (v0.16), sem desenho a mais ---
+  // 1) Bordas do quintal um pouco mais escuras (cor nos vértices do chão): o ringue vira o lugar mais aceso.
+  for (const o of scene.children) if (o.userData.ground) shadeGround(o as THREE.Mesh, ax, az);
+  // 2) Poças de luz quente no chão embaixo das lâmpadas, da varanda, do camarote e das brasas (1 malha aditiva).
+  const pools: [number, number, number, number, number][] = [
+    [pa.c.x, pa.c.z - 0.1, 2.6, 0xffb867, 0.5],
+    [BAR.x, BAR.z + 1.4, 3.2, 0xffb867, 0.42],
+    ...bulbs.filter((_, i) => i % 3 === 1 && i < bulbs.length - corner.bulbs.length).map((b) => [b.pos.x, b.pos.z, 1.0, 0xffb060, 0.1] as [number, number, number, number, number]),
+    ...cfg.obstacles.filter((o) => o.prop === 'grill').map((o) => {
+      const w = toWorld(cfg, o.kind === 'circle' ? o.x : o.x + o.w / 2, o.kind === 'circle' ? o.y : o.y + o.h / 2);
+      return [w.x, w.z, 1.2, 0xff7a2f, 0.4] as [number, number, number, number, number];
+    }),
+  ];
+  const poolGeos = pools.map(([x, z, r, c, k]) => {
+    const g = new THREE.PlaneGeometry(r * 2, r * 2).rotateX(-Math.PI / 2).translate(x, 0.02, z);
+    const col = new THREE.Color(c).multiplyScalar(k);
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.getAttribute('position').count * 3).map((_, i) => [col.r, col.g, col.b][i % 3]), 3));
+    return g;
+  });
+  const poolMat = new THREE.MeshBasicMaterial({ map: SOFT, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 1 });
+  const lightPools = new THREE.Mesh(mergeGeometries(poolGeos), poolMat);
+  lightPools.renderOrder = 1;
+  scene.add(lightPools);
+  before.add(lightPools); // transparente: fica fora do merge
 
   // Desempenho: junta tudo que é parado em poucas malhas (centenas de desenhos a menos por quadro).
   // Os obstáculos ficam com grupo próprio (engradado quebra, freezer abre a tampa), juntados por dentro.
@@ -412,6 +462,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   scene.add(glows);
 
   const base = { hemi: hemi.intensity, sun: sun.intensity, bar: barLight.intensity };
+  const lamp = scene.getObjectByName('camarote-lamp') as THREE.PointLight | undefined;
+  const lampBase = lamp?.intensity ?? 0;
   const night = new THREE.Color(0x1c1e24);
   const day = new THREE.Color(SKY);
   let dim = 0;
@@ -434,6 +486,9 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
       hemi.intensity = base.hemi * (1 - 0.82 * k);
       sun.intensity = base.sun * (1 - 0.92 * k);
       barLight.intensity = base.bar * (1 + 0.6 * k);
+      if (lamp) lamp.intensity = lampBase * (1 + 0.6 * k);
+      // No escuro as poças de luz aparecem mais (lâmpadas e brasa continuam acesas).
+      poolMat.color.setScalar(1 + 0.9 * k);
       const c = day.clone().lerp(night, k);
       (scene.background as THREE.Color).copy(c);
       if (scene.fog) (scene.fog as THREE.Fog).color.copy(c);
@@ -550,6 +605,7 @@ function buildRoad(scene: THREE.Scene, pts: [number, number][]): THREE.Vector3[]
   if (g.attributes.normal.getY(0) < 0) g.setIndex(idx.map((_, k) => idx[k - (k % 3) + [0, 2, 1][k % 3]]));
   g.computeVertexNormals();
   const road = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: roadTexture(), roughness: 0.95 }));
+  road.userData.ground = true;
   road.receiveShadow = true;
   scene.add(road);
   return along;

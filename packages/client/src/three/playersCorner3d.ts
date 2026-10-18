@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Seat } from './arena3d';
 import { makeBottle } from './character3d';
 import { rbox, rcyl, soft } from './props3d';
-import { textTexture } from './textures';
+import { paintedSign } from './signTextures';
 
 /**
  * Cantinho dos jogadores (v0.16): "camarote" de boteco logo depois da porteira, **reto na tela** (alinhado com
@@ -227,14 +227,18 @@ export function buildPlayersCorner(scene: THREE.Scene, pc: PlayersCorner): { sea
   };
   for (const p of Object.values(corners)) g.add(box(0.09, p.y, 0.09, post, p.x, p.y / 2, p.z));
   g.add(box(L * 2 - 0.1, 0.09, 0.09, post, 0, backY - 0.05, -D + 0.1));
+  // Placa de madeira pintada (v0.16) com tábua de fundo (espessura), pendurada na viga.
+  const plateG = new THREE.Group();
+  plateG.add(box(1.78, 0.6, 0.06, post, 0, 0, -0.035));
   const plate = new THREE.Mesh(
     new THREE.PlaneGeometry(1.7, 0.52),
-    new THREE.MeshStandardMaterial({ map: textTexture('SÓ QUEM JOGA', { w: 768, h: 236, bg: 0xffc145, border: 0x2b1d22, color: '#2b1d22', size: 104 }) }),
+    new THREE.MeshStandardMaterial({ map: paintedSign('SÓ QUEM JOGA', { w: 1024, h: 314, seed: 8 }), roughness: 0.75 }),
   );
-  plate.position.set(0, backY - 0.42, -D + 0.14);
-  plate.rotation.x = -0.3; // inclinada para trás: a câmera (de cima) lê bem
-  plate.castShadow = true;
-  g.add(plate);
+  plate.receiveShadow = true;
+  plateG.add(plate);
+  plateG.position.set(0, backY - 0.42, -D + 0.17);
+  plateG.rotation.x = -0.3; // inclinada para trás: a câmera (de cima) lê bem
+  g.add(plateG);
   for (const sx of [-0.55, 0.55]) {
     const ch = box(0.012, 0.14, 0.012, post, sx, backY - 0.13, -D + 0.12, false);
     g.add(ch);

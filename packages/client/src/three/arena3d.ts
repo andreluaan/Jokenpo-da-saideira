@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { makeRng, type GameConfig, type Obstacle } from '@ppt/shared';
 import { S, fit, instance, place, recolor, shadows, toWorld } from './assets';
 import { makeBottle } from './character3d';
-import { grassTexture, roadTexture, softCircle, speckleTexture, textTexture } from './textures';
+import { grassTexture, roadTexture, softCircle, speckleTexture } from './textures';
+import { chalkSign, paintedSign } from './signTextures';
 import { mergeStatic } from './merge';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildBeerTable, buildCooler, buildCrates, buildFreezer, buildGrill } from './props3d';
@@ -316,7 +317,19 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   // (v0.13: maior e virada para a câmera, inclinada para trás para ler de cima)
   const face = new THREE.Group();
   face.add(mesh(new THREE.BoxGeometry(1.9, 1.25, 0.08), std(0x8a4f45), 0, 0, 0));
-  face.add(mesh(new THREE.PlaneGeometry(1.74, 1.09), new THREE.MeshStandardMaterial({ map: textTexture('SAIDEIRA\nquem perde paga', { w: 768, h: 480, bg: 0x2f3b33, size: 112, color: '#fff4e6' }), roughness: 1 }), 0, 0, 0.045));
+  face.add(mesh(new THREE.PlaneGeometry(1.74, 1.09), new THREE.MeshStandardMaterial({ map: chalkSign(['SAIDEIRA', 'quem perde paga']), roughness: 1 }), 0, 0, 0.045));
+  // Aparador com gizes e um paninho (v0.16: placa menos "seca").
+  face.add(mesh(new THREE.BoxGeometry(1.7, 0.04, 0.1), std(0x6a3f37), 0, -0.6, 0.07));
+  for (const [x, c] of [
+    [-0.5, 0xfff4e6],
+    [-0.38, 0xffd27a],
+    [0.3, 0xff9a8a],
+  ] as const) {
+    const ch = mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.1, 6), std(c), x, -0.565, 0.08);
+    ch.rotation.z = Math.PI / 2 + (x > 0 ? 0.3 : 0.1);
+    face.add(ch);
+  }
+  face.add(mesh(new THREE.BoxGeometry(0.16, 0.03, 0.08), std(0xd9d2c3), 0.55, -0.565, 0.075));
   face.position.y = 1.35;
   face.rotation.x = -0.45;
   board.add(face);
@@ -661,13 +674,28 @@ function buildBar(scene: THREE.Scene, x: number, z: number): { bartender: { pos:
   g.add(vRoof);
   g.add(mesh(new THREE.BoxGeometry(W + 0.4, 0.12, 0.08), darkWood, 0, front + 0.04, VD - 0.02));
   // Placa em cima da varanda.
+  // Letreiro de madeira pintada (v0.16) com tábua de fundo (espessura) e duas luminárias pescoço-de-ganso por cima.
+  const signG = new THREE.Group();
+  signG.add(mesh(new THREE.BoxGeometry(2.5, 0.68, 0.07), darkWood, 0, 0, -0.04));
   const sign = new THREE.Mesh(
     new THREE.PlaneGeometry(2.4, 0.6),
-    new THREE.MeshStandardMaterial({ map: textTexture('BAR DO ZÉ', { w: 512, h: 128, bg: 0xffc145, border: 0x2b1d22, color: '#2b1d22', size: 84 }) }),
+    new THREE.MeshStandardMaterial({ map: paintedSign('BAR DO ZÉ', { w: 1024, h: 256, seed: 3 }), roughness: 0.75 }),
   );
-  sign.position.set(0, front + 0.45, VD - 0.02);
-  sign.rotation.x = -0.2;
-  g.add(sign);
+  sign.receiveShadow = true;
+  signG.add(sign);
+  const shade = std(0x2f5d48, { roughness: 0.5, metalness: 0.3 });
+  for (const lx of [-0.75, 0.75]) {
+    const arm = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.32, 5), std(0x2b1d22), lx, 0.42, 0.1);
+    arm.rotation.x = 0.9;
+    signG.add(arm);
+    const cone = mesh(new THREE.ConeGeometry(0.09, 0.09, 10, 1, true), shade, lx, 0.47, 0.24);
+    cone.rotation.x = 0.5;
+    signG.add(cone);
+    signG.add(mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffe2a0, emissive: 0xffc860, emissiveIntensity: 1.6 }), lx, 0.43, 0.24));
+  }
+  signG.position.set(0, front + 0.45, VD - 0.02);
+  signG.rotation.x = -0.2;
+  g.add(signG);
   g.add(mesh(new THREE.BoxGeometry(0.05, 0.45, 0.05), darkWood, -0.9, front + 0.22, VD - 0.05));
   g.add(mesh(new THREE.BoxGeometry(0.05, 0.45, 0.05), darkWood, 0.9, front + 0.22, VD - 0.05));
   // Lampiões e cordão de lâmpadas na beirada da varanda.

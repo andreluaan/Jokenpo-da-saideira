@@ -162,6 +162,40 @@ kbd {
 .menulabel3d:empty { display: none; }
 .menulabel3d.me { background: var(--accent); color: #2b1d22; border-color: #2b1d22; }
 
+/* ---------- Jo-Ken-Pô fora do personagem (v0.15): painel fixo na lateral, estilo lousa ---------- */
+.jkp-panel { position: absolute; right: 16px; top: 50%; z-index: 6; width: 200px; padding: 10px 12px 12px; border-radius: 18px; pointer-events: none;
+  background: var(--chalkboard); border: 8px solid var(--wood); box-shadow: inset 0 0 0 2px var(--wood-dark), 0 10px 26px #0007;
+  translate: 0 -50%; transform: translateX(calc(100% + 40px)); opacity: 0; transition: transform .28s cubic-bezier(.2, 1.3, .4, 1), opacity .2s;
+  --zone: #fff4e6; --skin: #f6ead6; }
+.jkp-panel.on { transform: none; opacity: 1; }
+.jkp-panel[data-zone="green"] { --zone: var(--good); --skin: #7fe3b0; }
+.jkp-panel[data-zone="red"] { --zone: var(--bad); --skin: #ff8a8d; }
+.jkp-words { display: flex; justify-content: space-between; font-family: var(--chalk); font-size: 30px; line-height: 1; padding: 0 4px; }
+.jkp-words span { color: #fff4e6; opacity: .28; transition: opacity .08s, transform .08s, color .08s; }
+.jkp-words span.past { opacity: .6; }
+.jkp-words span.on { opacity: 1; transform: scale(1.2) rotate(-4deg); color: var(--accent); }
+.jkp-words span:last-child.on { color: var(--zone); }
+.jkp-stage { position: relative; height: 104px; margin: 4px 0 6px; display: grid; place-items: center; }
+.jkp-hands { width: 150px; height: 104px; overflow: visible; filter: drop-shadow(0 3px 0 #0006); }
+.jkp-hands .skin { fill: var(--skin); stroke: #2b1d22; stroke-width: 3.2; stroke-linejoin: round; transition: fill .1s; }
+.jkp-hands .skin2 { fill: var(--skin); stroke: #2b1d22; stroke-width: 2.8; stroke-linejoin: round; stroke-linecap: round; }
+.jkp-hands .line { fill: none; stroke: #2b1d22; stroke-width: 2.2; stroke-linecap: round; }
+.jkp-panel.hit .jkp-hands { filter: drop-shadow(0 0 10px var(--zone)) drop-shadow(0 3px 0 #0006); }
+.jkp-panel.has-pick .jkp-hands .fist { display: none; }
+.jkp-picked { position: absolute; left: 50%; top: 2px; width: 70px; height: 70px; translate: -50% 0; }
+.jkp-picked:not(:empty) { animation: jkp-pop .3s cubic-bezier(.2, 1.6, .4, 1); filter: drop-shadow(0 0 10px var(--zone)) drop-shadow(0 3px 0 #0006); }
+.jkp-picked b, .jkp-opp b { font-size: 44px; color: #fff4e6; -webkit-text-stroke: 6px #2b1d22; paint-order: stroke fill; display: grid; place-items: center; height: 100%; }
+@keyframes jkp-pop { from { scale: .4; } }
+.jkp-bar { position: relative; height: 12px; border-radius: 6px; overflow: visible; background: #fff4e633; border: 2px solid #2b1d22; }
+.jkp-bar i { position: absolute; top: 0; bottom: 0; }
+.jkp-bar .z-early { left: 0; width: var(--g0); background: #fff4e655; border-radius: 4px 0 0 4px; }
+.jkp-bar .z-green { left: var(--g0); width: calc(var(--g1) - var(--g0)); background: var(--good); }
+.jkp-bar .z-red { left: var(--g1); right: 0; background: var(--bad); border-radius: 0 4px 4px 0; }
+.jkp-needle { position: absolute; top: -6px; width: 6px; height: 20px; margin-left: -3px; border-radius: 3px; background: #fff; border: 2px solid #2b1d22; }
+.jkp-opp { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; min-height: 30px; font-size: 12px; font-weight: 600; color: #e9e2d4; }
+.jkp-opp .sym-ico { width: 30px; height: 30px; }
+.jkp-opp b { font-size: 22px; -webkit-text-stroke: 4px #2b1d22; width: 30px; }
+@media (max-width: 760px) { .jkp-panel { top: auto; bottom: 120px; translate: 0 0; width: 170px; } }
 
 /* Crachás dos outros mais discretos (menos poluição quando a briga está cheia). */
 .tag3d:not(.me) .fb { display: none; }

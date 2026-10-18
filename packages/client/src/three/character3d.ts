@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import type { CharacterId, PlayerView, Rps } from '@ppt/shared';
+import type { CharacterId, PlayerView } from '@ppt/shared';
 import { gltf, instance } from './assets';
 import { recolorColormap } from './textures';
 import { WobbleRig } from '../art/rig';
-import { JkpHands, type HandTint } from './jkpHands';
 
 /** Escala do personagem (o modelo da Kenney tem ~0,67 de altura). */
 export const CHAR_SCALE = 1.45;
@@ -30,10 +29,6 @@ interface Look {
   build: (c: Character3D) => void;
   /** Adereço na mão quando parado/andando (some ao segurar símbolo). */
   prop?: 'bottle' | 'mug';
-  /** Cor das mãos do Jo-Ken-Pô (pele, luva ou atadura). */
-  skin: number;
-  /** Cor do braço de desenho que liga o ombro às mãos do Jo-Ken-Pô (manga ou pele). */
-  sleeve: number;
 }
 
 const BLACK = 0x1a1420;
@@ -82,8 +77,6 @@ const LOOKS: Record<CharacterId, Look> = {
     // r3c1 = cabelo do modelo base, r3c7/r3c9 = óculos dele: viram pele (a tigelinha nova mostra testa e sobrancelhas).
     head: { r3c13: 0xf2c6a0, r3c1: 0xf2c6a0, r3c7: 0xf2c6a0, r3c9: 0xf2c6a0 },
     prop: 'bottle',
-    skin: 0xf3ece8,
-    sleeve: 0x3f9a3a,
     build: (c) => {
       const h = c.headAnchor;
       const shiny = { roughness: 0.22, metalness: 0.15 };
@@ -116,8 +109,6 @@ const LOOKS: Record<CharacterId, Look> = {
     // Macacão azul (r3c1), sem gravata/camisa (r3c9/r2c9 → branco, ficam sob o peitoral), luvas brancas (r3c15).
     body: { r3c1: 0x2753c4, r2c9: 0xf7f5ef, r3c9: 0xf7f5ef, r3c15: 0xf7f5ef },
     head: { r3c11: BLACK },
-    skin: 0xf7f5ef,
-    sleeve: 0x2753c4,
     build: (c) => {
       const h = c.headAnchor;
       // Cabelão em chama, alto e para cima.
@@ -168,8 +159,6 @@ const LOOKS: Record<CharacterId, Look> = {
     body: { r2c9: 0xfafafa, r2c11: 0x4fb3e8, r3c15: 0xf5c62a, r3c11: 0x5e4334 },
     head: { r3c15: 0xf5c62a, r3c11: 0xcaa774, r3c13: 0xf5c62a },
     prop: 'mug',
-    skin: 0xf5c62a,
-    sleeve: 0xf5c62a,
     build: (c) => {
       const h = c.headAnchor;
       // Olhões redondos de desenho, quase encostados.
@@ -191,8 +180,6 @@ const LOOKS: Record<CharacterId, Look> = {
     base: 'character-male-f',
     body: { r2c3: 0x6f8040, r3c3: 0x2c3328, r3c15: 0x2c3328, r3c11: 0xe9b48c },
     head: { r3c11: 0xe9b48c, r3c1: 0x16131c },
-    skin: 0xe9b48c,
-    sleeve: 0xe9b48c,
     build: (c) => {
       const h = c.headAnchor;
       // Rabo de cavalo "abacaxi": tufo de espetos saindo do alto da nuca, preso com elástico.
@@ -395,10 +382,8 @@ export interface CharacterState {
   faceX: number;
   faceZ: number;
   speed: number;
-  /** 0–1 altura dos punhos no Jo-Ken-Pô (sem `jkp`: pose antiga, usada por quem não tem mãos de duelo). */
+  /** 0–1 altura dos punhos no Jo-Ken-Pô. */
   pump: number;
-  /** Mãos do Jo-Ken-Pô (QTE na própria mão): altura do punho, amassadinho, cor e gesto. */
-  jkp?: { lift: number; squash: number; tint: HandTint; glow: number; gesture: Rps | 'fist' } | null;
   /** 0–1 progresso bebendo; <0 = não bebendo. */
   drink: number;
   /** Sentado no banquinho (menu). */
@@ -420,7 +405,6 @@ export class Character3D {
   readonly armR: THREE.Bone;
   readonly rig = new WobbleRig();
   readonly handR = new THREE.Group();
-  readonly handL = new THREE.Group();
   /** Grupo preso à cabeça cujas coordenadas seguem CANON_HEAD (topo em y≈0,33, rosto em z≈+0,17). */
   readonly headAnchor = new THREE.Group();
   readonly torsoBox: THREE.Box3;
@@ -435,8 +419,6 @@ export class Character3D {
   private prop: THREE.Object3D | null = null;
   private drinkProp: THREE.Object3D;
   private dead = false;
-  /** Mãos grandes do Jo-Ken-Pô (palma + punho/gesto), só durante o duelo. */
-  private readonly jkp: JkpHands;
   private tiltDir = new THREE.Vector2(1, 0);
   private yaw = 0;
   /** Rotação de repouso dos ossos ajustados à mão (evita acumular ajustes de um quadro para o outro). */
@@ -490,11 +472,9 @@ export class Character3D {
 
     for (const b of [this.head, this.torso, this.armL, this.armR]) this.rest.set(b, b.rotation.clone());
     this.handR.position.copy(handPoint(this.model, this.armR));
-    this.handL.position.copy(handPoint(this.model, this.armL));
-    this.model.add(this.handR, this.handL);
+    this.model.add(this.handR);
     this.model.updateMatrixWorld(true);
     this.armR.attach(this.handR);
-    this.armL.attach(this.handL);
     if (look.prop) {
       this.prop = look.prop === 'mug' ? makeMug() : makeBottle();
       this.prop.scale.setScalar(1 / CHAR_SCALE);
@@ -504,9 +484,6 @@ export class Character3D {
     this.drinkProp.scale.setScalar(1 / CHAR_SCALE);
     this.drinkProp.visible = false;
     this.handR.add(this.drinkProp);
-    // Ombros: na lateral de cima do tronco (o braço de desenho sai dali).
-    this.jkp = new JkpHands(look.skin, look.sleeve, this.torsoBox.max.x * 0.85, this.torsoBox.max.y - 0.04);
-    this.model.add(this.jkp.group);
     addOutline(this.model);
 
     this.mixer = new THREE.AnimationMixer(this.model);
@@ -628,23 +605,10 @@ export class Character3D {
       this.head.rotation.x += this.rig.headY * 0.02;
       this.armL.rotation.z += this.rig.lX * 0.03;
       this.armR.rotation.z += this.rig.rX * 0.03;
-      const j = s.jkp && !this.oneShot && s.drink < 0 ? s.jkp : null;
-      if (j) {
-        // Jo-Ken-Pô de verdade: mão esquerda aberta na frente do corpo, punho direito batendo nela.
-        // O braço original some (vira um ponto no ombro) e entram os braços de desenho do JkpHands.
-        this.armL.scale.setScalar(0.001);
-        this.armR.scale.setScalar(0.001);
-        this.jkp.setGesture(j.gesture);
-        this.jkp.pose(j.lift, j.squash);
-        this.jkp.tint(j.tint, j.glow);
-      } else if (s.pump > 0 && !this.oneShot) {
+      if (s.pump > 0 && !this.oneShot) {
+        // Jo-Ken-Pô: os dois punhos sobem e descem juntos, fechados (igual para os 3 símbolos).
         this.armL.rotation.x -= 0.6 + s.pump * 0.9;
         this.armR.rotation.x -= 0.6 + s.pump * 0.9;
-      }
-      this.jkp.show(!!j);
-      if (!j) {
-        this.armL.scale.setScalar(1);
-        this.armR.scale.setScalar(1);
       }
       if (s.drink >= 0) {
         // Leva a bebida à boca e inclina a cabeça para trás.
@@ -653,11 +617,6 @@ export class Character3D {
         this.armR.rotation.z -= 0.35;
         this.head.rotation.x -= 0.35 + sip;
       }
-    }
-    if (!p.alive) {
-      this.jkp.show(false);
-      this.armL.scale.setScalar(1);
-      this.armR.scale.setScalar(1);
     }
     if (this.prop) this.prop.visible = p.alive && !p.holding && s.drink < 0 && !this.oneShot;
     this.drinkProp.visible = s.drink >= 0;

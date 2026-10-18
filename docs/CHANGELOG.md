@@ -17,8 +17,9 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 
-## v0.15 — QTE na mão do boneco (pilar do jogo)
-- Pedido: o QTE tem que ser **a mão do próprio boneco**, no gesto clássico (punho batendo na palma), mudando de cor: normal → verde → vermelho. Feito: palma aberta + punho batendo no JO… KEN… PÔ!, braços de desenho na cor de cada personagem, mãos grandinhas para ler de longe. Ao botar, a mão vira o gesto do símbolo (os outros veem). O widget de punho ao lado (v0.14) saiu.
+## v0.15 — Jo-Ken-Pô num painel fora do personagem (pilar do jogo)
+- Tentativa 1: QTE na **mão do próprio boneco** (palma + punho 3D mudando de cor). Usuário achou estranho grande e não gostou pequeno → **descartado**.
+- Final: **painel fixo na lateral direita** (lousa) com JO · KEN · PÔ! acendendo, mão desenhada batendo o punho na palma (normal → verde → vermelho), faixa de tempo com ponteiro e o que o adversário mostrou. Não atrapalha o duelo. O boneco volta a só bater os punhos.
 
 ## v0.14 — objetos da arena e QTE com as mãos
 - **Objetos da arena no estilo da referência** (cantos arredondados, sombreado suave): isopor azul aberto com gelo e latinhas, freezer com vidro, engradados de plástico, churrasqueira de tambor e mesa GELADA quadrada. Cada cópia sai um pouco diferente (tamanho e giro).

@@ -27,7 +27,10 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - **Eventos**: `ui/barEventFx.ts` (ver 04) — classes `.barfx.kind-*.stage-*` em `style.css`.
 - Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
 
-## QTE com as mãos (v0.14, substituído na v0.15 pela mão do boneco — ver 05-personagens)
+## Painel do Jo-Ken-Pô (v0.15) — `ui/qteHands.ts`
+`QteHands` agora é um painel fixo (`.jkp-panel`, lateral direita, estilo lousa; no celular vai para baixo), visível só no seu duelo (`.on` desliza para dentro). Palavras JO/KEN/PÔ! (`.on` na batida da vez), mão SVG (palma + punho `.fist` que sobe e desce; cor por `--skin`/`--zone` em `data-zone` early/green/red), faixa de tempo (`--g0`/`--g1` = início/fim do verde, ponteiro `.jkp-needle`), símbolo botado em `.jkp-picked` e linha do adversário `.jkp-opp`. `Game3D.updateQte` só passa tempo, `pickedAt` local e o adversário.
+
+### Histórico: QTE com as mãos ao lado do personagem (v0.14)
 `QteHands` (dentro do `.overlay3d`): punho SVG num círculo com aro (`--zone`), mesinha embaixo, batidas JO/KEN/PÔ! e o símbolo do adversário (`.qh-opp`). `Game3D.updateQte` posiciona do lado oposto ao adversário (`.left`) e escala pelo zoom. Zona = `early`/`green`/`red` pela mesma regra do `gradePick` (ao apertar congela na nota; o punho vira o ícone do símbolo). O punho cai em T−800, T−400 e T (`BEAT_MS`, igual ao `pumpFor` dos personagens).
 
 ## Ícones dos símbolos (v0.12)

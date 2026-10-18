@@ -25,11 +25,8 @@ Corpo e cabeça recebem **texturas separadas** (assim o terno vira azul sem apag
 3. Os builders desenham em coordenadas canônicas; depois `head.attach(headAnchor)` (preserva o mundo). Tronco: `torsoAnchor` + `torsoBox`. Mão: `handPoint()` → `armR.attach(handR)`.
 - **Armadilhas já vividas:** coordenadas no espaço do osso deram cabelo flutuando (osso tem rotação interna); placas por cima da cabeça viram "tampo" visto de cima — preferir franja/espetos.
 
-## Mãos do Jo-Ken-Pô — o QTE (v0.15) — `three/jkpHands.ts`
-- `JkpHands` (no espaço do modelo): palma aberta (`PALM_AT`, mão esquerda), punho/gestos (`FIST_AT(lift)`, mão direita: punho fechado pulando, e pedra/papel/tesoura depois de botar) e dois **braços de desenho** (cápsulas na cor `Look.sleeve`) do ombro (`torsoBox`) até as mãos. Mãos no tamanho de mão de boneco (`HAND_SCALE` 1,1 — 1,75 ficou "grande e estranho" para o usuário) em blocos arredondados (`rbox`), com contorno.
-- No duelo, os braços originais da Kenney encolhem para um ponto (`armL/armR.scale` 0,001) e voltam ao normal fora dele (ou ao morrer). Tentativas descartadas: girar/esticar o braço original (a mão-bloco da Kenney crescia junto e tapava tudo; braço curto não alcança a frente do queixo, e a cabeça grande tapava as mãos vistas de cima).
-- `Game3D.jkpFor(p)`: `lift` (sobe na preparação; bate a cada `BEAT_MS` com o PÔ! em T), `squash` na batida, `tint` (`normal`/`green`/`red`, mesma regra do `gradePick`; congela na nota ao botar), `glow` pulsando, `gesture`. Para você usa o instante local em que apertou (`localLock`) para responder na hora.
-- Cores: `Look.skin` (mão: atadura do Fera, luva do Príncipe, amarelo do Pança, pele do Sonolento) e `Look.sleeve` (braço).
+## Mãos do Jo-Ken-Pô no boneco — testado e descartado (v0.15)
+O usuário pediu o QTE na mão do próprio boneco (palma + punho 3D, cores), viu grande e pequeno e **não gostou**: o QTE foi para um painel fixo na tela (07-ui-hud). Lições: a mão-bloco da Kenney cresce junto se esticar o braço; o braço é curto demais para a frente do queixo e a cabeça grande tapa as mãos vistas de cima. O código saiu (está no histórico do Git, commit da0f899).
 
 ## Hierarquia e animação
 `root` (posição) → `tilt` (balanço/tombo no mundo) → `facing` (yaw suave) → `model`.

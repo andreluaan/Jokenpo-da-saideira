@@ -433,7 +433,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
     }),
   ];
   const poolGeos = pools.map(([x, z, r, c, k]) => {
-    const g = new THREE.PlaneGeometry(r * 2, r * 2).rotateX(-Math.PI / 2).translate(x, 0.02, z);
+    const g = new THREE.PlaneGeometry(r * 2, r * 2).rotateX(-Math.PI / 2).translate(x, 0.05, z); // acima do piso do camarote (0,035): na mesma altura piscava
     const col = new THREE.Color(c).multiplyScalar(k);
     g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.getAttribute('position').count * 3).map((_, i) => [col.r, col.g, col.b][i % 3]), 3));
     return g;
@@ -452,6 +452,7 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
   mergeStatic(scene, decor);
 
   // Lâmpadas: 1 desenho para todas (cor por instância), sem sombra.
+  const fenceBulbs = bulbs.length - corner.bulbs.length;
   const glows = new THREE.InstancedMesh(new THREE.SphereGeometry(0.045, 8, 6), new THREE.MeshBasicMaterial(), bulbs.length);
   const tmp = new THREE.Matrix4();
   bulbs.forEach((b, i) => {
@@ -504,7 +505,8 @@ export function buildArena3D(scene: THREE.Scene, cfg: GameConfig): ArenaHandles 
       const k = 0.85 + Math.sin(now / 700) * 0.15;
       // Lâmpadas do varal "respirando".
       bulbs.forEach((b, i) => {
-        const sc = k + Math.sin(now / 400 + i) * 0.1;
+        // Só o varal da cerca "respira"; as do camarote ficam paradas (piscando ficava estranho).
+        const sc = i < fenceBulbs ? k + Math.sin(now / 400 + i) * 0.1 : 1;
         glows.setMatrixAt(i, tmp.makeScale(sc, sc, sc).setPosition(b.pos));
       });
       glows.instanceMatrix.needsUpdate = true;

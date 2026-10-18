@@ -7,27 +7,28 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 
 **Leia primeiro o arquivo da área que vai mexer em [`docs/tech/`](docs/tech/README.md)** — não releia o código todo.
 
-## Estado atual (atualize a cada etapa) — out/2026, v0.15
+## Estado atual (atualize a cada etapa) — out/2026, v0.16
 - **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Fim de um longo **passe de arte/gameplay** (v0.5 → v0.15).
   **Histórico e o que o usuário aprovou/recusou: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)** — leia antes de propor ideias.
 - **Como o jogo está hoje (resumo):**
   - **Duelo com malandragem** (DESIGN §5): Espaço desafia (1×1); 1/2/3 bota o símbolo, que aparece na hora para todos.
     Antes do verde = cedo (o outro lê); verde no PÔ! = perfeito (golpe final se ganhar); vermelho = pego roubando (apanha).
-  - **Jo-Ken-Pô (QTE) = painel fixo na lateral direita** (`ui/qteHands.ts`): JO·KEN·PÔ! acendendo, mão desenhada batendo
-    o punho na palma (normal → verde → vermelho), faixa de tempo e o que o adversário mostrou. O boneco só bate os punhos.
-    (Testados e recusados: barra curva ao lado, punho ao lado do personagem, mãos 3D no próprio boneco.)
+  - **Jo-Ken-Pô (QTE) = só o texto JO · KEN · PÔ! curvado abaixo da cerca da frente** (`ui/qteArc.ts`, v0.16), mudando de cor
+    (creme → verde → vermelho). O boneco só bate os punhos. (Recusados: barra curva, punho ao lado, mãos 3D, painel lateral.)
   - **Tela da partida limpa:** sem pop-ups de texto, sem aba de confrontos, nomes discretos, botão "✕ Sair" no canto.
   - **Menu:** lousa à esquerda + card do personagem logo embaixo; "Como jogar" em 8 cards com fotos; transição = câmera
     do quintal voando até o enquadramento da partida (`three/matchCamera.ts`).
-  - **Cenário:** objetos da arena no estilo "brinquedo" (`three/props3d.ts`), área dos jogadores colada na porteira com mesa de
-    8 lugares, estradinha desviada, muitas árvores, quintal com bar/torcida/cachorros/picape.
+  - **Cenário:** objetos da arena no estilo "brinquedo" (`three/props3d.ts`), **camarote dos jogadores** reto ao lado da porteira
+    (`three/playersCorner3d.ts`: toalha xadrez, cerveja na mesa, engradados de banquinho, varal de lâmpadas; nome só no hover no menu),
+    estradinha desviada, muitas árvores, quintal com bar/torcida/cachorros/picape. Luz com profundidade (bordas escuras, poças de luz).
+  - **Desempenho:** ~770 desenhos por quadro na partida (`merge.ts` junta por acabamento, com cor nos vértices; ver 06).
   - **Personagens:** 4 (Fera Verde, Príncipe Marrento, Seu Pança, Sonolento), visual mais fiel às referências do usuário (v0.10).
 - **Online:** código no GitHub (`andreluaan/Jokenpo-da-saideira`, branch `main`); hospedagem na **Render** (Web Service Node:
   build `npm install && npm run build`, start `npm run start -w @ppt/server`, sem variáveis obrigatórias — opcional `NODE_VERSION=22`;
   **não** pôr `NODE_ENV=production`). Só enviar ao GitHub quando o usuário pedir.
 - **Banco de ideias** (guardadas, nada decidido): [`docs/IDEIAS.md`](docs/IDEIAS.md) — sons, novos personagens com skill + mesa maior,
-  HUD do duelo mais limpo, mini game da cerveja (fora da partida), disputa pela gelada na mesa do meio, iluminação.
-- **Próximo:** o usuário testa com a turma na Render e avalia o painel do Jo-Ken-Pô (largura do verde com atraso de rede).
+  HUD do duelo mais limpo, mini game da cerveja (fora da partida), disputa pela gelada na mesa do meio.
+- **Próximo:** o usuário avalia a v0.16 (texto do Jo-Ken-Pô, camarote, luz) e testa com a turma na Render (largura do verde com atraso de rede).
   Depois: sons, Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.
 

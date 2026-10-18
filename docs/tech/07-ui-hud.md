@@ -14,7 +14,7 @@ Ganchos só em DEV: `window.__menu`, `__ppt` (conexão), `__ppt3d` (Game3D).
 - **Como jogar** (`ui/howto.ts`): janela com 1 card por vez — foto do jogo, título, frase, teclas — Voltar/Próximo, bolinhas, ← → e Esc; o último vira "🍺 Bora jogar!". Fotos em `public/howto/*.jpg` (960×540), capturadas do próprio jogo (ver 09). Para trocar uma foto: recapturar e sobrescrever o arquivo com o mesmo nome.
 - **Câmera do menu** (`MenuStage3D.resize`): enquadra a arena e depois **se afasta até o Bar do Zé inteiro (telhado incluído) caber** na área livre à direita da lousa (`BAR`/`BAR_EXTENT` em `arena3d.ts`). Mudou o tamanho do bar → ajuste `BAR_EXTENT`.
 - Entrada animada (lousa desliza, card sobe); `prefers-reduced-motion` desliga as animações contínuas.
-No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (você = largada 1, NPCs na ordem de `CHARACTER_IDS` sem você) **levantam em sequência** (`STAND_MS`, `STAGGER_MS`), passam pela **porteira** e vão às largadas; quem sai da partida volta ao banquinho. Clicar num personagem no 3D o seleciona.
+No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (você = largada 1, NPCs na ordem de `CHARACTER_IDS` sem você) **levantam em sequência** (`STAND_MS`, `STAGGER_MS`), passam pela **porteira** e vão às largadas; quem sai da partida volta ao banquinho. Clicar num personagem no 3D o seleciona. **Nomes (v0.16):** quem está sentado no camarote fica sem nome (`.menulabel3d.off`); aparece só com o mouse em cima (`pointermove` → `actorAt`, 55 px).
 
 ## HUD da partida
 - `ui/hud.ts` — cartões de jogadores (topo), barra de ações (🤜 Desafiar/Espaço, símbolos 1/2/3 só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
@@ -27,8 +27,15 @@ No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (voc�
 - **Eventos**: `ui/barEventFx.ts` (ver 04) — classes `.barfx.kind-*.stage-*` em `style.css`.
 - Investida na ajuda: curta, gasta metade do foco. Finta (F) removida.
 
-## Painel do Jo-Ken-Pô (v0.15) — `ui/qteHands.ts`
-`QteHands` agora é um painel fixo (`.jkp-panel`, lateral direita, estilo lousa; no celular vai para baixo), visível só no seu duelo (`.on` desliza para dentro). Palavras JO/KEN/PÔ! (`.on` na batida da vez), mão SVG (palma + punho `.fist` que sobe e desce; cor por `--skin`/`--zone` em `data-zone` early/green/red), faixa de tempo (`--g0`/`--g1` = início/fim do verde, ponteiro `.jkp-needle`), símbolo botado em `.jkp-picked` e linha do adversário `.jkp-opp`. `Game3D.updateQte` só passa tempo, `pickedAt` local e o adversário.
+## Jo-Ken-Pô (v0.16) — `ui/qteArc.ts`
+Pedido: o painel lateral ficava longe do campo de visão. Agora é **só o texto JO · KEN · PÔ!** num `<svg class="jkp-arc">` com `<textPath>`
+curvado **abaixo da cerca da frente**, acompanhando a elipse (caminho e tamanho da letra vêm do `Game3D.updateQte`, ver 04).
+Palavras acendem no ritmo (`.lit`; a da vez `.now`); a cor vem de `data-zone`: creme = cedo, verde = PÔ!, vermelho = roubou;
+ao apertar (ou passar do fim) congela na nota (`.done`, mesma regra do `gradePick`). Sem mão, faixa de tempo nem símbolo do adversário
+(o símbolo botado já aparece no crachá/personagem). Fica entre a cerca e a barra de ações.
+
+### Histórico: painel fixo na lateral (v0.15, removido na v0.16)
+Lousa à direita com JO/KEN/PÔ!, mão SVG batendo o punho, faixa de tempo e o que o adversário mostrou.
 
 ### Histórico: QTE com as mãos ao lado do personagem (v0.14)
 `QteHands` (dentro do `.overlay3d`): punho SVG num círculo com aro (`--zone`), mesinha embaixo, batidas JO/KEN/PÔ! e o símbolo do adversário (`.qh-opp`). `Game3D.updateQte` posiciona do lado oposto ao adversário (`.left`) e escala pelo zoom. Zona = `early`/`green`/`red` pela mesma regra do `gradePick` (ao apertar congela na nota; o punho vira o ícone do símbolo). O punho cai em T−800, T−400 e T (`BEAT_MS`, igual ao `pumpFor` dos personagens).

@@ -16,7 +16,7 @@ Nada aqui altera regras: tudo lê `conn.latest()` e eventos.
 | `portraits.ts` | Retratos 3D dos cartões do menu (renderer offscreen → dataURL) |
 
 ## Renderer e luz
-`ACESFilmicToneMapping`, sombras `PCFSoftShadowMap` (sol 2048², câmera de sombra ±13×±10), hemisfério quente + sol baixo + point lights (bar, brasas). Névoa = distância da câmera +5 / +30 (recalculada no `resize`).
+`ACESFilmicToneMapping`, sombras `PCFSoftShadowMap` (sol 2048², câmera de sombra ±13×±10), hemisfério quente 0,95 + sol baixo 2,9 + point lights sem sombra (bar, brasas, camarote) + degradê nas bordas do chão e poças de luz aditivas (v0.16, ver 06). Névoa = distância da câmera +5 / +30 (recalculada no `resize`).
 
 ## Câmera
 Perspectiva fov 36, direção fixa `(0,1,0.95)` (~46°, mostra mais corpo/rosto que topo de cabeça); distância calculada no `resize()` para caber a elipse com margem curta (+0,7 lateral) — mais perto = personagens maiores. `shake` decai nos golpes.
@@ -27,7 +27,7 @@ Menu usa `setViewOffset(W,H,-side/2,…)` para centralizar a cena à direita da 
 1. envia `move` se mudou · 2. contagem/relógio · 3. poses da revelação · 4. atualiza cada `Character3D` (velocidade estimada pelo deslocamento, `pump`, `drink`, olhar) + anel + crachá · 5. setas, revelações, Jo-Ken-Pô, cerveja, QTE, poeira · 6. render · 7. `hud.update`.
 
 ## Efeitos de combate
-- **Jo-Ken-Pô:** `pumpFor()` faz os punhos descerem a cada `BEAT_MS=400` até T; as palavras do ritmo (JO ~T−800, KEN ~T−400, **PÔ!** em T) acendem no **painel fixo da lateral** (v0.15), só para o jogador local.
+- **Jo-Ken-Pô:** `pumpFor()` faz os punhos descerem a cada `BEAT_MS=400` até T; as palavras do ritmo (JO ~T−800, KEN ~T−400, **PÔ!** em T) acendem no **texto curvo abaixo da cerca da frente** (v0.16, `ui/qteArc.ts`), só para o jogador local. `Game3D.updateQte` projeta 25 pontos da elipse (rx·S+1,25, ry·S+1,25, ângulos π/2 ± 0,75); letra = 0,62 × px por unidade do chão (22–64 px).
 - **Revelação** (`REVEAL_MS=1300`, relógio de parede): estágio 0 → `attack-melee-right` + sprites de sinal (`signTexture`) na mão; 120 ms → vencedor `attack-kick-right`; 330 ms → perdedor `hit(..., sweep=true)` (tombo), poeira (sem texto: animação + manchete bastam). Empate → os dois `hit`.
 - **QTE (até a v0.13 — barra estilo "shot meter"; desde a v0.14 é `ui/qteHands.ts`, ver 07):** SVG curvo à direita do jogador (arco de +62° a −62°, raio ≈ 1,25 × 0,75 un. projetado, mín. 46 px). Tempo → posição: `u(t) = (t − (T − windupMs)) / (qteEnd(T) − (T − windupMs))`. Trilho creme = CEDO, fatia verde = `T − greenBeforeMs … T + greenAfterMs` com risquinho em T, fatia **vermelha** até o fim (ROUBOU). Risquinho `.opp` + `.oppsym` na cor do adversário = quando ele botou e o quê. Enchimento sobe até agora; ao apertar (`pressSymbol` guarda `localLock = conn.now()`), **congela** e mostra a nota com a mesma regra do `gradePick` (PERFEITO / CEDO! / ROUBOU!); no vermelho sem apertar pisca "VAI DAR ROUBO!"; passou do topo = NADA!. Uma seta no chão por duelo (de quem desafiou). Crachá: símbolo público com aro âmbar (`.hand.shown`).
 - **Fim:** vencedor vivo toma a cerveja em loop (`drink`).
@@ -62,7 +62,7 @@ Quando o `ExchangeEvent` tem `finisher` (vencedor acertou o QTE), aos 120 ms da 
 - **Garçom no balcão** do Bar do Zé (`arena.barWaiter`); some enquanto o garçom do evento atravessa (`setWaiterAway`).
 - **Picape com paredão** (`buildParedao`, procedural, sem marca) nos fundos à direita (`arena.truck`), caçamba virada para o ringue; falantes pulsam a ~120 bpm e a "energia" sobe com golpes e eventos.
 - Faíscas nas churrasqueiras; vapor do freezer aberto está no `boteco3d`.
-- **Desempenho:** ~840 draw calls na partida depois de juntar a decoração parada (ver 06-arena, `merge.ts`); a maior parte que sobra é a torcida.
+- **Desempenho:** ~770 draw calls na partida com 4 jogadores (1280×800, v0.16; ver 06-arena, `merge.ts`); a maior parte que sobra é a torcida.
 
 ## Menos poluição (várias pessoas perto)
 - Setas de mira de terceiros: opacidade 0,28 e sem pontinhos.

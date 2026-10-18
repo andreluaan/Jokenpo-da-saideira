@@ -20,8 +20,15 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
 - **Pop-ups de texto** na arena (RASTEIRA, CORTOU, CEDO, PERFEITO…) e **aba Confrontos** — removidos a pedido.
 - **Copo de cerveja enchendo a tela** como transição — trocado pelo voo de câmera.
-- **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) — todos trocados pelo **painel fixo na lateral**.
+- **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) e o **painel fixo na lateral** (longe do campo de visão) — hoje é o texto curvo abaixo da arena (v0.16).
 - Óculos escuros do Fera Verde (escondiam as sobrancelhas).
+
+## v0.16 — Jo-Ken-Pô perto do duelo, camarote dos jogadores e luz (aguardando o usuário avaliar)
+- **Desempenho:** decoração juntada também por cor (cor nos vértices); picape, cachorros e torcida juntados: partida 1.439 → ~770 desenhos por quadro, sem diferença visual.
+- **Jo-Ken-Pô:** pedido "fica distante do campo de visão" → painel lateral trocado por **só o texto JO · KEN · PÔ!** curvado abaixo da cerca da frente, mudando de cor (creme/verde/vermelho).
+- **Camarote dos jogadores:** pedido "mesa torta, sem temática de bar" → mesa reta com toalha xadrez, balde de gelo e long necks GELADA, copos americanos, porções, engradados de banquinho, varal de lâmpadas e placa "SÓ QUEM JOGA" pendurada; cercadinho de corda removido; árvores afastadas.
+- **Nomes no menu:** quem está sentado só mostra o nome com o mouse em cima.
+- **Iluminação (ideia 7):** bordas do quintal mais escuras, poças de luz quente (varal, varanda, camarote, brasas), sol mais baixo e forte — sem desenho extra relevante.
 
 ## v0.15 — Jo-Ken-Pô num painel fora do personagem (pilar do jogo)
 - Tentativa 1: QTE na **mão do próprio boneco** (palma + punho 3D mudando de cor). Usuário achou estranho grande e não gostou pequeno → **descartado**.

@@ -2,9 +2,11 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /**
- * Junta malhas paradas que usam o "mesmo" material (mesma cor/textura/acabamento) numa malha só.
+ * Junta malhas paradas que usam o "mesmo" material (mesmo tipo/textura/acabamento) numa malha só.
  * Cada malha a menos é um desenho (draw call) a menos por quadro — e o dobro disso com sombras.
  * O visual não muda: as geometrias são copiadas já na posição final.
+ * Cores diferentes não separam: a cor de cada peça é "pintada" nos vértices (atributo `color`) e o
+ * material juntado fica branco com `vertexColors` (cor final = branco × cor do vértice = a mesma de antes).
  *
  * `container`: onde as malhas juntadas vão morar (e em que espaço ficam as coordenadas).
  * `roots`: o que pode ser juntado. `skip`: subárvores que se mexem e devem ficar como estão.
@@ -13,7 +15,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 export function mergeStatic(container: THREE.Object3D, roots: THREE.Object3D[], skip: Set<THREE.Object3D> = new Set()): number {
   container.updateMatrixWorld(true);
   const toLocal = container.matrixWorld.clone().invert();
-  const buckets = new Map<string, { mat: THREE.Material; cast: boolean; recv: boolean; geos: THREE.BufferGeometry[]; meshes: THREE.Mesh[] }>();
+  const buckets = new Map<string, { mat: THREE.Material; cast: boolean; recv: boolean; bake: boolean; geos: THREE.BufferGeometry[]; colors: THREE.Color[]; meshes: THREE.Mesh[] }>();
 
   const visit = (o: THREE.Object3D) => {
     if (skip.has(o)) return;
@@ -41,9 +43,11 @@ export function mergeStatic(container: THREE.Object3D, roots: THREE.Object3D[], 
     if (!g.getAttribute('normal')) g.computeVertexNormals();
     g.applyMatrix4(world);
     g = g.index ? g.toNonIndexed() : g;
+    // Dá para pintar a cor nos vértices se o material ainda não usa cor por vértice nem shader próprio.
+    const bake = !!mat.color && !mat.vertexColors && mat.onBeforeCompile === THREE.Material.prototype.onBeforeCompile;
     const key = [
       mat.type,
-      mat.color?.getHexString(),
+      bake ? 'bake' : mat.color?.getHexString(),
       mat.map?.uuid ?? '-',
       mat.emissive?.getHexString() ?? '-',
       mat.emissiveIntensity ?? '-',
@@ -56,8 +60,9 @@ export function mergeStatic(container: THREE.Object3D, roots: THREE.Object3D[], 
       m.receiveShadow,
     ].join('|');
     let b = buckets.get(key);
-    if (!b) buckets.set(key, (b = { mat, cast: m.castShadow, recv: m.receiveShadow, geos: [], meshes: [] }));
+    if (!b) buckets.set(key, (b = { mat, cast: m.castShadow, recv: m.receiveShadow, bake, geos: [], colors: [], meshes: [] }));
     b.geos.push(g);
+    b.colors.push(mat.color);
     b.meshes.push(m);
   };
   roots.forEach(visit);
@@ -65,10 +70,25 @@ export function mergeStatic(container: THREE.Object3D, roots: THREE.Object3D[], 
   let replaced = 0;
   for (const b of buckets.values()) {
     if (b.meshes.length < 2) continue;
+    let mat = b.mat;
+    if (b.bake && b.colors.some((c) => !c.equals(b.colors[0]))) {
+      // Cores diferentes no mesmo grupo: cada geometria leva a sua cor nos vértices.
+      b.geos.forEach((g, i) => {
+        const c = b.colors[i];
+        const n = g.getAttribute('position').count;
+        const arr = new Float32Array(n * 3);
+        for (let k = 0; k < n; k++) arr.set([c.r, c.g, c.b], k * 3);
+        g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+      });
+      const m = b.mat.clone() as THREE.MeshStandardMaterial;
+      m.color.set(0xffffff);
+      m.vertexColors = true;
+      mat = m;
+    }
     const merged = mergeGeometries(b.geos, false);
     if (!merged) continue; // atributos incompatíveis: deixa as originais
     merged.computeBoundingSphere();
-    const mesh = new THREE.Mesh(merged, b.mat);
+    const mesh = new THREE.Mesh(merged, mat);
     mesh.castShadow = b.cast;
     mesh.receiveShadow = b.recv;
     mesh.matrixAutoUpdate = false;

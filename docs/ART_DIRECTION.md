@@ -8,7 +8,7 @@
 - Modelos **CC0 da Kenney** (Mini Characters, Furniture, Food, Nature) — ver `packages/client/public/models/CREDITS.md`.
 - Personagens = modelo animado da Kenney (idle, andar, correr, soco, chute, cair) + repintura da paleta por personagem + cabelos/acessórios em blocos montados no espaço do modelo e presos aos ossos.
 - "Bêbado": molas (`art/rig.ts`) inclinam o corpo inteiro e somam rotação nos ossos (cabeça e braços) depois da animação; rasteira = tombo limitado a ~83° + chute do vencedor.
-- HUD e textos são HTML por cima do 3D (crachás, pop-ups, anel do QTE em SVG).
+- HUD e textos são HTML por cima do 3D (crachás, painel do Jo-Ken-Pô). Sem pop-ups de texto (v0.11.1).
 
 ## 1. Pilares
 
@@ -108,17 +108,15 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 
 - **Tom:** boteco aconchegante, com madeira escura, creme e âmbar e cantos bem arredondados. Inspirações futuras: lousa de giz no placar e porta-copos nos cartões de jogador.
 - **Cartões de jogador (topo):** cor, nome, ❤ vida e barra de foco. Discretos, fora da arena.
-- **Log de confrontos (lateral):** uma frase por confronto explicando o porquê. Borda verde quando você ganha, vermelha quando perde.
 - **Barra de ações (base):** símbolos e ações clicáveis com atalho visível. Fica desabilitada quando a ação não é possível.
-- **Anel do QTE:** creme fixo e anel que se fecha. Cinza = "confirmar cedo", âmbar = janela, verde = perfeito, vermelho = atrasado.
-- **Durante o combate:** nada sobre a arena além de nomes, vida, foco, mira e pop-ups temporários.
+- **Painel do Jo-Ken-Pô (v0.15):** lousa fixa na lateral direita, só no seu duelo: JO·KEN·PÔ!, mão desenhada batendo o punho na palma (normal → verde → vermelho), faixa de tempo, o que o adversário mostrou.
+- **Durante o combate:** nada sobre a arena além de nomes (pequenos), vida, foco e a seta do desafio. Sem pop-ups, sem log.
 
 ## 8. Efeitos e feedback
 
 | Evento | Feedback |
 |---|---|
 | Preparação de ataque | Lâmina branca no chão apontando o alvo + arco de tempo na cor do atacante (âmbar se for duelo) |
-| Troca/finta ↻ · trava 🔒 · cancelar ✖ | Ícone flutuante ao lado do jogador, **idêntico** para troca e finta |
 | Acerto | Ícones revelados + frase + "−1 ❤", piscar de invulnerabilidade, tremor de câmera leve |
 | Choque / cambaleio | Empurrão para trás, estrelinhas girando no atordoado |
 | Perfeito / Bom / Falha | Selo colorido sob o personagem |

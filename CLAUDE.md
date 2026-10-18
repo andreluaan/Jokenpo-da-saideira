@@ -7,15 +7,28 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 
 **Leia primeiro o arquivo da área que vai mexer em [`docs/tech/`](docs/tech/README.md)** — não releia o código todo.
 
-## Estado atual (atualize a cada etapa)
-- **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Estamos num longo **passe de arte/gameplay** (v0.5 → v0.11):
-  golpes finais por símbolo, boteco vivo (churrasqueira, engradado, poças, freezer/escudo, 1 evento por rodada + garçom),
-  quintal verde com estradinha, Bar do Zé com varanda e gente dentro, torcida, cachorros, picape com paredão;
-  v0.10: menu enxuto (personagem num card no canto, Como jogar em cards com fotos) e personagens mais fiéis às referências;
-  v0.11: **malandragem** — Espaço desafia (1×1), QTE = apertar o símbolo; verde = perfeito, vermelho = pego roubando (DESIGN §5).
+## Estado atual (atualize a cada etapa) — out/2026, v0.15
+- **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Fim de um longo **passe de arte/gameplay** (v0.5 → v0.15).
   **Histórico e o que o usuário aprovou/recusou: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)** — leia antes de propor ideias.
-- **Banco de ideias** (guardadas para depois, nada decidido): [`docs/IDEIAS.md`](docs/IDEIAS.md).
-- **Próximo:** o usuário vai jogar e avaliar. Depois: sons (ganchos prontos), Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
+- **Como o jogo está hoje (resumo):**
+  - **Duelo com malandragem** (DESIGN §5): Espaço desafia (1×1); 1/2/3 bota o símbolo, que aparece na hora para todos.
+    Antes do verde = cedo (o outro lê); verde no PÔ! = perfeito (golpe final se ganhar); vermelho = pego roubando (apanha).
+  - **Jo-Ken-Pô (QTE) = painel fixo na lateral direita** (`ui/qteHands.ts`): JO·KEN·PÔ! acendendo, mão desenhada batendo
+    o punho na palma (normal → verde → vermelho), faixa de tempo e o que o adversário mostrou. O boneco só bate os punhos.
+    (Testados e recusados: barra curva ao lado, punho ao lado do personagem, mãos 3D no próprio boneco.)
+  - **Tela da partida limpa:** sem pop-ups de texto, sem aba de confrontos, nomes discretos, botão "✕ Sair" no canto.
+  - **Menu:** lousa à esquerda + card do personagem logo embaixo; "Como jogar" em 8 cards com fotos; transição = câmera
+    do quintal voando até o enquadramento da partida (`three/matchCamera.ts`).
+  - **Cenário:** objetos da arena no estilo "brinquedo" (`three/props3d.ts`), área dos jogadores colada na porteira com mesa de
+    8 lugares, estradinha desviada, muitas árvores, quintal com bar/torcida/cachorros/picape.
+  - **Personagens:** 4 (Fera Verde, Príncipe Marrento, Seu Pança, Sonolento), visual mais fiel às referências do usuário (v0.10).
+- **Online:** código no GitHub (`andreluaan/Jokenpo-da-saideira`, branch `main`); hospedagem na **Render** (Web Service Node:
+  build `npm install && npm run build`, start `npm run start -w @ppt/server`, sem variáveis obrigatórias — opcional `NODE_VERSION=22`;
+  **não** pôr `NODE_ENV=production`). Só enviar ao GitHub quando o usuário pedir.
+- **Banco de ideias** (guardadas, nada decidido): [`docs/IDEIAS.md`](docs/IDEIAS.md) — sons, novos personagens com skill + mesa maior,
+  HUD do duelo mais limpo, mini game da cerveja (fora da partida), disputa pela gelada na mesa do meio, iluminação.
+- **Próximo:** o usuário testa com a turma na Render e avalia o painel do Jo-Ken-Pô (largura do verde com atraso de rede).
+  Depois: sons, Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.
 
 ## Comandos
@@ -38,6 +51,8 @@ npm run build
   marcas reais (Skol, Heineken…) **não** — usar a marca fictícia **"GELADA"**.
 - **Commits menores**, um por pedaço funcionando (pedido do usuário).
 - **Commits sem coautoria do Claude:** nunca adicionar `Co-Authored-By: Claude…` nem "Generated with Claude Code" em commits ou PRs (o usuário não quer isso no GitHub).
+- **Enviar ao GitHub (push) só quando o usuário pedir** — ele costuma revisar antes ("ainda não envie").
+- **Mudança visual: mostrar e deixar o usuário julgar.** Ele decide pelo que vê (já recusou várias versões); conferir no navegador antes de dizer que ficou bom.
 - Downloads de assets: só CC0/licença clara, pedindo permissão com nome, origem e tamanho.
 - **Documentação viva:** ao mexer num setor do código, atualize o arquivo correspondente em `docs/tech/`
   (conceito, arquivos, decisões, armadilhas) de forma enxuta. Mudou algo do estado do projeto → atualize este arquivo.

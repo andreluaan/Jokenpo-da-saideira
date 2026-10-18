@@ -7,7 +7,7 @@ Nada aqui altera regras: tudo lê `conn.latest()` e eventos.
 ## Arquivos
 | Arquivo | Papel |
 |---|---|
-| `Game3D.ts` | Partida: renderer, câmera, atores, setas de mira, anel de seleção, revelação/rasteira, Jo-Ken-Pô, cerveja na mesa, anel do QTE (SVG), entrada, `Hud` (sem pop-ups de texto na arena desde a v0.11.1 e sem log de confrontos desde a v0.13: o resultado se vê na revelação 3D, no golpe/rasteira e na cor da barra) |
+| `Game3D.ts` | Partida: renderer, câmera, atores, setas de mira, anel de seleção, revelação/rasteira, Jo-Ken-Pô, cerveja na mesa, painel do Jo-Ken-Pô (`QteHands`, ver 07), entrada, `Hud` (sem pop-ups de texto na arena desde a v0.11.1 e sem log de confrontos desde a v0.13: o resultado se vê na revelação 3D, no golpe/rasteira e no painel) |
 | `MenuStage3D.ts` | Fundo do menu: mesma arena, turma sentada → porteira → largadas (ver 06/07) |
 | `arena3d.ts` | Cenário inteiro + luzes (ver 06) |
 | `character3d.ts` | Personagem 3D (ver 05) |
@@ -27,7 +27,7 @@ Menu usa `setViewOffset(W,H,-side/2,…)` para centralizar a cena à direita da 
 1. envia `move` se mudou · 2. contagem/relógio · 3. poses da revelação · 4. atualiza cada `Character3D` (velocidade estimada pelo deslocamento, `pump`, `drink`, olhar) + anel + crachá · 5. setas, revelações, Jo-Ken-Pô, cerveja, QTE, poeira · 6. render · 7. `hud.update`.
 
 ## Efeitos de combate
-- **Jo-Ken-Pô:** `pumpFor()` faz os punhos descerem a cada `BEAT_MS=400` até T; a palavra do ritmo (JO ~T−800, KEN ~T−400, **PÔ!** em T) aparece **pequena no rótulo da barra do QTE**, só para o jogador local (antes era pop-up grande sobre o duelo — poluía).
+- **Jo-Ken-Pô:** `pumpFor()` faz os punhos descerem a cada `BEAT_MS=400` até T; as palavras do ritmo (JO ~T−800, KEN ~T−400, **PÔ!** em T) acendem no **painel fixo da lateral** (v0.15), só para o jogador local.
 - **Revelação** (`REVEAL_MS=1300`, relógio de parede): estágio 0 → `attack-melee-right` + sprites de sinal (`signTexture`) na mão; 120 ms → vencedor `attack-kick-right`; 330 ms → perdedor `hit(..., sweep=true)` (tombo), poeira (sem texto: animação + manchete bastam). Empate → os dois `hit`.
 - **QTE (até a v0.13 — barra estilo "shot meter"; desde a v0.14 é `ui/qteHands.ts`, ver 07):** SVG curvo à direita do jogador (arco de +62° a −62°, raio ≈ 1,25 × 0,75 un. projetado, mín. 46 px). Tempo → posição: `u(t) = (t − (T − windupMs)) / (qteEnd(T) − (T − windupMs))`. Trilho creme = CEDO, fatia verde = `T − greenBeforeMs … T + greenAfterMs` com risquinho em T, fatia **vermelha** até o fim (ROUBOU). Risquinho `.opp` + `.oppsym` na cor do adversário = quando ele botou e o quê. Enchimento sobe até agora; ao apertar (`pressSymbol` guarda `localLock = conn.now()`), **congela** e mostra a nota com a mesma regra do `gradePick` (PERFEITO / CEDO! / ROUBOU!); no vermelho sem apertar pisca "VAI DAR ROUBO!"; passou do topo = NADA!. Uma seta no chão por duelo (de quem desafiou). Crachá: símbolo público com aro âmbar (`.hand.shown`).
 - **Fim:** vencedor vivo toma a cerveja em loop (`drink`).

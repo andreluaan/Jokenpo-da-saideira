@@ -18,22 +18,23 @@
 7. Testes: simulação de sala no servidor (sem rede) + teste manual em 2 navegadores e em 2 computadores na rede.
 
 ## Próximo
-1. Usuário joga e dá retorno (força dos golpes finais, frequência de eventos, cenário).
+1. Usuário testa com a turma na **Render** e dá retorno — em especial o **painel do Jo-Ken-Pô** e se o verde (260 ms) fica justo demais com o atraso da internet (ajuste em `config.qte`).
 2. **Sons** (direção em `ART_DIRECTION.md` §9): ganchos prontos — eventos `exchange/finisher`, `burn`, `crate`, `shield`, `waiterBump`, `barEvent` (classes CSS `.barfx.kind-*.stage-*`), paredão (`Paredao.update(t, energy)`).
 3. Etapa 3: testes entre computadores diferentes (hospedar no Render — ver CHANGELOG), latência real, balanceamento bot×bot (script em 09-testes) e humanos.
-4. Fila de arte antiga ainda aberta: detalhes dos personagens de perto (franja do Fera, pálpebras do Sonolento, "terno" do Príncipe), freezer/isopor mais caprichados.
+4. Banco de ideias (`docs/IDEIAS.md`): novos personagens com skill, mini game da cerveja, disputa na mesa do meio, iluminação, HUD do duelo.
 
 ## Problemas conhecidos / dívidas
 - Sem sons ainda (ganchos listados acima).
 - Desempenho: ~1.200 desenhos por quadro na partida (a maior parte é a torcida animada, ~45 figurantes). Se travar em máquina fraca: tirar sombra/contorno de figurante longe ou reduzir a turma (`ambient3d.ts`). FPS real ainda não medido em hardware do usuário.
 - Cachorros atravessam decoração às vezes (andam numa elipse sem desviar).
 - Bar do Zé fica perto da borda de cima na câmera da partida (aparece inteiro no menu).
+- O painel do Jo-Ken-Pô cobre um pedaço da cerca direita em telas estreitas (não cobre o duelo).
+- O painel e a malandragem ainda não foram testados com teclado/mouse por humanos nem no online com latência real.
 - Rede: `Infinity` vira `null` no JSON (cerveja/freezer "em uso") — o cliente trata `null` como "não disponível" nos dois.
 - Online: sem predição do movimento local (atraso ~100 ms + RTT/2 ao andar); snapshots JSON completos (sem compressão).
 - Online: personagem de quem caiu fica parado na arena até voltar (pode ser eliminado).
 - Menu: personagens andam em linha reta dentro do ringue (podem atravessar obstáculos); mesa de fora pode ficar perto da borda da barra lateral em telas estreitas.
 - Pose de beber é procedural (braço girado) — conferir alinhamento do gargalo com a boca em close.
 - HUD ocupa bastante espaço em telas pequenas.
-- Pop-ups podem se acumular em brigas simultâneas.
 - Sem áudio ainda (direção em `docs/ART_DIRECTION.md` §9).
 - Celular: layout básico; controles de toque não implementados.

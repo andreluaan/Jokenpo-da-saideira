@@ -14,7 +14,7 @@
 | Fugir sempre é melhor que lutar | Segurar símbolo reduz a velocidade só de quem segura; investida (dash) custa foco e tem recarga; arena fechada com obstáculos. Tudo configurável. |
 | 2–3 jogadores "ganking" um alvo | Teto de 1 de dano por janela de proteção (graça de 900 ms após levar dano) + **uma mão só**: o símbolo do defensor vale contra todos que o atacam. |
 | Falha de QTE = eliminação | Falha apenas rebaixa um degrau (vitória → empate); dano é sempre 1. |
-| Regras incompreensíveis com 4 jogadores | Cada confronto revela os dois símbolos, as notas de QTE e o motivo do resultado (pop-up + log de combate). |
+| Regras incompreensíveis com 4 jogadores | Cada confronto revela os dois símbolos (mãos 3D na revelação) e o painel do Jo-Ken-Pô mostra o tempo e o que o outro botou. (Pop-ups e log foram removidos a pedido: tela limpa.) |
 
 ### Técnicos
 | Risco | Mitigação |
@@ -75,7 +75,7 @@ PPT Da saideira/
 
 1. Cliente → servidor: `input` (`move`, `symbol`, `commit`, `cancel`, `dash`). Só intenções.
 2. Servidor aplica as entradas na simulação, roda `step()` em 30 Hz.
-3. Servidor → cada cliente: `snapshot` filtrado (`snapshotFor`) a 20 Hz + `events` (sinais, confrontos, dano, eliminação, fim).
+3. Servidor → cada cliente: `snapshot` (`snapshotFor`; desde a v0.11 nada é escondido — o símbolo aparece quando botado) a 20 Hz + `events` (desafio, pick, confrontos, dano, eliminação, fim).
 4. Cliente renderiza a partir do snapshot (interpolado) e usa os eventos para feedback.
 
 Na Etapa 1, `LocalConnection` faz o papel do servidor dentro do navegador, com a **mesma** API. **Aviso:** a Etapa 1 não é multiplayer; os adversários são NPCs locais.

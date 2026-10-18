@@ -10,12 +10,18 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - Personagens na escala **1,45** (testamos 1,6 → "fica feio"). Figurantes do mesmo tamanho dos jogadores.
 - Gosta de cenário vivo e com cara de **evento da cidade**, mas sem aperto (gente espalhada, não colada na cerca).
 - Hospedagem: o Netlify só serve site estático; para o online usar Render/Railway com `npm install && npm run build` e `npm run start -w @ppt/server`.
+- Tela da partida **sem poluição**: nada de pop-ups de texto, nada de log/aba de confrontos; nomes pequenos.
+- Push para o GitHub **só quando ele pedir**. Mudanças visuais: ele quer ver e julgar (recusa sem medo).
 
 ## Ideias recusadas / removidas (não trazer de volta sem o usuário pedir)
 - **Mão cansada** (não repetir símbolo 2x) e **histórico público de símbolos** no crachá — implementadas e removidas.
 - **Finta (F)** — removida (não servia para muita coisa).
 - **Cachaça da casa** e **amendoim** (itens no chão) — implementados e removidos ("itens voando ficaram ruins").
 - Itens flutuando/girando no chão — a cerveja do evento do Zé fica em pé, parada.
+- **Pop-ups de texto** na arena (RASTEIRA, CORTOU, CEDO, PERFEITO…) e **aba Confrontos** — removidos a pedido.
+- **Copo de cerveja enchendo a tela** como transição — trocado pelo voo de câmera.
+- **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) — todos trocados pelo **painel fixo na lateral**.
+- Óculos escuros do Fera Verde (escondiam as sobrancelhas).
 
 ## v0.15 — Jo-Ken-Pô num painel fora do personagem (pilar do jogo)
 - Tentativa 1: QTE na **mão do próprio boneco** (palma + punho 3D mudando de cor). Usuário achou estranho grande e não gostou pequeno → **descartado**.

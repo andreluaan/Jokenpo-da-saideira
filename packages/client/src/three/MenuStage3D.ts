@@ -263,7 +263,8 @@ export class MenuStage3D {
     const halfW = cfg.arena.rx * S + 2.5;
     const halfH = cfg.arena.ry * S + 1.4;
     let dist = Math.max(halfW / (t * (freeW / H)), halfH / t, 9);
-    const target = new THREE.Vector3(-1.6, 0, -0.9);
+    // v0.16: mira um pouco mais à direita do mapa (pedido do usuário); o laço abaixo ainda garante o bar inteiro.
+    const target = new THREE.Vector3(-0.8, 0, -0.9);
     const dir = new THREE.Vector3(0, 1, 0.95).normalize();
     // Afasta só o necessário para o Bar do Zé caber inteiro (telhado encostando no alto da tela).
     const e = BAR_EXTENT;

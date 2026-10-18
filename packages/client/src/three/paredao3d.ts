@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { addOutline } from './character3d';
+import { mergeStatic } from './merge';
 
 /**
  * Picape vermelha com paredão de som na caçamba (modelo procedural, sem marca).
@@ -70,6 +71,8 @@ export function buildParedao(): Paredao {
 
   // ---- paredão: 3 caixas empilhadas viradas para trás (−X), cada uma com falantes
   const cones: THREE.Object3D[] = [];
+  const coneMat = mat(0x2f2a33);
+  const coneCap = mat(0xd8443c); // tampinha: mesmo acabamento do cone para juntar (era 0,3; diferença invisível nesse tamanho)
   const tower = new THREE.Group();
   tower.position.set(-0.75, 0.79, 0);
   root.add(tower);
@@ -86,11 +89,12 @@ export function buildParedao(): Paredao {
         spk.rotation.z = Math.PI / 2;
         const ring = new THREE.Mesh(new THREE.CylinderGeometry(size, size, 0.04, 16), black);
         const cone = new THREE.Group();
-        const cm = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.82, size * 0.4, 0.06, 16), mat(0x2f2a33));
-        const cap = new THREE.Mesh(new THREE.SphereGeometry(size * 0.28, 10, 6), mat(0xd8443c, { roughness: 0.3 }));
+        const cm = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.82, size * 0.4, 0.06, 16), coneMat);
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(size * 0.28, 10, 6), coneCap);
         cap.position.y = 0.035;
         cap.scale.y = 0.5;
         cone.add(cm, cap);
+        mergeStatic(cone, [cm, cap]); // cone + tampinha = uma peça (mesmo acabamento, cores nos vértices)
         cone.position.y = 0.03;
         spk.add(ring, cone);
         tower.add(spk);
@@ -103,6 +107,8 @@ export function buildParedao(): Paredao {
   cab(1.24, 0.5, 3, 2, 0.1);
   // Tweeters em cima.
   tower.add(box(0.5, 0.18, W * 0.7, black, 0.05, 1.83, 0));
+  // Desempenho: tudo menos os cones (que pulsam) vira poucas malhas; o contorno vem depois, já nas malhas juntadas.
+  mergeStatic(root, [...root.children], new Set(cones));
   addOutline(root);
 
   return {

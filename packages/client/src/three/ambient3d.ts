@@ -4,6 +4,7 @@ import { S, toWorld } from './assets';
 import type { ArenaHandles } from './arena3d';
 import { Extra3D } from './boteco3d';
 import { addOutline } from './character3d';
+import { mergeStatic } from './merge';
 import { buildParedao, type Paredao } from './paredao3d';
 import { softCircle } from './textures';
 
@@ -94,6 +95,9 @@ function dogModel(furColor: number, bellyColor: number, earColor: number): Pick<
     legs.push(leg);
   }
   root.scale.setScalar(1.3);
+  // Desempenho: cada parte animada vira uma malha só (cores nos vértices) antes do contorno.
+  mergeStatic(head, [...head.children]);
+  mergeStatic(body, body.children.filter((c) => c !== head && c !== tail));
   addOutline(root);
   return { root, legs, tail, head, body };
 }

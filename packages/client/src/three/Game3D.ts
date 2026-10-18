@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
+import { qteEnd, type CharacterId, type ExchangeEvent, type GameEvent, type PlayerView, type Rps, type Snapshot } from '@ppt/shared';
 import type { GameConnection } from '../net/connection';
 import { Hud } from '../ui/hud';
 import { symbolSvg } from '../ui/symbolIcons';
-import { BEAT_MS, QteHands } from '../ui/qteHands';
 import { toWorld } from './assets';
 import { buildArena3D, type ArenaHandles, SKY } from './arena3d';
-import { Character3D, makeBottle } from './character3d';
+import { Character3D, makeBottle, type CharacterState } from './character3d';
+import type { HandTint } from './jkpHands';
 import { signTexture, softCircle } from './textures';
 import { finisherModels, startFinisher, type Fx } from './finishers';
 import { Boteco3D } from './boteco3d';
@@ -16,6 +16,8 @@ import { MATCH_FOV, MATCH_TARGET, matchCameraPose } from './matchCamera';
 
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
 const REVEAL_MS = 1300;
+/** Batidas do Jo-Ken-Pô: o punho bate na palma em T − 800 (JO), T − 400 (KEN) e T (PÔ!). */
+const BEAT_MS = 400;
 const SYM_BY_CODE: Record<string, Rps> = { Digit1: 'rock', Digit2: 'paper', Digit3: 'scissors', KeyJ: 'rock', KeyK: 'paper', KeyL: 'scissors', Numpad1: 'rock', Numpad2: 'paper', Numpad3: 'scissors' };
 
 interface Actor {
@@ -66,7 +68,6 @@ export class Game3D {
   private readonly aims = new Map<string, THREE.Group>();
   private readonly selRing: THREE.Mesh;
   private readonly beer: THREE.Group;
-  private readonly qte: QteHands;
   /** Instante (tempo do servidor) em que VOCÊ apertou a Última Palavra — para congelar a barra ali. */
   private localLock: number | null = null;
   private readonly center = document.createElement('div');
@@ -124,8 +125,6 @@ export class Game3D {
     this.beer.position.copy(this.arena.beerSpot);
     this.scene.add(this.beer);
 
-    // QTE com as mãos (punho batendo no ritmo do Jo-Ken-Pô) ao lado do seu personagem.
-    this.qte = new QteHands(this.overlay);
     this.center.className = 'center3d';
     this.timer.className = 'timer3d';
     this.beerHint.className = 'beerhint3d';
@@ -427,6 +426,8 @@ export class Game3D {
           faceZ: pose ? pose.y : p.faceY,
           speed: a.speed,
           pump: this.pumpFor(p, now),
+          // QTE na própria mão do boneco: punho batendo na palma, normal → verde → vermelho.
+          jkp: this.jkpFor(p, now),
           // No fim, quem ficou de pé por último leva a cerveja — e toma ali mesmo.
           drink:
             p.drinkingUntil > now
@@ -791,34 +792,36 @@ export class Game3D {
     }
   }
 
-  /** QTE com as mãos ao lado do seu personagem (ver ui/qteHands.ts). */
-  private updateQte(snap: Snapshot, now: number, me: PlayerView | undefined): void {
-    if (!me?.alive || !me.holding || me.impactAt === null) {
-      this.localLock = null;
-      this.qte.hide();
-      return;
-    }
-    const opp = snap.players.find((p) => p.id === me.targetId);
-    // À direita do corpo, no tamanho do zoom da câmera.
-    const c = this.screen(this.world(me.x, me.y, 0.9));
-    const edge = this.screen(this.world(me.x, me.y, 0.9).add(new THREE.Vector3(0.75, 0, 0)));
-    const px = Math.abs(edge.x - c.x);
-    // Do lado oposto ao adversário, para não ficar no meio da briga.
-    const oppX = opp ? this.screen(this.world(opp.x, opp.y, 0.9)).x : c.x - 1;
-    const left = oppX > c.x;
-    this.qte.update({
-      x: c.x + (left ? -1 : 1) * px * 0.85,
-      y: c.y,
-      left,
-      scale: Math.max(0.9, Math.min(1.7, px / 48)),
-      now,
-      impactAt: me.impactAt,
-      pickedAt: this.localLock ?? me.pickedAt,
-      symbol: me.symbol,
-      opp: opp ? { symbol: opp.symbol, pickedAt: opp.pickedAt } : null,
-      cfg: this.conn.config,
-    });
+  /** Zera o "apertei agora" local quando o duelo acaba (a resposta imediata do QTE usa esse instante). */
+  private updateQte(_snap: Snapshot, _now: number, me: PlayerView | undefined): void {
+    if (!me?.alive || !me.holding || me.impactAt === null) this.localLock = null;
   }
+
+  /**
+   * QTE na mão do boneco (v0.15). Durante o duelo: a mão esquerda aberta na frente, o punho direito bate nela
+   * no JO (T − 800), no KEN (T − 400) e no PÔ! (T). A cor é a faixa da malandragem, igual à regra do servidor:
+   * normal = cedo (o outro vê sua mão), verde = PÔ! (golpe final se ganhar), vermelho = roubou.
+   * Depois de botar, o punho vira o gesto do símbolo (todo mundo vê — é a malandragem) e a cor congela na nota.
+   */
+  private jkpFor(p: PlayerView, now: number): CharacterState['jkp'] {
+    if (!p.alive || !p.holding || p.impactAt === null) return null;
+    const { qte } = this.conn.config;
+    const T = p.impactAt;
+    const picked = p.id === this.conn.localPlayerId ? (this.localLock ?? p.pickedAt) : p.pickedAt;
+    const d = (picked ?? now) - T;
+    let tint: HandTint = d < -qte.greenBeforeMs ? 'normal' : d <= qte.greenAfterMs ? 'green' : 'red';
+    if (picked === null && now > qteEnd(T, qte)) tint = 'red';
+    const dt = T - now;
+    let lift: number;
+    if (picked !== null) lift = 0.3;
+    else if (dt > BEAT_MS * 2.5) lift = Math.min(1, (this.conn.config.attack.windupMs - dt) / 400); // levanta o punho
+    else if (dt >= 0) lift = Math.sin(((((dt % BEAT_MS) + BEAT_MS) % BEAT_MS) / BEAT_MS) * Math.PI);
+    else lift = Math.min(1, -dt / 140) * 0.55 + Math.sin(now / 30) * 0.03; // passou do PÔ!: tremendo no ar
+    const squash = picked === null && lift < 0.12 ? ((0.12 - lift) / 0.12) * 0.35 : 0;
+    const glow = tint === 'green' ? 0.6 + 0.4 * Math.sin(now / 55) : tint === 'red' ? 0.75 : 0;
+    return { lift, squash, tint, glow, gesture: picked !== null && p.symbol ? p.symbol : 'fist' };
+  }
+
 
 }
 

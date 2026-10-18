@@ -162,33 +162,6 @@ kbd {
 .menulabel3d:empty { display: none; }
 .menulabel3d.me { background: var(--accent); color: #2b1d22; border-color: #2b1d22; }
 
-/* ---------- QTE com as mãos (v0.14): punho batendo no ritmo do Jo-Ken-Pô ---------- */
-.qhand { position: absolute; left: 0; top: 0; width: 86px; translate: 0 -50%; transform-origin: 0 50%; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  --zone: var(--accent); pointer-events: none; }
-.qhand.left { translate: -100% -50%; transform-origin: 100% 50%; }
-.qhand.left .qh-opp { right: auto; left: -30px; }
-.qhand[data-zone="green"] { --zone: var(--good); }
-.qhand[data-zone="red"] { --zone: var(--bad); }
-.qh-stage { position: relative; width: 86px; height: 92px; }
-.qh-fist { position: absolute; left: 13px; bottom: 16px; width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
-  background: #2b1d22b3; box-shadow: 0 0 0 4px var(--zone), 0 0 14px var(--zone); transition: box-shadow .12s; }
-.qh-fist svg { width: 48px; height: 48px; overflow: visible; }
-.qh-fist.picked { animation: qh-pop .3s cubic-bezier(.2, 1.6, .4, 1); }
-.qh-none { font-size: 34px; color: #fff4e6; -webkit-text-stroke: 5px #2b1d22; paint-order: stroke fill; }
-@keyframes qh-pop { from { scale: .5; } }
-.qh-table { position: absolute; left: 4px; right: 4px; bottom: 4px; height: 12px; border-radius: 6px; background: var(--zone); border: 3px solid #2b1d22;
-  box-shadow: 0 3px 0 #0005; transition: background .12s; }
-.qh-table.hit { scale: 1.08 .8; }
-.qh-beats { display: flex; gap: 4px; }
-.qh-beats span { font-size: 12px; font-weight: 700; padding: 1px 6px; border-radius: 999px; color: #fff4e6; background: #2b1d22b3; opacity: .45;
-  -webkit-text-stroke: 0; transition: opacity .1s, background .1s; }
-.qh-beats span.on { opacity: 1; background: #2b1d22; }
-.qh-beats span:last-child.on { background: var(--good); color: #2b1d22; }
-.qhand.done .qh-beats { opacity: .5; }
-.qh-opp { position: absolute; right: -30px; top: -6px; width: 34px; height: 34px; }
-.qh-opp:not(:empty) { animation: qh-pop .3s cubic-bezier(.2, 1.6, .4, 1); filter: drop-shadow(0 2px 0 #0006); }
-.qh-opp:not(:empty)::before { content: 'ele:'; position: absolute; top: -14px; left: -2px; font-size: 11px; font-weight: 700; color: #fff4e6;
-  -webkit-text-stroke: 3px #2b1d22; paint-order: stroke fill; }
 
 /* Crachás dos outros mais discretos (menos poluição quando a briga está cheia). */
 .tag3d:not(.me) .fb { display: none; }

@@ -160,6 +160,7 @@ kbd {
 .menulabel3d { position: absolute; left: 0; top: 0; translate: -50% -100%; font-weight: 700; font-size: 15px; padding: 2px 10px; border-radius: 999px;
   background: #2b1d22cc; border: 2px solid #fff4e6aa; white-space: nowrap; }
 .menulabel3d:empty { display: none; }
+.menulabel3d { transition: opacity .15s; }
 .menulabel3d.me { background: var(--accent); color: #2b1d22; border-color: #2b1d22; }
 
 /* ---------- Jo-Ken-Pô (v0.16): texto curvado abaixo da cerca da frente, mudando de cor ---------- */
@@ -189,6 +190,8 @@ kbd {
 }
 
 .menulabel3d.bench { opacity: .75; font-size: 13px; background: #2b1d2299; }
+/* Sentado no camarote: nome só com o mouse em cima (MenuStage3D marca `.off`). */
+.menulabel3d.off { opacity: 0; }
 
 /* ---------- abas e lobby online ---------- */
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 2px 0 10px; }

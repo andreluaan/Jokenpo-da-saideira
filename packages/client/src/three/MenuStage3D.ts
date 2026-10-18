@@ -74,6 +74,8 @@ export class MenuStage3D {
   private flight: { from: CamPose; to: () => CamPose; start: number; ms: number; done: () => void } | null = null;
   /** Parada no enquadramento da partida esperando a troca de tela (sem a câmera "respirando"). */
   private parked = false;
+  /** Personagem com o mouse em cima (mostra o nome mesmo sentado). */
+  private hovered: Actor | null = null;
 
   constructor(
     private readonly parent: HTMLElement,
@@ -132,6 +134,12 @@ export class MenuStage3D {
     });
 
     r.domElement.addEventListener('pointerdown', (e) => this.pick(e));
+    // Na mesa, o nome só aparece com o mouse em cima (menos poluição no camarote).
+    r.domElement.addEventListener('pointermove', (e) => {
+      this.hovered = this.actorAt(e, 55);
+      r.domElement.style.cursor = this.hovered ? 'pointer' : '';
+    });
+    r.domElement.addEventListener('pointerleave', () => (this.hovered = null));
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(this.parent);
     this.resize();
@@ -282,11 +290,12 @@ export class MenuStage3D {
     this.scene.fog = new THREE.Fog(SKY, dist + 5, dist + 30);
   }
 
-  private pick(e: PointerEvent): void {
-    if (!this.renderer) return;
+  /** Personagem mais perto do ponteiro (na tela), até `maxPx`. */
+  private actorAt(e: PointerEvent, maxPx: number): Actor | null {
+    if (!this.renderer) return null;
     const rect = this.renderer.domElement.getBoundingClientRect();
     let best: Actor | null = null;
-    let bestD = 70;
+    let bestD = maxPx;
     for (const a of this.actors) {
       const s = a.pos.clone().setY(0.7).project(this.camera);
       const sx = ((s.x + 1) / 2) * rect.width;
@@ -297,6 +306,11 @@ export class MenuStage3D {
         best = a;
       }
     }
+    return best;
+  }
+
+  private pick(e: PointerEvent): void {
+    const best = this.actorAt(e, 70);
     if (best) {
       best.c.hit(0, 0, 1, 0, 0.8, performance.now());
       this.onPick(best.id);
@@ -371,6 +385,7 @@ export class MenuStage3D {
       a.label.textContent = isMe ? `${nm} (você)` : nm;
       a.label.classList.toggle('me', isMe);
       a.label.classList.toggle('bench', a.slot < 0);
+      a.label.classList.toggle('off', a.seated && a !== this.hovered);
     }
     this.arena.update(dt, now);
     // Câmera: voando (menu ↔ partida), parada no enquadramento do duelo, ou respirando devagar no menu.

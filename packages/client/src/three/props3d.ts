@@ -30,7 +30,7 @@ export function rbox(w: number, h: number, d: number, r: number, m: THREE.Materi
 }
 
 /** Cilindro com as bordas arredondadas (latinha, tambor). */
-function rcyl(r: number, h: number, bevel: number, m: THREE.Material, x = 0, y = 0, z = 0, seg = 18): THREE.Mesh {
+export function rcyl(r: number, h: number, bevel: number, m: THREE.Material, x = 0, y = 0, z = 0, seg = 18): THREE.Mesh {
   const b = Math.min(bevel, r * 0.5, h * 0.5);
   const pts: THREE.Vector2[] = [new THREE.Vector2(0, 0)];
   for (let i = 0; i <= 4; i++) {

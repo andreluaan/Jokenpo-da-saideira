@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { GameConfig, GameEvent, Snapshot } from '@ppt/shared';
 import { S, gltf, instance, toWorld } from './assets';
 import type { ArenaHandles } from './arena3d';
@@ -48,6 +49,35 @@ const BEER_GLOW = 0xffd27a;
 // ------------------------------------------------------------------ figurante (garçom)
 
 /** Personagem extra da Kenney com animações (garçom, torcida). */
+/**
+ * Desempenho (torcida): junta a cabeça no corpo — mesmo esqueleto, então vira 1 malha (e 1 contorno, 1 sombra)
+ * em vez de 2. Só quando a cabeça não usa nenhuma célula repintada da paleta (`cells`, ex.: camisa), porque
+ * a malha juntada fica com o material (repintado) do corpo.
+ */
+function joinHead(model: THREE.Object3D, cells: string[]): void {
+  const body = model.getObjectByName('body-mesh') as THREE.SkinnedMesh | undefined;
+  const head = model.getObjectByName('head-mesh') as THREE.SkinnedMesh | undefined;
+  if (!body?.isSkinnedMesh || !head?.isSkinnedMesh || body.parent !== head.parent) return;
+  if (!body.position.equals(head.position) || !body.quaternion.equals(head.quaternion) || !body.scale.equals(head.scale)) return;
+  const bs = body.skeleton.bones;
+  const hs = head.skeleton.bones;
+  if (bs.length !== hs.length || bs.some((b, i) => b !== hs[i])) return;
+  if (!body.bindMatrix.equals(head.bindMatrix) || body.skeleton.boneInverses.some((m, i) => !m.equals(head.skeleton.boneInverses[i]))) return;
+  const uv = head.geometry.getAttribute('uv');
+  if (!uv) return;
+  for (const cell of cells) {
+    const m = /^r(\d)c(\d+)$/.exec(cell);
+    if (!m) continue;
+    for (let i = 0; i < uv.count; i++) {
+      if (Math.floor(uv.getX(i) * 16) === Number(m[2]) && Math.floor(uv.getY(i) * 4) === Number(m[1])) return;
+    }
+  }
+  const geo = mergeGeometries([body.geometry, head.geometry], false);
+  if (!geo) return;
+  body.geometry = geo;
+  head.removeFromParent();
+}
+
 export class Extra3D {
   readonly root = new THREE.Group();
   private readonly mixer: THREE.AnimationMixer;
@@ -74,6 +104,7 @@ export class Extra3D {
       bm.material = m;
     }
     this.root.add(model);
+    joinHead(model, Object.keys(body));
     addOutline(model);
     this.mixer = new THREE.AnimationMixer(model);
     for (const clip of gltf(`chars/${base}`).animations) this.actions.set(clip.name, this.mixer.clipAction(clip));
@@ -91,8 +122,8 @@ export class Extra3D {
     this.model.add(hand);
     this.model.updateMatrixWorld(true);
     this.armR.attach(hand);
-    const b = makeBottle();
-    b.scale.setScalar(1 / this.model.scale.x); // sem contorno: garrafa pequenininha, economiza desenho
+    const b = makeBottle(true);
+    b.scale.setScalar(1 / this.model.scale.x); // sem contorno nem sombra: garrafa pequenininha, economiza desenho
     hand.add(b);
   }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { CharacterId, PlayerView } from '@ppt/shared';
 import { gltf, instance } from './assets';
+import { mergeStatic } from './merge';
 import { recolorColormap } from './textures';
 import { WobbleRig } from '../art/rig';
 
@@ -250,19 +251,24 @@ export function handPoint(model: THREE.Object3D, bone: THREE.Bone): THREE.Vector
   return new THREE.Vector3(c.x, b.min.y + 0.03, c.z);
 }
 
-export function makeBottle(): THREE.Group {
+/**
+ * Long neck. `lite` (torcida): uma malha só, mesmo acabamento em tudo e sem sombra — é minúscula na tela
+ * e assim custa 1 desenho em vez de 4 (+4 de sombra) por figurante.
+ */
+export function makeBottle(lite = false): THREE.Group {
   const g = new THREE.Group();
   const glass = (c: number) => mat(c, { roughness: 0.25, metalness: 0.1 });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 8), glass(0x6b3a1f));
   body.position.y = 0.08;
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.04, 0.09, 8), glass(0x6b3a1f));
   neck.position.y = 0.205;
-  const label = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.06, 8), mat(0xfff4e6));
+  const label = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.06, 8), lite ? glass(0xfff4e6) : mat(0xfff4e6));
   label.position.y = 0.08;
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.015, 8), mat(0xe8d9a0, { metalness: 0.6 }));
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.015, 8), lite ? glass(0xe8d9a0) : mat(0xe8d9a0, { metalness: 0.6 }));
   cap.position.y = 0.255;
   g.add(body, neck, label, cap);
-  g.traverse((o) => ((o as THREE.Mesh).castShadow = true));
+  g.traverse((o) => ((o as THREE.Mesh).castShadow = !lite));
+  if (lite) mergeStatic(g, [...g.children]);
   return g;
 }
 

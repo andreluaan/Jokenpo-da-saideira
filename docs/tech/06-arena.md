@@ -33,9 +33,13 @@ Horta removida. Mesas vermelhas em `PATIOS` (hoje 9; `buildPatio` devolve as cad
 Layout dos obstáculos da arena: ver `shared/config.ts` (comentado) e 02-simulação.
 
 ## Desempenho: decoração juntada (`merge.ts`)
-No fim de `buildArena3D`, `mergeStatic()` junta toda malha parada com o mesmo material (cor/textura/acabamento/sombra) numa malha só: geometria copiada já na posição final (`toNonIndexed` + `applyMatrix4` + `mergeGeometries`). Ficam de fora: lâmpadas do varal (`glows`, animadas), fumaça (sprites), luzes, materiais transparentes (logo GELADA, vidros), malhas espelhadas e o que estiver em `skip`. Cada obstáculo é juntado **por dentro do próprio grupo** (o engradado continua podendo sumir; a tampa do freezer fica em `skip`).
-Resultado: partida 1.881 → ~840 desenhos por quadro; menu 1.672 → ~780. O que resta é gente animada (torcida/jogadores).
-**Armadilha:** decoração nova que precise se mexer depois de montada tem de ir para `skip` (ou ser criada depois do merge), senão vira parte de uma malha juntada.
+No fim de `buildArena3D`, `mergeStatic()` junta toda malha parada com o mesmo **acabamento** (tipo de material, textura, rugosidade/metal, brilho, lado, sombra) numa malha só: geometria copiada já na posição final (`toNonIndexed` + `applyMatrix4` + `mergeGeometries`). **Cores diferentes não separam:** a cor de cada peça vai para os vértices (atributo `color`) e o material juntado fica branco com `vertexColors` — mesmo resultado na tela. Ficam de fora: lâmpadas do varal (`glows`, animadas), fumaça (sprites), luzes, materiais transparentes (logo GELADA, vidros), malhas espelhadas, materiais com shader próprio (`onBeforeCompile`) e o que estiver em `skip`. Cada obstáculo é juntado **por dentro do próprio grupo** (o engradado continua podendo sumir; a tampa do freezer fica em `skip`).
+Também usado fora da arena (sempre **antes** de `addOutline`, para o contorno sair já da malha juntada):
+- **Picape/paredão** (`paredao3d.ts`): tudo menos os cones que pulsam; cada cone + tampinha = 1 peça.
+- **Cachorros** (`ambient3d.ts`): cada parte animada (corpo, cabeça) vira 1 malha.
+- **Torcida** (`boteco3d.ts` `Extra3D`): `joinHead()` junta cabeça no corpo (mesmo esqueleto) quando a cabeça não usa célula repintada da paleta (male-c e male-e usam → ficam separadas); garrafinha `makeBottle(true)` = 1 malha sem sombra.
+Resultado (partida, 1280×800, contando a passada de sombra): 1.439 → **786** desenhos por quadro; capturas antes/depois iguais. O que resta é gente animada (torcida ~43 figurantes, jogadores, cachorros).
+**Armadilha:** decoração nova que precise se mexer depois de montada tem de ir para `skip` (ou ser criada depois do merge), senão vira parte de uma malha juntada. Peças com rugosidade diferente não juntam — num detalhe minúsculo, vale igualar o acabamento.
 
 ## Interativo (v0.6)
 `ArenaHandles.props[i]` = grupo 3D do obstáculo i (null na mesa). Freezer tem `userData.lid` (tampa de vidro com pivô na borda de trás). `setDim(k)` = queda de luz.

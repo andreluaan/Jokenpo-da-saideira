@@ -26,7 +26,7 @@ OUT="$TEMP/ppt_stats.txt" npx vitest run packages/shared/test/_stats.test.ts > /
 - Forçar cenas: `__ppt.bots.length = 0` (NPCs parados), `__ppt.sim.debugSet/debugPlace/debugStartEvent/debugSpawnItem`, métodos privados acessíveis no console (ex.: `sim.bumpInto`, `sim.addPuddle`).
 - Câmera de close: mover `camera.position`/`lookAt`, renderizar, `toDataURL` → `tools/shotserver.mjs`, restaurar. No menu, `camera.clearViewOffset()` antes e restaurar o `view` depois.
 - Elementos HTML (faixas de evento, HUD) só aparecem em `computer screenshot`, não no canvas.
-- `renderer.info.render.calls` = desenhos por quadro (meta: < ~1.200).
+- `renderer.info.render.calls` = desenhos por quadro, já somando a passada de sombra (hoje ~790 na partida; meta: < ~800). Para saber quem gasta, embrulhe `onBeforeRender`/`onBeforeShadow` das malhas e conte por grupo do topo da cena.
 - **Painel oculto** (screenshot "congelado"): pare o `setInterval` da conexão e avance à mão (`bots.think` → `sim.step(1000/60)` → `snapshot` → `listeners` → espera ocupada 16 ms → `__ppt3d.frame()`).
 - **Fotos com o HUD 3D junto** (crachás, arco do QTE, faixas de evento): depois de `frame()` **duas vezes** (a 1ª atualiza a câmera), clonar `.overlay3d` com os estilos computados em linha, pôr num `<svg><foreignObject>` com as fontes embutidas (`@font-face` em data URL) e desenhar por cima do canvas num `<canvas>` 2D. Animações/transições não andam com o painel oculto: force `opacity:1` nas `.barfx` antes. Foi assim que saíram as fotos de `public/howto/`.
 - Retratos grandes dos personagens para comparar: criar `Character3D` num renderer à parte (como `portraits.ts`) com câmera de frente e de 3/4.

@@ -21,6 +21,14 @@ Usado pela partida **e** pelo menu (mesma cena). Obstáculos visuais seguem **ex
 - ~~Área dos jogadores (v0.13)~~ — **substituída na v0.16 pelo camarote (abaixo).** Era: `PlayersArea` calculada a partir da porteira: retângulo alinhado com a cerca (`t` ao longo da cerca, `n` para fora), logo depois da porteira e descido `shift` para longe da varanda do bar. `buildPlayersArea`: corda em retângulo com uma **entradinha** (dois mourões + placa grande "SÓ QUEM JOGA" inclinada para a câmera) na posição `doorU`, alinhada com a porteira. `buildPlayersTable`: mesa comprida com **8 banquinhos** (4 de cada lado; os 4 primeiros `seats` são os virados para a arena). Cada `Seat.path` leva do banco até a entradinha sem atravessar a mesa (quem senta do lado de fora dá a volta pela ponta); o `MenuStage3D` usa esse caminho na ida e na volta. `inPlayersArea()` reserva o espaço (vegetação e árvores não entram); `ArenaHandles.playersArea` (centro + raio que cobre o retângulo) segura a torcida longe.
 - **Armadilha vivida:** o laço da torcida na cerca passava de π e caía do outro lado (dentro da área dos jogadores) — agora para em π e ainda checa `nearPlayers`.
 
+## Placas (v0.16) — `three/signTextures.ts`
+Pedido: placas "muito secas". `paintedSign(texto)` = tábuas com veio/nós/frestas, painel de tinta com pinceladas e **descascado**
+(canvas à parte com `destination-out`), moldura dupla, estrelinhas, pregos e letra com sombra + contorno + degradê + brilho
+(BAR DO ZÉ, SÓ QUEM JOGA). `chalkSign([título, linhas…])` = lousa com nuvens de apagador, giz granulado (furinhos), título amarelo
+sublinhado, caneco e estrelinhas desenhados (SAIDEIRA). O texto encolhe para caber (`fitSize`; antes o "quem perde paga" saía cortado).
+Em 3D as placas ganharam tábua de fundo com espessura; BAR DO ZÉ tem 2 luminárias por cima e a lousa um aparador com gizes.
+`textTexture` continua para os logos GELADA.
+
 ## Camarote dos jogadores (v0.16) — `three/playersCorner3d.ts`
 Pedido: a mesa antiga estava "torta" (seguia a curva da cerca) e sem cara de bar. Agora `buildPlayersCorner(scene, pc)`:
 retângulo **alinhado com os eixos** (reto na tela) logo depois da porteira (`door` = 0,95 antes de `gate.outside`), **sem cercadinho**.

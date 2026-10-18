@@ -28,6 +28,8 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **Jo-Ken-Pô:** pedido "fica distante do campo de visão" → painel lateral trocado por **só o texto JO · KEN · PÔ!** curvado abaixo da cerca da frente, mudando de cor (creme/verde/vermelho).
 - **Camarote dos jogadores:** pedido "mesa torta, sem temática de bar" → mesa reta com toalha xadrez, balde de gelo e long necks GELADA, copos americanos, porções, engradados de banquinho, varal de lâmpadas e placa "SÓ QUEM JOGA" pendurada; cercadinho de corda removido; árvores afastadas.
 - **Nomes no menu:** quem está sentado só mostra o nome com o mouse em cima.
+- **Placas:** pedido "muito secas" → BAR DO ZÉ e SÓ QUEM JOGA viraram letreiro de madeira pintada (tinta gasta, moldura, estrelas, pregos, letra com contorno e brilho); SAIDEIRA virou lousa de giz de verdade (giz granulado, sublinhado, caneco desenhado, aparador com gizes) e o texto parou de sair cortado.
+- **Câmera do menu** um pouco mais à direita do mapa (a pedido).
 - **Iluminação (ideia 7):** bordas do quintal mais escuras, poças de luz quente (varal, varanda, camarote, brasas), sol mais baixo e forte — sem desenho extra relevante.
 
 ## v0.15 — Jo-Ken-Pô num painel fora do personagem (pilar do jogo)

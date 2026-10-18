@@ -27,7 +27,7 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
   build `npm install && npm run build`, start `npm run start -w @ppt/server`, sem variáveis obrigatórias — opcional `NODE_VERSION=22`;
   **não** pôr `NODE_ENV=production`). Só enviar ao GitHub quando o usuário pedir.
 - **Banco de ideias** (guardadas, nada decidido): [`docs/IDEIAS.md`](docs/IDEIAS.md) — sons, novos personagens com skill + mesa maior,
-  HUD do duelo mais limpo, mini game da cerveja (fora da partida), disputa pela gelada na mesa do meio.
+  HUD do duelo mais limpo, mini game da cerveja (fora da partida), disputa pela gelada na mesa do meio, pódio/animação de fim de partida.
 - **Próximo:** o usuário avalia a v0.16 (texto do Jo-Ken-Pô, camarote, luz) e testa com a turma na Render (largura do verde com atraso de rede).
   Depois: sons, Etapa 3 (testes/balanceamento) — ver `docs/tech/10-roadmap.md`.
 - Etapas: 1 protótipo · 2 multiplayer · 3 testes/balanceamento · 4 acabamento/publicação.

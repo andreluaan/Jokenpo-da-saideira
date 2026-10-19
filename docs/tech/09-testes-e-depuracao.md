@@ -29,6 +29,7 @@ OUT="$TEMP/ppt_stats.txt" npx vitest run packages/shared/test/_stats.test.ts > /
 - `renderer.info.render.calls` = desenhos por quadro, já somando a passada de sombra (hoje ~790 na partida; meta: < ~800). Para saber quem gasta, embrulhe `onBeforeRender`/`onBeforeShadow` das malhas e conte por grupo do topo da cena.
 - **Painel oculto** (screenshot "congelado"): pare o `setInterval` da conexão e avance à mão (`bots.think` → `sim.step(1000/60)` → `snapshot` → `listeners` → espera ocupada 16 ms → `__ppt3d.frame()`).
 - **Fotos com o HUD 3D junto** (crachás, arco do QTE, faixas de evento): depois de `frame()` **duas vezes** (a 1ª atualiza a câmera), clonar `.overlay3d` com os estilos computados em linha, pôr num `<svg><foreignObject>` com as fontes embutidas (`@font-face` em data URL) e desenhar por cima do canvas num `<canvas>` 2D. Animações/transições não andam com o painel oculto: force `opacity:1` nas `.barfx` antes. Foi assim que saíram as fotos de `public/howto/`.
+  Golpes finais e revelações usam `performance.now()`: para pegá-los na foto, troque `performance.now` por um relógio falso que só anda no passo manual. O `javascript_tool` corta scripts com mais de 45 s — divida em várias chamadas. `img.decode()` do SVG pode travar; use `onload` com tempo-limite. Para fotos mais de perto, recorte uma área 16:9 do canvas (o recorte vale também para o HUD).
 - Retratos grandes dos personagens para comparar: criar `Character3D` num renderer à parte (como `portraits.ts`) com câmera de frente e de 3/4.
 
 ## Checklist antes de commitar

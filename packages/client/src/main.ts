@@ -19,6 +19,7 @@ import { mountSoundPanel } from './ui/soundPanel';
 import { ambience } from './audio/ambience';
 import * as sfx from './audio/sfx';
 import { audio } from './audio/engine';
+import { radio } from './audio/radio';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -67,7 +68,7 @@ new HowTo($('#howto'), $('#howto-open'));
 // e clique curtinho nos botões do menu / Como jogar.
 mountSoundPanel(matchScreen.parentElement!);
 ambience.start();
-if (import.meta.env.DEV) Object.assign(window, { __audio: audio, __sfx: sfx });
+if (import.meta.env.DEV) Object.assign(window, { __audio: audio, __sfx: sfx, __radio: radio });
 for (const el of [menu, endOverlay]) {
   el.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('button, .tab, select')) sfx.uiClick();
@@ -163,6 +164,8 @@ function myLobbyChar(): CharacterId | undefined {
 }
 
 function renderLobby(s: LobbyState | null): void {
+  // Rádio do Zé: numa sala, o dono escolhe e os outros seguem (ver audio/radio.ts).
+  radio.setRoom(s, online?.playerId ?? null, (r) => online?.socket.emit('room:radio', r));
   const inRoom = mode === 'online' && !!s;
   $('#online-out').classList.toggle('hidden', inRoom);
   $('#online-in').classList.toggle('hidden', !inRoom);

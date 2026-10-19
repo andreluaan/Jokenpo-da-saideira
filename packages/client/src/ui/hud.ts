@@ -91,7 +91,7 @@ export class Hud {
     else if (me.holding && !me.locked) {
       warn = !me.challenger;
       const seen = opp?.symbol ? ` ${opp.name} já mostrou ${labelOf(opp.symbol)}!` : '';
-      text = `Jo-Ken-Pô contra ${opp?.name ?? '?'}! Bote 1/2/3 no VERDE.${seen} Passou pro vermelho = pego roubando.`;
+      text = `Jo-Ken-Pô contra ${opp?.name ?? '?'}! Bote J/K/L no VERDE.${seen} Passou pro vermelho = pego roubando.`;
     } else if (me.holding) text = `Você botou ${me.symbol ? labelOf(me.symbol) : ''}. Agora é ver no que dá…`;
     else if (canDrink) text = 'Tem uma gelada na mesa: aperte E para beber e recuperar 1 ❤ (fica parado e vulnerável).';
     else if (me.busy) text = 'Recuperando…';

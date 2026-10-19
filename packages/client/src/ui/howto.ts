@@ -32,7 +32,7 @@ const STEPS: Step[] = [
     img: 'howto/4-duelo.jpg',
     title: 'Bote no verde',
     body: 'Embaixo da arena aparece JO · KEN · PÔ! no ritmo dos punhos. No PÔ! o texto fica verde: aperte seu símbolo ali. Botou antes? O outro já vê sua mão. Não botou nada? Apanha.',
-    keys: ['1 [rock]', '2 [paper]', '3 [scissors]'],
+    keys: ['J [rock]', 'K [paper]', 'L [scissors]'],
   },
   {
     img: 'howto/5-malandragem.jpg',

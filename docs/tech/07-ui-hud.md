@@ -17,7 +17,7 @@ Ganchos só em DEV: `window.__menu`, `__ppt` (conexão), `__ppt3d` (Game3D).
 No fundo, `MenuStage3D`: todos **sentados** na mesa de fora; os escolhidos (você = largada 1, NPCs na ordem de `CHARACTER_IDS` sem você) **levantam em sequência** (`STAND_MS`, `STAGGER_MS`), passam pela **porteira** e vão às largadas; quem sai da partida volta ao banquinho. Clicar num personagem no 3D o seleciona. **Nomes (v0.16):** quem está sentado no camarote fica sem nome (`.menulabel3d.off`); aparece só com o mouse em cima (`pointermove` → `actorAt`, 55 px).
 
 ## HUD da partida
-- `ui/hud.ts` — cartões de jogadores (topo), barra de ações (🤜 Desafiar/Espaço, símbolos 1/2/3 só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
+- `ui/hud.ts` — cartões de jogadores (topo), barra de ações (🤜 Desafiar/Espaço, símbolos J/K/L só no duelo, Investida, Beber; botões não pegam foco: `mousedown`+`preventDefault`), dica contextual (`#hint`; mostra o símbolo que o adversário já botou; `warn` quando te chamaram). `update(snap, now, canDrink)`.
 - Sair: botãozinho `#leave` (`.leave-btn`, "✕ Sair") no canto de cima à direita. A aba "Confrontos" (log) e `ui/describe.ts` foram removidos na v0.13 a pedido do usuário.
 - No 3D (`Game3D`): crachá por jogador (`.tag3d`: mão/símbolo, nome — v0.13: só texto com contorno e risquinho na cor do jogador, sem caixinha —, ❤, foco, anel de preparação em `conic-gradient`), `.center3d` (contagem/LUTA!), `.timer3d` (selo de lousa no canto), `.beerhint3d`, `.qte3d`.
 

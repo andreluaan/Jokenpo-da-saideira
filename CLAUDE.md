@@ -11,7 +11,7 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
 - **Etapas 1 (protótipo + NPCs) e 2 (multiplayer online) feitas.** Fim de um longo **passe de arte/gameplay** (v0.5 → v0.15).
   **Histórico e o que o usuário aprovou/recusou: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)** — leia antes de propor ideias.
 - **Como o jogo está hoje (resumo):**
-  - **Duelo com malandragem** (DESIGN §5): Espaço desafia (1×1); 1/2/3 bota o símbolo, que aparece na hora para todos.
+  - **Duelo com malandragem** (DESIGN §5): Espaço desafia (1×1); J/K/L bota o símbolo, que aparece na hora para todos.
     Antes do verde = cedo (o outro lê); verde no PÔ! = perfeito (golpe final se ganhar); vermelho = pego roubando (apanha).
   - **Jo-Ken-Pô (QTE) = só o texto JO · KEN · PÔ! curvado abaixo da cerca da frente** (`ui/qteArc.ts`, v0.16), mudando de cor
     (creme → verde → vermelho). O boneco só bate os punhos. (Recusados: barra curva, punho ao lado, mãos 3D, painel lateral.)

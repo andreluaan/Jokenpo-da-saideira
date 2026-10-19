@@ -36,7 +36,7 @@ npm run build      # build de produção do cliente
 | WASD / setas | Mover |
 | Clique / Tab | Escolher alvo |
 | Espaço | **Desafiar** o alvo para um Jo-Ken-Pô (1 contra 1) |
-| 1 2 3 (ou J K L) | Pedra · Papel · Tesoura — **bota o símbolo** no duelo (uma vez). No PÔ! (verde) = perfeito; cedo, o outro vê; tarde (vermelho) = pego roubando |
+| J K L (ou 1 2 3) | Pedra · Papel · Tesoura — **bota o símbolo** no duelo (uma vez). No PÔ! (verde) = perfeito; cedo, o outro vê; tarde (vermelho) = pego roubando |
 | Shift | Investida curta (gasta foco; no duelo serve para fugir antes de botar) |
 | E | Beber a gelada da mesa (machucado) · abrir o freezer (escudo de gelo) |
 

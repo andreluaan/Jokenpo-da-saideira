@@ -253,7 +253,7 @@ export class Game3D {
     return snap.players.find((p) => p.id === this.conn.localPlayerId);
   }
 
-  /** 1/2/3: bota o símbolo no duelo (a conexão carimba o instante em que apertou). */
+  /** J/K/L (ou 1/2/3): bota o símbolo no duelo (a conexão carimba o instante em que apertou). */
   private pressSymbol(s: Rps): void {
     const snap = this.conn.latest();
     const me = snap && this.me(snap);

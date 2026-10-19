@@ -125,6 +125,7 @@ export function createGameServer(opts: GameServerOptions = {}): GameServer {
       const r = socket.data.room?.start(socket.data.playerId!) ?? { ok: false as const, error: 'Você não está numa sala.' };
       if (typeof ack === 'function') ack(r);
     });
+    socket.on('room:radio', (r) => socket.data.room?.setRadio(socket.data.playerId!, r ?? null));
     socket.on('input', (input) => socket.data.room?.input(socket.data.playerId!, input));
     socket.on('ping', (ack) => {
       if (typeof ack === 'function') ack(socket.data.room?.simNow() ?? -1);

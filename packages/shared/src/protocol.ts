@@ -19,6 +19,15 @@ export interface LobbyPlayer {
   isBot: boolean;
 }
 
+/** Rádio do Zé (YouTube): o que está tocando na sala. Só o dono troca; todos ouvem a mesma, no mesmo ponto. */
+export interface RadioState {
+  /** Id do vídeo do YouTube (11 caracteres). */
+  id: string;
+  title: string;
+  /** Instante (relógio do servidor, ms) em que a música estaria no segundo 0. */
+  startedAt: number;
+}
+
 export interface LobbyState {
   code: string;
   hostId: string;
@@ -27,6 +36,10 @@ export interface LobbyState {
   /** NPCs que completam a mesa ao começar (0–3, limitado ao espaço livre). */
   bots: number;
   difficulty: BotDifficulty;
+  /** null = rádio desligada pelo dono. */
+  radio: RadioState | null;
+  /** Relógio do servidor (ms) quando este estado saiu — para o cliente achar o ponto da música. */
+  serverTime: number;
 }
 
 export interface JoinOk {
@@ -60,6 +73,8 @@ export interface ClientToServer {
   'room:character': (character: CharacterId, ack: (r: Ack) => void) => void;
   'room:settings': (p: { bots?: number; difficulty?: BotDifficulty }) => void;
   'room:start': (ack: (r: Ack) => void) => void;
+  /** Só o dono: troca a música (`pos` = segundo em que está agora) ou desliga (null). */
+  'room:radio': (r: { id: string; title: string; pos: number } | null) => void;
   input: (input: PlayerInput) => void;
   /** Sincronia de relógio: devolve o tempo da simulação no servidor (ou -1 fora de partida). */
   ping: (ack: (simNow: number) => void) => void;
@@ -71,6 +86,11 @@ export interface ServerToClient {
   snap: (s: Snapshot) => void;
   ev: (e: GameEvent[]) => void;
   'match:end': (winnerId: string | null) => void;
+}
+
+/** Id de vídeo do YouTube válido? */
+export function isYoutubeId(id: unknown): boolean {
+  return typeof id === 'string' && /^[\w-]{11}$/.test(id);
 }
 
 /** Limpa apelido vindo da rede. */

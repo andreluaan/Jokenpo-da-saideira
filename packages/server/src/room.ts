@@ -9,6 +9,7 @@ import {
   MAX_PLAYERS,
   SERVER_TICK_HZ,
   SNAPSHOT_HZ,
+  isYoutubeId,
   sanitizeName,
   type Ack,
   type BotDifficulty,
@@ -18,6 +19,7 @@ import {
   type JoinResult,
   type LobbyState,
   type PlayerInput,
+  type RadioState,
   type PlayerSetup,
   type ServerToClient,
 } from '@ppt/shared';
@@ -62,6 +64,7 @@ export class Room {
   bots = 0;
   difficulty: BotDifficulty = 'normal';
   sim: GameSimulation | null = null;
+  radio: RadioState | null = null;
 
   private readonly players: RoomPlayer[] = [];
   private brains: BotBrain[] = [];
@@ -297,6 +300,19 @@ export class Room {
     this.loop = null;
   }
 
+  /** Rádio do Zé: só o dono troca a música (vale no lobby e na partida). */
+  setRadio(id: string, r: { id: string; title: string; pos: number } | null): void {
+    if (id !== this.hostId) return;
+    if (r === null) this.radio = null;
+    else {
+      if (!r || !isYoutubeId(r.id)) return;
+      const pos = Number.isFinite(r.pos) ? Math.max(0, Math.min(36_000, r.pos)) : 0;
+      const title = typeof r.title === 'string' ? r.title.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) : '';
+      this.radio = { id: r.id, title, startedAt: Date.now() - pos * 1000 };
+    }
+    this.broadcastLobby();
+  }
+
   // ------------------------------------------------------------------ apoio
 
   lobby(): LobbyState {
@@ -306,6 +322,8 @@ export class Room {
       phase: this.phase,
       bots: this.bots,
       difficulty: this.difficulty,
+      radio: this.radio,
+      serverTime: Date.now(),
       players: this.players.map((p) => ({ id: p.id, name: p.name, character: p.character, ready: p.ready, connected: !!p.peer, isBot: false })),
     };
   }

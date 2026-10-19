@@ -56,6 +56,22 @@ describe('lobby', () => {
     expect(rb.lobby.hostId).toBe(ra.playerId);
   });
 
+  it('rádio: só o dono troca a música e todos recebem o mesmo ponto', async () => {
+    const { a, b } = await roomWithTwo();
+    let last: LobbyState | null = null;
+    b.on('room:state', (s) => (last = s));
+    b.emit('room:radio', { id: 'xxxxxxxxxxx', title: 'Intrusa', pos: 0 });
+    a.emit('room:radio', { id: '8Xe8gApDRgU', title: 'Garçom', pos: 30 });
+    await until(() => last !== null && (last as LobbyState).radio !== null);
+    const s = last as unknown as LobbyState;
+    expect(s.radio!.id).toBe('8Xe8gApDRgU');
+    // Começou "30 s atrás" no relógio do servidor.
+    expect(s.serverTime - s.radio!.startedAt).toBeGreaterThanOrEqual(29_000);
+    a.emit('room:radio', { id: 'id inválido', title: 'x', pos: 0 });
+    a.emit('room:radio', null);
+    await until(() => (last as unknown as LobbyState).radio === null);
+  });
+
   it('código errado e sala cheia são recusados', async () => {
     const x = await client();
     expect(await x.emitWithAck('room:join', { code: 'ZZZZ', name: 'X', character: 'fera' })).toMatchObject({ ok: false });

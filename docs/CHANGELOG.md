@@ -23,7 +23,8 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) e o **painel fixo na lateral** (longe do campo de visão) — hoje é o texto curvo abaixo da arena (v0.16).
 - Óculos escuros do Fera Verde (escondiam as sobrancelhas).
 
-## v0.18 — Rádio do Zé (aguardando o usuário avaliar)
+## v0.18 — Rádio do Zé (aprovada pelo usuário)
+- Som de derrota trocado: "Perdeu!" do Galvão (MyInstants, sem licença) no lugar do Rock Lee.
 - Rádio do YouTube com a lista do usuário (18 músicas, sugestões ⭐), tocando já no menu e na partida, numa "TV do Zé" no canto de baixo à direita (regra do YouTube: player visível ≥ 200×200).
 - Painel 🔊: barrinha **Música**, Ligar/Desligar, próxima, escolher da lista, colar link do YouTube.
 - Online: o **dono da sala** escolhe e todos ouvem a mesma música no mesmo ponto (~0,5 s de diferença nos testes); convidado só desliga para si.

@@ -14,7 +14,7 @@ const FILES = [
   'doorOpen_1', 'metalClick', 'metalLatch', 'handleCoins', 'creak1', 'dropLeather', 'chip-lay-1', 'chip-lay-2', 'chip-lay-3', 'card-place-1', 'applause',
   // Escolhidos pelo usuário no MyInstants (sem licença — trocar antes de publicar; ver CREDITS.md).
   'meme-faaah.mp3', 'meme-the-rock.mp3', 'meme-cerveja-mike.mp3', 'meme-cabeca-de-gelo.mp3', 'crowd-murmur-loop.mp3',
-  'meme-uhh-anime.mp3', 'meme-beber.mp3', 'meme-rock-lee.mp3',
+  'meme-uhh-anime.mp3', 'meme-beber.mp3', 'meme-perdeu-galvao.mp3',
 ];
 
 function range(base: string, n: number): string[] {

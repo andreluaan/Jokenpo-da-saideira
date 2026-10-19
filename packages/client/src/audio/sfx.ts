@@ -170,9 +170,9 @@ export function coins(vol = 1): void {
 
 /** Fim da partida. */
 export function matchEnd(won: boolean): void {
-  // Escolhidos pelo usuário: ganhou = "BEBER"; perdeu = "Rock Lee – poder da vontade".
+  // Escolhidos pelo usuário: ganhou = "BEBER"; perdeu = "Perdeu!" do Galvão.
   if (won) play('meme-beber', { vol: 0.5, jitter: 0 });
-  else play('meme-rock-lee', { vol: 1.2, jitter: 0, dur: 8 });
+  else play('meme-perdeu-galvao', { vol: 1.5, jitter: 0 });
 }
 
 /** Clique de botão no menu: ficha batendo na mesa. */

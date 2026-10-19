@@ -11,7 +11,7 @@ Os da tabela abaixo são **CC0 (domínio público)**: uso livre, sem crédito ob
 
 ## ⚠️ Sem licença — escolhidos pelo usuário (out/2026). **Trocar antes de publicar** (Etapa 4)
 Baixados de myinstants.com a pedido do usuário, ciente do risco. São recortes de memes/vídeos/anime de terceiros
-(ex.: "Rock Lee" é do anime Naruto, o que também vai contra a regra de PI do projeto). Uso só entre amigos.
+(ex.: "Perdeu!" é a voz do Galvão Bueno numa transmissão de TV). Uso só entre amigos.
 
 | Arquivo | Onde toca | Origem |
 |---|---|---|
@@ -22,4 +22,4 @@ Baixados de myinstants.com a pedido do usuário, ciente do risco. São recortes 
 | `crowd-murmur-loop.mp3` | burburinho de fundo (loop, bem baixo) | https://www.myinstants.com/pt/instant/crowd-murmur-loop-11518/ |
 | `meme-uhh-anime.mp3` | golpe normal / rasteira | https://www.myinstants.com/pt/instant/uhh-anime-6012/ |
 | `meme-beber.mp3` | fim de partida — ganhou | https://www.myinstants.com/pt/instant/beber-79780/ |
-| `meme-rock-lee.mp3` | fim de partida — perdeu | https://www.myinstants.com/pt/instant/rock-lee-poder-da-vontade-86152/ |
+| `meme-perdeu-galvao.mp3` | fim de partida — perdeu (voz do Galvão Bueno, trecho de TV) | https://www.myinstants.com/pt/instant/perdeu-galvao/ |

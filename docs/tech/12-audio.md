@@ -14,7 +14,7 @@ Direção e decisões do usuário: `docs/ART_DIRECTION.md` §9. 1ª entrega (v0.
 ## Regras (pedidas pelo usuário)
 - Batidas do Jo-Ken-Pô e clique do símbolo **só no seu duelo**; lances dos outros a 50% (`OTHERS`).
 - Golpe especial: som próprio por símbolo, casado com `finishers.ts` (pedra cai em 240 ms, tesoura corta em ~210 ms, papel embrulha em 170 ms e voa até 760 ms). Golpe normal: o mesmo `hit` para os três.
-- Colocar o símbolo = mesmo clique para os três. Pego roubando = apito.
+- Colocar o símbolo = mesmo clique para os três. Pego roubando = lata batendo ("plém!").
 - Ambiente muito baixo; **sem TV, sem cachorros/grilos**. Fim de partida discreto (ganhou ≠ perdeu).
 
 ## Armadilhas

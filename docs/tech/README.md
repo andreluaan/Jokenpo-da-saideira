@@ -16,6 +16,7 @@ Regra: ao mexer num setor, atualize o arquivo dele no mesmo commit (curto e obje
 | 09 | [Testes e depuração](09-testes-e-depuracao.md) | Testar, inspecionar, tirar capturas |
 | 10 | [Roadmap](10-roadmap.md) | Etapas, pendências, próximos passos |
 | 11 | [Multiplayer](11-multiplayer.md) | Servidor, salas, protocolo, relógio, reconexão |
+| 12 | [Áudio](12-audio.md) | Efeitos, ambiente, volume, ganchos de som |
 
 Histórico de versões e decisões do usuário (aprovado/recusado): [`../CHANGELOG.md`](../CHANGELOG.md).
 

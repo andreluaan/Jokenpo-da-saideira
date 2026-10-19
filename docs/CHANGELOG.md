@@ -23,6 +23,12 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) e o **painel fixo na lateral** (longe do campo de visão) — hoje é o texto curvo abaixo da arena (v0.16).
 - Óculos escuros do Fera Verde (escondiam as sobrancelhas).
 
+## v0.17 — Som, 1ª entrega (aguardando o usuário ouvir e julgar)
+- Decisões do usuário em `ART_DIRECTION.md` §9 (rádio do YouTube, nada de Spotify; ambiente muito baixo, sem TV/bichos).
+- Efeitos sintetizados: batidas JO·KEN·PÔ! (só no seu duelo), clique do símbolo, apito de pego roubando, golpe normal, golpe especial próprio de pedra/tesoura/papel, cerveja, brasa, engradado, freezer, garçom, eventos do Zé, fim de partida (ganhou/perdeu).
+- Burburinho do bar e torcida reagindo, bem baixinhos. Botão 🔊 com Efeitos/Ambiente e mudo (tecla M).
+- Teclas dos símbolos na tela: J/K/L. Fotos novas do Como jogar.
+
 ## v0.16 — Jo-Ken-Pô perto do duelo, camarote dos jogadores e luz (aguardando o usuário avaliar)
 - **Desempenho:** decoração juntada também por cor (cor nos vértices); picape, cachorros e torcida juntados: partida 1.439 → ~770 desenhos por quadro, sem diferença visual.
 - **Jo-Ken-Pô:** pedido "fica distante do campo de visão" → painel lateral trocado por **só o texto JO · KEN · PÔ!** curvado abaixo da cerca da frente, mudando de cor (creme/verde/vermelho).

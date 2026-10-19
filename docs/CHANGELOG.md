@@ -23,6 +23,11 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) e o **painel fixo na lateral** (longe do campo de visão) — hoje é o texto curvo abaixo da arena (v0.16).
 - Óculos escuros do Fera Verde (escondiam as sobrancelhas).
 
+## v0.17.2 — Sons escolhidos pelo usuário + escudo de 10 s
+- 8 sons do MyInstants escolhidos pelo usuário (tesoura, pedra, cerveja, escudo, burburinho em loop, golpe normal, ganhou, perdeu) — **sem licença**, trocar antes de publicar (avisado; usuário aceitou o risco).
+- Escudo de gelo do freezer agora **derrete após 10 s** (`hazards.freezer.shieldMs`).
+- Rádio do YouTube: vídeos da lista achados; implementação pausada a pedido do usuário.
+
 ## v0.17.1 — Sons de verdade
 - Usuário: sintetizado "muito robotizado, ficou péssimo" → efeitos trocados por **gravações reais CC0** (Kenney Impact/RPG/Casino + aplauso de qubodup, baixados com permissão). Burburinho e torcida falando **tirados** até ter gravação de vozes.
 - Volume em 0 agora fica mudo de verdade.

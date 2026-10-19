@@ -13,6 +13,7 @@ import { Boteco3D } from './boteco3d';
 import { BarEventFx } from '../ui/barEventFx';
 import { Ambient3D } from './ambient3d';
 import { MATCH_FOV, MATCH_TARGET, matchCameraPose } from './matchCamera';
+import { MatchAudio } from '../audio/matchAudio';
 
 const HAND_COLOR: Record<CharacterId, number> = { fera: 0xf3ece8, principe: 0xf7f5ef, panca: 0xf0bf8f, sonolento: 0xf2c6a0 };
 const REVEAL_MS = 1300;
@@ -76,6 +77,7 @@ export class Game3D {
   private readonly camTarget = MATCH_TARGET.clone();
   private softTex = softCircle();
   private lastPhase = '';
+  private readonly sound: MatchAudio;
 
   constructor(
     private readonly parent: HTMLElement,
@@ -139,6 +141,7 @@ export class Game3D {
       drink: () => conn.send({ type: 'drink' }),
     });
 
+    this.sound = new MatchAudio(conn.localPlayerId, BEAT_MS);
     this.setupInput();
     const off = conn.onEvents((ev) => this.handleEvents(ev));
     this.cleanups.push(off);
@@ -305,6 +308,7 @@ export class Game3D {
 
   private handleEvents(events: GameEvent[]): void {
     const meId = this.conn.localPlayerId;
+    this.sound.onEvents(events);
     for (const e of events) {
       this.boteco.onEvent(e);
       this.ambient.onEvent(e);
@@ -469,6 +473,7 @@ export class Game3D {
     this.updateReveals(snap, now);
     this.updateBeer(snap, now, me);
     this.updateQte(now, me);
+    this.sound.qte(now, me, this.conn.config);
     this.updateDust(dt);
     this.updateFx();
     this.boteco.update(snap, now, dt);
@@ -650,7 +655,10 @@ export class Game3D {
       });
       if (r.stage === 1 && t > 120) {
         r.stage = 2;
-        if (e.damagedId && e.winnerId && e.finisher) this.finisher(e.finisher, e.damagedId, e.winnerId, simNow);
+        if (e.damagedId && e.winnerId && e.finisher) {
+          this.finisher(e.finisher, e.damagedId, e.winnerId, simNow);
+          this.sound.strike(e, 'special');
+        }
         else if (e.damagedId && e.winnerId) this.actors.get(e.winnerId)?.c.trigger('attack-kick-right', 600, simNow);
       }
       if (r.stage === 2 && t > 330) {
@@ -666,6 +674,7 @@ export class Game3D {
           const w = otherOf(e.damagedId);
           this.actors.get(e.damagedId)?.c.hit(w.x, w.z, v.x, v.z, 1.1, simNow, true);
           this.puff(v, 0xe9d2b8, 10);
+          this.sound.strike(e, 'impact');
         } else if (e.protectedId) {
           const v = posOf(e.protectedId);
           const w = otherOf(e.protectedId);

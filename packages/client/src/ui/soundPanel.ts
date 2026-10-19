@@ -26,8 +26,9 @@ export function mountSoundPanel(host: HTMLElement): void {
 
   const render = () => {
     const st = audio.settings;
-    btn.textContent = st.muted ? '🔇' : '🔊';
-    btn.classList.toggle('muted', st.muted);
+    const off = st.muted || SLIDERS.every((x) => st[x.bus] <= 0);
+    btn.textContent = off ? '🔇' : '🔊';
+    btn.classList.toggle('muted', off);
     mute.textContent = st.muted ? '🔊 Ligar o som (M)' : '🔇 Mudo (M)';
     for (const inp of inputs) {
       const v = Math.round(st[inp.dataset.bus as Bus] * 100);

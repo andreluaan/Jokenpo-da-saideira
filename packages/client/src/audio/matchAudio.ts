@@ -85,7 +85,10 @@ export class MatchAudio {
           if (e.kind === 'blackout' && e.stage === 'start') sfx.power(true);
           if (e.kind === 'blackout' && e.stage === 'end') sfx.power(false);
           if (e.kind === 'ze' && e.stage === 'announce') sfx.waiterWhistle();
-          if (e.kind === 'ze' && e.stage === 'start') ambience.react('cheer', 0.7);
+          if (e.kind === 'ze' && e.stage === 'start') {
+            sfx.coins();
+            ambience.react('cheer', 0.7);
+          }
           break;
       }
     }

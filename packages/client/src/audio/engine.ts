@@ -93,9 +93,19 @@ class AudioEngine {
   private apply(): void {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.master.gain.setTargetAtTime(this.settings.muted ? 0 : 1, t, 0.03);
+    // Valor exato e na hora (setTargetAtTime só "se aproxima" do zero e deixava um fiozinho de som).
+    const set = (p: AudioParam, v: number) => {
+      p.cancelScheduledValues(t);
+      p.setValueAtTime(v, t);
+    };
+    set(this.master.gain, this.settings.muted ? 0 : 1);
     // Curva quadrada: a barrinha "anda" de forma mais natural para o ouvido.
-    for (const b of ['sfx', 'ambient', 'music'] as Bus[]) this.buses[b].gain.setTargetAtTime(this.settings[b] ** 2, t, 0.03);
+    for (const b of ['sfx', 'ambient', 'music'] as Bus[]) set(this.buses[b].gain, this.settings[b] ** 2);
+  }
+
+  /** Canal em 0 ou mudo: nem cria o som. */
+  silent(b: Bus): boolean {
+    return this.settings.muted || this.settings[b] <= 0;
   }
 
   /** 2 s de ruído branco reaproveitado por todos os sons. */

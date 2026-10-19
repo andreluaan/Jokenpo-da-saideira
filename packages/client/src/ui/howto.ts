@@ -13,13 +13,13 @@ const STEPS: Step[] = [
   {
     img: 'howto/1-objetivo.jpg',
     title: 'Só tem uma gelada',
-    body: 'Até 4 na arena do quintal. Quem ficar de pé por último leva a cerveja do freezer.',
+    body: 'Até 4 no ringue do quintal do Bar do Zé, com a cidade toda assistindo. Quem ficar de pé por último leva a cerveja.',
     keys: [],
   },
   {
     img: 'howto/2-mover.jpg',
     title: 'Movimentação',
-    body: 'Ande pela arena e use engradados e churrasqueiras como cobertura. A investida (gasta foco) serve pra fugir de um duelo antes de botar o símbolo.',
+    body: 'Ande pela arena e use engradados, isopores e churrasqueiras como cobertura. A investida é curta e gasta metade do foco: serve pra escapar de um duelo antes de botar o símbolo.',
     keys: ['W A S D', 'Shift investida'],
   },
   {
@@ -31,31 +31,31 @@ const STEPS: Step[] = [
   {
     img: 'howto/4-duelo.jpg',
     title: 'Bote no verde',
-    body: 'No painel da direita, a mão bate o punho na palma no JO… KEN… e no PÔ! fica verde: aperte seu símbolo ali. Botou antes? O outro já vê sua mão. Não botou nada? Apanha.',
+    body: 'Embaixo da arena aparece JO · KEN · PÔ! no ritmo dos punhos. No PÔ! o texto fica verde: aperte seu símbolo ali. Botou antes? O outro já vê sua mão. Não botou nada? Apanha.',
     keys: ['1 [rock]', '2 [paper]', '3 [scissors]'],
   },
   {
     img: 'howto/5-malandragem.jpg',
     title: 'Malandragem tem limite',
-    body: 'O painel mostra o que o outro botou. Dá pra virar no último instante… mas se a mão ficar vermelha, é pego roubando e apanha.',
+    body: 'O símbolo de quem botou aparece em cima da cabeça dele. Dá pra esperar e virar no último instante… mas se o JO · KEN · PÔ! ficar vermelho, é pego roubando e apanha.',
     keys: [],
   },
   {
     img: 'howto/6-golpe.jpg',
     title: 'Golpe final',
-    body: 'Quem ganha no símbolo derruba o outro (−1 ❤). Ganhou botando no verde? Sai o golpe especial do símbolo.',
+    body: 'Quem ganha no símbolo derruba o outro (−1 ❤). Ganhou botando no verde? Sai o golpe especial: a pedra esmaga, a tesoura corta e deixa lento, o papel embrulha e arremessa.',
     keys: [],
   },
   {
     img: 'howto/7-gelada.jpg',
     title: 'Machucou? Toma uma gelada',
-    body: 'Na mesa amarela, aperte E para beber (+1 ❤). Se te chamarem pro duelo bebendo, derrama! No freezer, E dá escudo de gelo.',
+    body: 'Na mesa GELADA do meio, aperte E para beber (+1 ❤). Se te chamarem pro duelo bebendo, derrama! Nos freezers da cerca, E dá um escudo de gelo que segura um golpe.',
     keys: ['E beber / freezer'],
   },
   {
     img: 'howto/8-boteco.jpg',
     title: 'O boteco também joga',
-    body: 'Churrasqueira queima, cerveja derramada escorrega e toda rodada o Zé apronta um evento.',
+    body: 'Quem é jogado na churrasqueira queima, engradado quebra e cerveja derramada escorrega. E toda rodada o Zé apronta: Saideira dupla, queda de luz ou rodada por conta da casa.',
     keys: [],
   },
 ];
@@ -80,27 +80,66 @@ export class HowTo {
     this.$('#howto-dots')
       .querySelectorAll<HTMLButtonElement>('button')
       .forEach((b) => b.addEventListener('click', () => this.go(Number(b.dataset.k))));
+    window.addEventListener('resize', () => !root.classList.contains('hidden') && (this.fitText(), this.go(this.i, true, false)));
     window.addEventListener('keydown', (e) => {
       if (root.classList.contains('hidden')) return;
       if (e.key === 'Escape') this.close();
       else if (e.key === 'ArrowRight') this.go(this.i + 1);
       else if (e.key === 'ArrowLeft') this.go(this.i - 1);
     });
-    // Pré-carrega as imagens para a troca de card não piscar.
-    for (const s of STEPS) new Image().src = url(s.img);
+    // Arrastar para o lado (dedo ou mouse) também troca de card.
+    const stage = this.$('.howto-stage');
+    let startX: number | null = null;
+    stage.addEventListener('pointerdown', (e) => (startX = e.clientX));
+    stage.addEventListener('pointerup', (e) => {
+      if (startX === null) return;
+      const dx = e.clientX - startX;
+      startX = null;
+      if (Math.abs(dx) > 50) this.go(this.i + (dx < 0 ? 1 : -1));
+    });
+    stage.addEventListener('pointercancel', () => (startX = null));
+    // Pré-carrega (e decodifica) as imagens para a troca de card não piscar.
+    for (const s of STEPS) {
+      const im = new Image();
+      im.src = url(s.img);
+      im.decode?.().catch(() => {});
+    }
   }
 
   open(): void {
     this.root.classList.remove('hidden');
+    this.fitText();
     this.go(0, true);
     this.$<HTMLButtonElement>('#howto-next').focus();
+    // Mede de novo com a janela já desenhada e as fontes carregadas (no 1º instante a medida sai curta).
+    const refit = () => {
+      if (this.root.classList.contains('hidden')) return;
+      this.fitText();
+      this.go(this.i, false, false);
+    };
+    requestAnimationFrame(refit);
+    document.fonts?.ready.then(refit);
+  }
+
+  /** Altura do texto = a do card mais comprido: a janela não muda de tamanho ao trocar de página. */
+  private fitText(): void {
+    const box = this.$('.howto-text');
+    box.style.setProperty('--howto-text-h', '0px');
+    let max = 0;
+    for (const s of STEPS) {
+      this.$('#howto-title').textContent = s.title;
+      this.$('#howto-body').textContent = s.body;
+      this.$('#howto-keys').innerHTML = s.keys.map((key) => `<kbd>${withSymbolIcons(key)}</kbd>`).join('');
+      max = Math.max(max, box.scrollHeight);
+    }
+    box.style.setProperty('--howto-text-h', `${Math.ceil(max)}px`);
   }
 
   close(): void {
     this.root.classList.add('hidden');
   }
 
-  private go(k: number, first = false): void {
+  private go(k: number, first = false, animate = true): void {
     if (k < 0 || k >= STEPS.length) return;
     const dir = k >= this.i ? 1 : -1;
     this.i = k;
@@ -119,6 +158,7 @@ export class HowTo {
     // Card desliza para o lado em que se andou.
     const card = this.$('.howto-card');
     card.classList.remove('slide-l', 'slide-r', 'enter');
+    if (!animate) return;
     void card.offsetWidth;
     card.classList.add(first ? 'enter' : dir > 0 ? 'slide-r' : 'slide-l');
   }

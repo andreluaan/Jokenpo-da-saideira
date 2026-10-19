@@ -327,7 +327,9 @@ kbd {
 .howto-overlay { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: #1a1015aa; backdrop-filter: blur(4px);
   animation: fade-in .2s ease-out; }
 @keyframes fade-in { from { opacity: 0; } }
-.howto-card { position: relative; width: min(640px, 100%); max-height: calc(100% - 8px); overflow: auto; border-radius: 20px; background: var(--chalkboard);
+/* Sem rolagem: o card cabe na tela (foto encolhe em tela baixa) e o deslize fica cortado dentro do "palco". */
+.howto-card { position: relative; width: min(640px, 100%); max-height: calc(100% - 8px); overflow: hidden; border-radius: 20px; background: var(--chalkboard);
+  display: flex; flex-direction: column;
   border: 12px solid var(--wood); box-shadow: inset 0 0 0 3px var(--wood-dark), 0 20px 50px #0008; padding: 14px 16px 14px; }
 .howto-card.enter { animation: howto-enter .45s cubic-bezier(.2, 1.4, .4, 1); }
 .howto-card.slide-r .howto-pic, .howto-card.slide-r .howto-text { animation: howto-r .32s ease-out; }
@@ -338,16 +340,17 @@ kbd {
 .howto-x { position: absolute; right: 10px; top: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 3px solid #2b1d22;
   background: #fff4e6; color: #2b1d22; font-weight: 700; cursor: pointer; }
 .howto-x:hover { background: var(--accent); }
-.howto-pic { aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 4px solid #f6ead6; background: #a9b97a; transform: rotate(-.8deg);
+.howto-stage { overflow: hidden; margin: -6px -8px 0; padding: 6px 8px 0; touch-action: pan-y; user-select: none; }
+.howto-pic { aspect-ratio: 16 / 9; max-height: min(340px, 44vh); width: 100%; border-radius: 12px; overflow: hidden; border: 4px solid #f6ead6; background: #a9b97a; transform: rotate(-.8deg);
   box-shadow: 0 6px 0 #0004; }
 .howto-pic img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.howto-text { padding: 12px 4px 4px; min-height: 142px; }
+.howto-text { padding: 12px 4px 4px; min-height: var(--howto-text-h, 142px); }
 .howto-step { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); }
 .howto-text h2 { margin: 0; font-family: var(--chalk); font-weight: 400; font-size: 36px; line-height: 1.05; }
 .howto-text p { margin: 4px 0 8px; font-size: 16px; line-height: 1.35; color: #e9e2d4; }
 .howto-keys { display: flex; gap: 6px; flex-wrap: wrap; min-height: 4px; }
 .howto-keys kbd { margin: 0; font-size: 14px; padding: 3px 10px; color: #fff4e6; background: #ffffff14; border-color: #fff4e655; }
-.howto-nav { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.howto-nav { display: flex; align-items: center; gap: 10px; margin-top: 10px; min-height: 50px; }
 .howto-nav .btn { flex: none; }
 .howto-nav .btn.primary { width: auto; font-size: 18px; padding: 10px 18px; }
 .howto-nav .btn.ghost { color: #fff4e6; }

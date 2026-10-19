@@ -174,6 +174,6 @@ export type GameEvent =
   | { type: 'pickup'; at: number; playerId: string; kind: ItemKind; x: number; y: number }
   | { type: 'burn'; at: number; playerId: string; x: number; y: number }
   | { type: 'crate'; at: number; index: number; broken: boolean }
-  | { type: 'shield'; at: number; playerId: string; stage: 'start' | 'ready' | 'broken' | 'interrupted' }
+  | { type: 'shield'; at: number; playerId: string; stage: 'start' | 'ready' | 'broken' | 'interrupted' | 'expired' }
   | { type: 'barEvent'; at: number; kind: BarEventKind; stage: 'announce' | 'start' | 'end' }
   | { type: 'waiterBump'; at: number; playerId: string; x: number; y: number };

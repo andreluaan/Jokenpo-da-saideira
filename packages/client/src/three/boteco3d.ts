@@ -258,7 +258,7 @@ export class Boteco3D {
         const c = d.character(e.playerId);
         if (e.stage === 'start') c?.trigger('interact-right', d.cfg.hazards.freezer.openMs, d.simNow());
         if (e.stage === 'ready') c?.trigger('emote-yes', 600, d.simNow());
-        if (e.stage === 'broken') {
+        if (e.stage === 'broken' || e.stage === 'expired') {
           const s = this.shields.get(e.playerId);
           const at = s ? s.position.clone() : new THREE.Vector3();
           d.puff(at, 0xbfe9ff, 14);

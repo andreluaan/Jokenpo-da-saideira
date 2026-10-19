@@ -117,8 +117,8 @@ export interface GameConfig {
     crate: { hp: number; minSpeed: number; cooldownMs: number };
     /** Poça de cerveja: escorrega (acelera e freia pouco). */
     puddle: { r: number; ms: number; accelMul: number; decelMul: number };
-    /** Freezer: abrir leva openMs parado; dá um escudo que segura 1 golpe. */
-    freezer: { openMs: number; cooldownMs: number; reach: number };
+    /** Freezer: abrir leva openMs parado; dá um escudo que segura 1 golpe e derrete após shieldMs. */
+    freezer: { openMs: number; cooldownMs: number; reach: number; shieldMs: number };
   };
   /** Um evento do bar por partida, sorteado. */
   barEvents: {
@@ -223,7 +223,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     grill: { minSpeed: 0.45, stunMs: 500, push: 70, cooldownMs: 1500 },
     crate: { hp: 2, minSpeed: 0.3, cooldownMs: 500 },
     puddle: { r: 55, ms: 18_000, accelMul: 0.45, decelMul: 0.2 },
-    freezer: { openMs: 1500, cooldownMs: 20_000, reach: 40 },
+    freezer: { openMs: 1500, cooldownMs: 20_000, reach: 40, shieldMs: 10_000 },
   },
   barEvents: {
     enabled: true,

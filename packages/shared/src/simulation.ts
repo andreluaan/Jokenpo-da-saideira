@@ -77,6 +77,8 @@ interface Player {
   slowUntil: number;
   /** Escudo de gelo do freezer (segura 1 golpe). */
   shield: boolean;
+  /** Quando o escudo de gelo derrete (se não quebrar antes). */
+  shieldUntil: number;
   openingUntil: number;
   openingFreezer: number;
   burnReadyAt: number;
@@ -184,6 +186,7 @@ export class GameSimulation {
         dashY: 0,
         slowUntil: 0,
         shield: false,
+        shieldUntil: 0,
         openingUntil: 0,
         openingFreezer: -1,
         burnReadyAt: 0,
@@ -789,9 +792,15 @@ export class GameSimulation {
 
   private finishOpenings(): void {
     for (const p of this.players) {
+      // Escudo dura shieldMs (pedido do usuário: ~10 s) e derrete sozinho.
+      if (p.shield && this.now >= p.shieldUntil) {
+        p.shield = false;
+        this.emit({ type: 'shield', at: this.now, playerId: p.id, stage: 'expired' });
+      }
       if (!p.alive || p.openingUntil === 0 || this.now < p.openingUntil) continue;
       p.openingUntil = 0;
       p.shield = true;
+      p.shieldUntil = this.now + this.config.hazards.freezer.shieldMs;
       const fz = this.freezers[p.openingFreezer];
       if (fz) fz.readyAt = this.now + this.config.hazards.freezer.cooldownMs;
       p.openingFreezer = -1;

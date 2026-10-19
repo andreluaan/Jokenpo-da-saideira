@@ -84,6 +84,20 @@ describe('arena interativa', () => {
     expect(view(sim, 'B').shielded).toBe(false);
   });
 
+  it('escudo de gelo derrete sozinho depois de shieldMs', () => {
+    const sim = newSim();
+    const f = sim.config.obstacles.find((o) => o.prop === 'freezer') as { x: number; y: number; w: number; h: number };
+    sim.debugPlace('B', f.x + f.w / 2, f.y + f.h + 30);
+    sim.applyInput('B', { type: 'drink' });
+    advanceTo(sim, sim.now + sim.config.hazards.freezer.openMs + 20);
+    expect(view(sim, 'B').shielded).toBe(true);
+    advanceTo(sim, sim.now + sim.config.hazards.freezer.shieldMs - 200);
+    expect(view(sim, 'B').shielded).toBe(true);
+    const ev: GameEvent[] = [];
+    while (view(sim, 'B').shielded) ev.push(...sim.step(1000 / 60));
+    expect(ev.some((e) => e.type === 'shield' && e.stage === 'expired')).toBe(true);
+  });
+
   it('cerveja derramada vira poça no chão', () => {
     const sim = newSim();
     sim.debugSet('B', { hp: 2 });

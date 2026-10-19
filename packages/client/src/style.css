@@ -372,3 +372,19 @@ kbd {
 /* ---------- indo para a partida: a coluna do menu sai pela esquerda enquanto a câmera voa ---------- */
 #menu.leaving .menu-col { transform: translateX(calc(-100% - 40px)); opacity: 0; transition: transform .55s cubic-bezier(.5, 0, .75, 0), opacity .55s; }
 #menu.leaving .menu-col * { pointer-events: none; }
+
+/* Som: botão 🔊 no canto (menu e partida) com barrinhas de volume (ui/soundPanel.ts) */
+.sound-ctl { position: absolute; top: 12px; right: 12px; z-index: 40; font-family: Fredoka, system-ui, sans-serif; }
+#match:not(.hidden) ~ .sound-ctl { right: 92px; }
+.sound-btn { width: 36px; height: 30px; padding: 0; border-radius: 999px; cursor: pointer; font-size: 16px; line-height: 1;
+  color: #fff4e6; background: #2b1d22b3; border: 2px solid #5e464f; backdrop-filter: blur(4px); }
+.sound-btn:hover { border-color: var(--accent); background: #2b1d22e6; }
+.sound-btn.muted { opacity: .75; }
+.sound-pop { position: absolute; top: 38px; right: 0; width: 230px; padding: 12px 14px; border-radius: 14px; color: #fff4e6;
+  background: var(--chalkboard); border: 3px solid #5e464f; box-shadow: 0 10px 24px #0006; display: grid; gap: 8px; }
+.sound-row { display: grid; grid-template-columns: 70px 1fr 28px; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.sound-row b { font-size: 12px; text-align: right; opacity: .8; }
+.sound-row input { width: 100%; accent-color: var(--accent); cursor: pointer; }
+.sound-mute { margin-top: 2px; padding: 6px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+  color: #fff4e6; background: #ffffff14; border: 2px solid #fff4e655; }
+.sound-mute:hover { border-color: var(--accent); }

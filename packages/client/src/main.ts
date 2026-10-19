@@ -15,6 +15,9 @@ import { preloadAll } from './three/assets';
 import { Game3D } from './three/Game3D';
 import { MenuStage3D, type MenuState } from './three/MenuStage3D';
 import { renderPortraits } from './three/portraits';
+import { mountSoundPanel } from './ui/soundPanel';
+import { ambience } from './audio/ambience';
+import { uiClick } from './audio/sfx';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -59,6 +62,15 @@ const charSelect = new CharacterSelect($('#char-spot'), savedChar && CHARACTER_I
   }
 });
 new HowTo($('#howto'), $('#howto-open'));
+// Som: botão 🔊 (depois do #match no HTML, para o CSS saber quando a partida está aberta), burburinho já no menu
+// e clique curtinho nos botões do menu / Como jogar.
+mountSoundPanel(matchScreen.parentElement!);
+ambience.start();
+for (const el of [menu, endOverlay]) {
+  el.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('button, .tab, select')) uiClick();
+  });
+}
 const menuStage = new MenuStage3D($('#menu-bg'), $('#menu-side'), menuState, (c) => charSelect.select(c));
 
 const myName = () => nickname.value.trim().slice(0, 16) || 'Jogador';

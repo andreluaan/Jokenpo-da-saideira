@@ -1,10 +1,13 @@
 import { audio } from './engine';
-import { play } from './samples';
+import { loop, onLoaded, play } from './samples';
+
+/** Burburinho de fundo ("crowd murmur loop", escolhido pelo usuário): quase imperceptível. */
+const MURMUR = 'crowd-murmur-loop';
+const MURMUR_VOL = 0.35;
 
 /**
- * Clima do quintal (canal "ambiente"), bem baixinho, só de fundo: copos tilintando e tampinhas de vez em quando,
- * e aplauso real quando alguém cai. As "vozes" sintetizadas (burburinho e torcida falando) soaram robóticas e
- * foram tiradas a pedido do usuário — voltam quando houver uma gravação real (turma ou Freesound CC0).
+ * Clima do quintal (canal "ambiente"), bem baixinho, só de fundo: burburinho gravado em loop, copos tilintando e
+ * tampinhas de vez em quando, e aplauso real quando alguém cai. (As vozes sintetizadas da v0.17 foram recusadas.)
  * Sem TV e sem bichos.
  */
 
@@ -14,6 +17,7 @@ class Ambience {
   private timer: ReturnType<typeof setInterval> | null = null;
   private nextClink = 0;
   private nextCap = 0;
+  private murmur = false;
 
   start(): void {
     audio.whenReady(() => {
@@ -22,6 +26,11 @@ class Ambience {
       this.nextClink = now + rnd(2, 5);
       this.nextCap = now + rnd(8, 15);
       this.timer = setInterval(() => this.tick(), 250);
+      const startMurmur = () => {
+        if (!this.murmur) this.murmur = !!loop(MURMUR, MURMUR_VOL, 'ambient');
+      };
+      startMurmur();
+      onLoaded((name) => name === MURMUR && startMurmur());
     });
   }
 

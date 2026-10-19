@@ -64,7 +64,7 @@ export class MatchAudio {
           if (e.phase === 'ended') setTimeout(() => sfx.matchEnd(e.winnerId === this.meId), 600);
           break;
         case 'drink':
-          if (e.stage === 'start') sfx.capOpen(this.mine(e.playerId) ? 1 : OTHERS);
+          if (e.stage === 'start') sfx.beerOpen(this.mine(e.playerId) ? 1 : OTHERS);
           else if (e.stage === 'done') sfx.gulp(this.mine(e.playerId) ? 1 : OTHERS);
           else sfx.splash(this.mine(e.playerId) ? 1 : 0.7);
           break;
@@ -75,7 +75,7 @@ export class MatchAudio {
           sfx.crate(e.broken, 0.8);
           break;
         case 'shield':
-          if (e.stage !== 'interrupted') sfx.freezer(e.stage, this.mine(e.playerId) ? 1 : OTHERS);
+          if (e.stage !== 'interrupted' && e.stage !== 'expired') sfx.freezer(e.stage, this.mine(e.playerId) ? 1 : OTHERS);
           break;
         case 'waiterBump':
           sfx.trayBump();

@@ -50,9 +50,9 @@ export function caughtWhistle(vol = 1): void {
 
 // ---------------------------------------------------------------- golpes
 
-/** Golpe normal (qualquer símbolo): soco. */
+/** Golpe normal / rasteira (qualquer símbolo): "uhh" de anime (escolhido pelo usuário). */
 export function hit(vol = 1): void {
-  play('impactPunch_medium', { vol: 0.9 * vol });
+  play('meme-uhh-anime', { vol: 0.75 * vol, jitter: 0 });
 }
 
 /** Esquiva/erro: roupa passando no vento. */
@@ -65,19 +65,16 @@ export function clink(vol = 1, at = 0, bus: Bus = 'sfx'): void {
   play('impactGlass_light', { vol: 0.6 * vol, at, bus, jitter: 0.1 });
 }
 
-/** Golpe especial da PEDRA: o punho cai (vento grave) e esmaga em 240 ms (pedra + soco pesado + chão). */
+/** Golpe especial da PEDRA. */
 export function finisherRock(vol = 1): void {
-  play('cloth', { vol: 0.5 * vol, rate: 0.6 });
-  play('impactMining', { vol: 1 * vol, at: 0.24, rate: 0.75 });
-  play('impactPunch_heavy', { vol: 0.9 * vol, at: 0.24, rate: 0.8 });
-  play('impactSoft_heavy', { vol: 0.8 * vol, at: 0.26, rate: 0.8 });
+  // Escolhido pelo usuário ("the rock sound effect"); o estouro cai junto do punho (240 ms).
+  play('meme-the-rock', { vol: 0.65 * vol, at: 0.15, jitter: 0 });
 }
 
-/** Golpe especial da TESOURA: lâmina sendo sacada e o corte em ~210 ms. */
+/** Golpe especial da TESOURA. */
 export function finisherScissors(vol = 1): void {
-  play('drawKnife', { vol: 0.7 * vol });
-  play('knifeSlice', { vol: 0.9 * vol, at: 0.2 });
-  play('impactPunch_medium', { vol: 0.6 * vol, at: 0.22 });
+  // Escolhido pelo usuário ("FAAAH"), entrando junto do corte (~210 ms).
+  play('meme-faaah', { vol: 0.85 * vol, at: 0.05, jitter: 0 });
 }
 
 /** Golpe especial do PAPEL: amassa (papel), voa (vento) e cai ("plof") em ~760 ms. */
@@ -100,6 +97,11 @@ export function knockout(vol = 1): void {
 export function capOpen(vol = 1, bus: Bus = 'sfx'): void {
   play('metalClick', { vol: 0.6 * vol, bus, rate: 1.2 });
   hiss({ type: 'highpass', f: 3000, f2: 5000, dur: 0.35, vol: 0.08 * vol, attack: 0.01, at: 0.02, bus });
+}
+
+/** Pegou a cerveja para beber: latinha abrindo (escolhido pelo usuário, "Cerveja#Mike"). */
+export function beerOpen(vol = 1): void {
+  play('meme-cerveja-mike', { vol: 0.35 * vol, skip: 0.65, dur: 2.5, jitter: 0 });
 }
 
 /** Terminou o gole: garrafa voltando para a mesa. */
@@ -126,10 +128,11 @@ export function crate(broken: boolean, vol = 1): void {
   clink(0.8 * vol, broken ? 0.08 : 0.04);
 }
 
-/** Freezer: abrindo a porta, escudo pronto (gelo), escudo quebrado (vidro). */
+/** Freezer: abrindo a porta, escudo pronto, escudo quebrado (vidro). */
 export function freezer(stage: 'start' | 'ready' | 'broken', vol = 1): void {
   if (stage === 'start') play('doorOpen', { vol: 0.6 * vol, rate: 1.2 });
-  else if (stage === 'ready') play('impactGlass_light', { vol: 0.6 * vol, rate: 1.6 });
+  // Escudo pronto: "Cabeça de Gelo" (escolhido pelo usuário).
+  else if (stage === 'ready') play('meme-cabeca-de-gelo', { vol: 0.55 * vol, jitter: 0 });
   else play('impactGlass_heavy', { vol: 0.8 * vol, rate: 1.2 });
 }
 
@@ -165,16 +168,11 @@ export function coins(vol = 1): void {
 
 // ---------------------------------------------------------------- fim e menu
 
-/** Fim da partida (discreto): ganhou = aplauso + brinde; perdeu = cadeira rangendo e corpo largado. */
+/** Fim da partida. */
 export function matchEnd(won: boolean): void {
-  if (won) {
-    play('applause', { vol: 0.35, bus: 'ambient' });
-    clink(0.8, 0.3);
-    capOpen(0.7);
-  } else {
-    play('creak1', { vol: 0.5, rate: 0.8 });
-    play('dropLeather', { vol: 0.6, at: 0.45 });
-  }
+  // Escolhidos pelo usuário: ganhou = "BEBER"; perdeu = "Rock Lee – poder da vontade".
+  if (won) play('meme-beber', { vol: 0.5, jitter: 0 });
+  else play('meme-rock-lee', { vol: 1.2, jitter: 0, dur: 8 });
 }
 
 /** Clique de botão no menu: ficha batendo na mesa. */

@@ -143,9 +143,18 @@ Mundo de 1920×1200. A arena é uma **elipse** (rx 760, ry 470) de terra pisada 
 
 ## 9. Áudio (direção)
 
-- **Música:** forró / samba-rock lo-fi, leve e em loop. Na fase final (2 jogadores), a música ganha percussão.
-- **Efeitos:** tampinha estourando (trava), "tum" de mesa (acerto), tilintar de copos (choque), apito de garçom (contagem), grilos ao fundo, torcida abafada do bar na vitória.
-- Mesmo som para troca e finta. O som do símbolo só toca na revelação.
+Decidido com o usuário em out/2026 (substitui a direção antiga de "troca/finta").
+
+- **Origem:** misto — efeitos de pacotes CC0/licença clara (pedir permissão: nome, origem, tamanho) + o que faltar sintetizado no código (Web Audio).
+- **Tom:** meio a meio — ambiente realista de boteco; golpes exagerados de desenho animado.
+- **Música = "rádio do Zé" pelo YouTube** (lista do usuário; campo para colar outro link). Som limpo (YouTube/Spotify não deixam aplicar efeito); o clima de paredão vem do ambiente por cima. Online: **o dono da sala escolhe** e todos ouvem a mesma. Toca já no menu e continua na partida. Spotify ficou de fora (exige Premium + login; só parte da turma tem). Músicas comerciais **nunca** vão como arquivo dentro do jogo.
+- **Jo-Ken-Pô:** sem voz — 3 batidas de punho na mesa (toc, toc, TUM), o PÔ! mais forte. **Só no seu duelo**; dos outros, só o golpe final.
+- **Golpes:** golpe especial (verde) = som único por símbolo (pedra, tesoura, papel); golpe normal = mesmo som para os três.
+- **Ambiente:** burburinho do bar e torcida reagindo aos lances **muito baixo, só de fundo**. **Sem TV.** Sem cachorros/grilos. Eventos do Zé com som marcante (sino da Saideira, "plá!" da luz, apito do garçom).
+- **Fim da partida:** discreto; ganhou = festinha, perdeu = lamento engraçado.
+- **Menu:** cliques nos botões + burburinho baixinho + rádio.
+- **Volume:** 3 barrinhas (música, efeitos, ambiente) + mudo; fica salvo no navegador.
+- **Ordem:** 1ª entrega = efeitos + volume; 2ª = rádio do YouTube.
 
 ## 10. Lista de assets para a Etapa 4
 

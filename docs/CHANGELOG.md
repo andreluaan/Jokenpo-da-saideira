@@ -23,6 +23,11 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) e o **painel fixo na lateral** (longe do campo de visão) — hoje é o texto curvo abaixo da arena (v0.16).
 - Óculos escuros do Fera Verde (escondiam as sobrancelhas).
 
+## v0.18 — Rádio do Zé (aguardando o usuário avaliar)
+- Rádio do YouTube com a lista do usuário (18 músicas, sugestões ⭐), tocando já no menu e na partida, numa "TV do Zé" no canto de baixo à direita (regra do YouTube: player visível ≥ 200×200).
+- Painel 🔊: barrinha **Música**, Ligar/Desligar, próxima, escolher da lista, colar link do YouTube.
+- Online: o **dono da sala** escolhe e todos ouvem a mesma música no mesmo ponto (~0,5 s de diferença nos testes); convidado só desliga para si.
+
 ## v0.17.2 — Sons escolhidos pelo usuário + escudo de 10 s
 - 8 sons do MyInstants escolhidos pelo usuário (tesoura, pedra, cerveja, escudo, burburinho em loop, golpe normal, ganhou, perdeu) — **sem licença**, trocar antes de publicar (avisado; usuário aceitou o risco).
 - Escudo de gelo do freezer agora **derrete após 10 s** (`hazards.freezer.shieldMs`).

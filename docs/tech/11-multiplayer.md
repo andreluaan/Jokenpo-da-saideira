@@ -18,8 +18,8 @@ O cliente usa `SocketConnection`, que implementa a mesma `GameConnection` da par
 
 ## Mensagens
 Cliente → servidor: `room:create {name, character}` · `room:join {code,…}` · `room:rejoin {code, token}` (todas com ack `JoinResult`) ·
-`room:leave` · `room:ready bool` · `room:character c` (ack) · `room:settings {bots, difficulty}` (só dono) · `room:start` (ack, só dono) · `input PlayerInput` · `ping` (ack → tempo da simulação ou −1).
-Servidor → cliente: `room:state LobbyState` · `match:start {config, playerId, snapshot}` · `snap Snapshot` (20 Hz) · `ev GameEvent[]` · `match:end winnerId`.
+`room:leave` · `room:ready bool` · `room:character c` (ack) · `room:settings {bots, difficulty}` (só dono) · `room:start` (ack, só dono) · `room:radio {id, title, pos} | null` (só dono; Rádio do Zé, vale no lobby e na partida) · `input PlayerInput` · `ping` (ack → tempo da simulação ou −1).
+Servidor → cliente: `room:state LobbyState` (inclui `radio {id, title, startedAt}` e `serverTime` para achar o ponto da música) · `match:start {config, playerId, snapshot}` · `snap Snapshot` (20 Hz) · `ev GameEvent[]` · `match:end winnerId`.
 
 ## Regras da sala
 - Código de 4 letras (sem I/O). Até 4 humanos. Personagens **únicos** (ao entrar, se o pedido estiver ocupado, recebe o primeiro livre).

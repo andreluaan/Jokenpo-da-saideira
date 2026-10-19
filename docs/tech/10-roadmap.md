@@ -19,12 +19,13 @@
 
 ## Próximo
 1. Usuário testa com a turma na **Render** e dá retorno — em especial o **painel do Jo-Ken-Pô** e se o verde (260 ms) fica justo demais com o atraso da internet (ajuste em `config.qte`).
-2. **Sons** (ver 12-audio): 1ª entrega feita (efeitos, ambiente, volume). Falta a **rádio do YouTube** (lista do usuário; dono da sala escolhe; barrinha de Música) e gravação de vozes para o burburinho/torcida.
+2. **Sons** (ver 12-audio): efeitos, ambiente, volume e Rádio do Zé feitos. Falta: trocar os sons do MyInstants (sem licença) antes de publicar.
 3. Etapa 3: testes entre computadores diferentes (hospedar no Render — ver CHANGELOG), latência real, balanceamento bot×bot (script em 09-testes) e humanos.
 4. Banco de ideias (`docs/IDEIAS.md`): novos personagens com skill, mini game da cerveja, disputa na mesa do meio, iluminação, HUD do duelo.
 
 ## Problemas conhecidos / dívidas
-- Sem burburinho/torcida falando (falta gravação de vozes); ainda sem música.
+- Torcida sem reações faladas (uuuh/risada); burburinho é um loop do MyInstants.
+- Rádio: a TV do Zé (200×200, exigência do YouTube) cobre um pedaço do canto direito da tela; anúncios do YouTube podem tocar; vídeos podem ser bloqueados pela gravadora (a rádio pula).
 - Desempenho: ~1.200 desenhos por quadro na partida (a maior parte é a torcida animada, ~45 figurantes). Se travar em máquina fraca: tirar sombra/contorno de figurante longe ou reduzir a turma (`ambient3d.ts`). FPS real ainda não medido em hardware do usuário.
 - Cachorros atravessam decoração às vezes (andam numa elipse sem desviar).
 - Bar do Zé fica perto da borda de cima na câmera da partida (aparece inteiro no menu).

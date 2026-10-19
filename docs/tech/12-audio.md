@@ -1,6 +1,6 @@
 # 12 — Áudio (efeitos, ambiente, volume)
 
-Direção e decisões do usuário: `docs/ART_DIRECTION.md` §9. 1ª entrega (v0.17): efeitos + ambiente + volume. **v0.17.1:** a versão sintetizada foi recusada ("muito robotizado") → trocada por gravações reais; vozes sintetizadas removidas. **v0.17.2:** o usuário escolheu 8 sons do MyInstants (memes, **sem licença** — trocar antes de publicar; lista em `public/sounds/CREDITS.md`). A música (rádio do YouTube, dono da sala escolhe) é a 2ª entrega — pausada a pedido do usuário; os vídeos da lista já foram achados (todos aceitam embed).
+Direção e decisões do usuário: `docs/ART_DIRECTION.md` §9. 1ª entrega (v0.17): efeitos + ambiente + volume. **v0.17.1:** a versão sintetizada foi recusada ("muito robotizado") → trocada por gravações reais; vozes sintetizadas removidas. **v0.17.2:** o usuário escolheu 8 sons do MyInstants (memes, **sem licença** — trocar antes de publicar; lista em `public/sounds/CREDITS.md`). **v0.18: Rádio do Zé** (YouTube) — ver seção abaixo.
 
 ## Arquivos (`packages/client/src/audio/`)
 - `engine.ts` — `audio` (único): `AudioContext` criado no 1º clique/tecla (`unlock`, regra do navegador), canais `sfx` / `ambient` / `music` → master (mudo) → compressor. Volumes em `localStorage` `ppt.sound` (curva ao quadrado). `noise()` = ruído branco compartilhado.
@@ -11,6 +11,15 @@ Direção e decisões do usuário: `docs/ART_DIRECTION.md` §9. 1ª entrega (v0.
 - `matchAudio.ts` — `MatchAudio` (criado pelo `Game3D`): eventos → sons; `qte()` a cada quadro toca JO/KEN/PÔ! quando cada palavra acende (mesma conta de `ui/qteArc.ts`); `strike(e, 'special'|'impact')` chamado pela revelação do `Game3D` no instante da animação.
 - `ui/soundPanel.ts` — botão 🔊 (canto direito; na partida fica ao lado do "✕ Sair" via `#match:not(.hidden) ~ .sound-ctl`) com barrinhas Efeitos/Ambiente e mudo; tecla **M** muta. CSS no fim de `style.css`.
 - `main.ts` — monta o painel, inicia o ambiente e toca `uiClick` em botões do menu/fim de partida.
+
+## Rádio do Zé (`audio/radio.ts`, v0.18)
+- **Player do YouTube** (IFrame API carregada sob demanda) dentro da "TV do Zé" (`.radio-tv`, canto de baixo à direita; na partida sobe para `bottom: 118px` acima da barra de ações). Regras do YouTube: viewport **≥ 200×200**, **nada por cima** (por isso a TV não fica no topo, onde abre o painel 🔊), autoplay só com o player visível → a TV aparece enquanto toca e some quando a rádio é desligada.
+- `ZE_LIST` = lista do usuário (18 vídeos, ids escolhidos por busca + oEmbed em out/2026). Vídeo bloqueado para embed (erro 101/150) → pula para o próximo.
+- Som do YouTube **não passa pelo Web Audio**: a barrinha Música só faz `setVolume(música² × 100)` / `mute()`.
+- Modos: `solo` (menu/treino: toca a lista em sequência, começa numa música sorteada no 1º clique), `host` (dono da sala: manda `room:radio {id, title, pos}` a cada música que começa), `guest` (segue `LobbyState.radio`; ponto = `(Date.now() + offset − startedAt)/1000`, `offset = serverTime − Date.now()`; corrige se passar de 1,5 s). Convidado só pode desligar para si.
+- Controles no painel 🔊: Ligar/Desligar (salvo em `ppt.radio.on`), ⏭, lista, "Colar link do YouTube" (`parseYoutube`: watch?v=, youtu.be, shorts, embed, live; só domínios do YouTube). Link colado entra logo depois da música atual.
+- Quem manda é o vídeo que está tocando de fato (`onState` PLAYING corrige `current`), e respostas atrasadas de "seguir o dono" são ignoradas fora do modo convidado (bug visto ao recarregar a página do dono).
+- Console (DEV): `__radio`.
 
 ## Regras (pedidas pelo usuário)
 - Batidas do Jo-Ken-Pô e clique do símbolo **só no seu duelo**; lances dos outros a 50% (`OTHERS`).

@@ -13,7 +13,7 @@ OUT="$TEMP/ppt_stats.txt" npx vitest run packages/shared/test/_stats.test.ts > /
 (Saída do console do Vitest não aparece com `grep` confiável; por isso grava em arquivo.)
 
 ## Ver o jogo "de verdade"
-- `npm run dev` e abrir http://localhost:5173 (o servidor de dev pode ser iniciado em segundo plano).
+- `npm run dev` e abrir http://localhost:5173 (o servidor de dev pode ser iniciado em segundo plano). No app, `.claude/launch.json` tem `client` (Vite) e `server` (só o servidor, porta 3001) — use `server` quando o Vite já estiver rodando em outra conversa. Teste online = duas abas (cada aba é um jogador); som e YouTube só começam depois de um clique **de verdade** na aba.
 - **O painel do navegador do app reduz o rAF para ~1 fps quando sem foco** → screenshots parecem congeladas/lentas. Soluções:
   1. Passo manual pelo console: parar o relógio (`clearInterval(__ppt.timer)`), e em laço: `sim.step(1000/60)`, atualizar `__ppt.snapshot = sim.snapshotFor('you')`, `__ppt.simWall = performance.now()`, repassar eventos para `__ppt.listeners`, chamar `__ppt3d.frame()` (com espera ativa de 16 ms por quadro).
   2. **Capturas do canvas:** `node tools/shotserver.mjs` (porta 5199) e, na página, `fetch('http://127.0.0.1:5199/shot?name=x', {method:'POST', body: renderer.domElement.toDataURL('image/jpeg')})` logo após `renderer.render(...)`. Arquivo vai para `tools/shots/` (fora do Git) e pode ser aberto como imagem.

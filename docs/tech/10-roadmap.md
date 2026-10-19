@@ -19,12 +19,12 @@
 
 ## Próximo
 1. Usuário testa com a turma na **Render** e dá retorno — em especial o **painel do Jo-Ken-Pô** e se o verde (260 ms) fica justo demais com o atraso da internet (ajuste em `config.qte`).
-2. **Sons** (ver 12-audio): 1ª entrega feita (efeitos, ambiente, volume). Falta a **rádio do YouTube** (lista do usuário; dono da sala escolhe; barrinha de Música) e, se o usuário pedir, trocar sons sintetizados por gravações CC0.
+2. **Sons** (ver 12-audio): 1ª entrega feita (efeitos, ambiente, volume). Falta a **rádio do YouTube** (lista do usuário; dono da sala escolhe; barrinha de Música) e gravação de vozes para o burburinho/torcida.
 3. Etapa 3: testes entre computadores diferentes (hospedar no Render — ver CHANGELOG), latência real, balanceamento bot×bot (script em 09-testes) e humanos.
 4. Banco de ideias (`docs/IDEIAS.md`): novos personagens com skill, mini game da cerveja, disputa na mesa do meio, iluminação, HUD do duelo.
 
 ## Problemas conhecidos / dívidas
-- Sons são sintetizados (sem arquivos): podem soar "de videogame"; ainda sem música.
+- Sem burburinho/torcida falando (falta gravação de vozes); ainda sem música.
 - Desempenho: ~1.200 desenhos por quadro na partida (a maior parte é a torcida animada, ~45 figurantes). Se travar em máquina fraca: tirar sombra/contorno de figurante longe ou reduzir a turma (`ambient3d.ts`). FPS real ainda não medido em hardware do usuário.
 - Cachorros atravessam decoração às vezes (andam numa elipse sem desviar).
 - Bar do Zé fica perto da borda de cima na câmera da partida (aparece inteiro no menu).

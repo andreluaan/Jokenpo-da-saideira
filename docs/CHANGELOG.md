@@ -23,6 +23,10 @@ Detalhes técnicos de cada área ficam em `docs/tech/`; regras em `docs/DESIGN.m
 - **QTE**: barra curva ao lado do personagem, punho num círculo ao lado do personagem e **mãos 3D no próprio boneco** (grandes = estranho, pequenas = não gostou) e o **painel fixo na lateral** (longe do campo de visão) — hoje é o texto curvo abaixo da arena (v0.16).
 - Óculos escuros do Fera Verde (escondiam as sobrancelhas).
 
+## v0.17.1 — Sons de verdade
+- Usuário: sintetizado "muito robotizado, ficou péssimo" → efeitos trocados por **gravações reais CC0** (Kenney Impact/RPG/Casino + aplauso de qubodup, baixados com permissão). Burburinho e torcida falando **tirados** até ter gravação de vozes.
+- Volume em 0 agora fica mudo de verdade.
+
 ## v0.17 — Som, 1ª entrega (aguardando o usuário ouvir e julgar)
 - Decisões do usuário em `ART_DIRECTION.md` §9 (rádio do YouTube, nada de Spotify; ambiente muito baixo, sem TV/bichos).
 - Efeitos sintetizados: batidas JO·KEN·PÔ! (só no seu duelo), clique do símbolo, apito de pego roubando, golpe normal, golpe especial próprio de pedra/tesoura/papel, cerveja, brasa, engradado, freezer, garçom, eventos do Zé, fim de partida (ganhou/perdeu).

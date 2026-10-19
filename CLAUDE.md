@@ -22,7 +22,7 @@ só tem uma gelada no freezer e **quem fica de pé por último leva a cerveja**.
     (`three/playersCorner3d.ts`: toalha xadrez, cerveja na mesa, engradados de banquinho, varal de lâmpadas; nome só no hover no menu),
     estradinha desviada, muitas árvores, quintal com bar/torcida/cachorros/picape. Luz com profundidade (bordas escuras, poças de luz).
   - **Desempenho:** ~770 desenhos por quadro na partida (`merge.ts` junta por acabamento, com cor nos vértices; ver 06).
-  - **Som (v0.17, 1ª entrega):** efeitos sintetizados no código + burburinho/torcida bem baixos + botão 🔊 (Efeitos/Ambiente, tecla M). Decisões em `ART_DIRECTION.md` §9, código em 12-audio. **2ª entrega: rádio do YouTube** (lista do usuário, dono da sala escolhe).
+  - **Som (v0.17, 1ª entrega):** efeitos com **gravações reais CC0** (Kenney + aplauso; sintetizado foi recusado por soar robótico) + copos/tampinhas de fundo; burburinho/vozes desligados até ter gravação + botão 🔊 (Efeitos/Ambiente, tecla M). Decisões em `ART_DIRECTION.md` §9, código em 12-audio. **2ª entrega: rádio do YouTube** (lista do usuário, dono da sala escolhe).
   - **Personagens:** 4 (Fera Verde, Príncipe Marrento, Seu Pança, Sonolento), visual mais fiel às referências do usuário (v0.10).
 - **Online:** código no GitHub (`andreluaan/Jokenpo-da-saideira`, branch `main`); hospedagem na **Render** (Web Service Node:
   build `npm install && npm run build`, start `npm run start -w @ppt/server`, sem variáveis obrigatórias — opcional `NODE_VERSION=22`;
@@ -69,7 +69,7 @@ npm run build
 | Personagens 3D, repintura, acessórios, ragdoll | `docs/tech/05-personagens.md` |
 | Arena/cenário 3D, obstáculos, porteira, mesa | `docs/tech/06-arena.md` |
 | UI/HUD/menu (DOM + CSS) | `docs/tech/07-ui-hud.md` |
-| Assets 3D (Kenney), como adicionar modelos | `docs/tech/08-assets.md` |
+| Assets 3D (Kenney), como adicionar modelos | `docs/tech/08-assets.md` (sons: `public/sounds/CREDITS.md`) |
 | Testes, depuração, capturas de tela | `docs/tech/09-testes-e-depuracao.md` |
 | Roadmap e problemas conhecidos | `docs/tech/10-roadmap.md` |
 | Multiplayer: servidor, salas, protocolo, relógio | `docs/tech/11-multiplayer.md` |
